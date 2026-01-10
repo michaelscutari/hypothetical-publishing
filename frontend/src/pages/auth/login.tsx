@@ -1,5 +1,5 @@
 import * as React from 'react';
-//import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -40,7 +40,7 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 export default function Login() {
   const [usernameError, setUsernameError] = React.useState(false);
   const [passwordError, setPasswordError] = React.useState(false);
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const validateInputs = () => {
     const username = (document.getElementById('username') as HTMLInputElement)?.value ?? '';
@@ -70,7 +70,7 @@ export default function Login() {
 
     if (!validateInputs()) return;
 
-    alert('Authorization not yet implemented');
+    navigate('/dashboard');
   };
 
   return (
