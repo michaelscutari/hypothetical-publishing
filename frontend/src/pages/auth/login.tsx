@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+//import { useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
@@ -40,7 +40,7 @@ const SignInContainer = styled(Stack)(({ theme }) => ({
 export default function Login() {
   const [usernameError, setUsernameError] = React.useState(false);
   const [passwordError, setPasswordError] = React.useState(false);
-  const navigate = useNavigate();
+  //const navigate = useNavigate();
 
   const validateInputs = () => {
     const username = (document.getElementById('username') as HTMLInputElement)?.value ?? '';
@@ -55,7 +55,7 @@ export default function Login() {
       setUsernameError(false);
     }
 
-    if (!password || password.length < 6) {
+    if (!password) {
       setPasswordError(true);
       valid = false;
     } else {
@@ -67,11 +67,10 @@ export default function Login() {
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+
     if (!validateInputs()) return;
 
-    // Fake login for now
-    localStorage.setItem('auth_token', 'admin');
-    navigate('/', { replace: true });
+    alert('Authorization not yet implemented');
   };
 
   return (
@@ -83,7 +82,12 @@ export default function Login() {
             Sign in
           </Typography>
 
-          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <Box
+            component="form"
+            onSubmit={handleSubmit}
+            noValidate
+            sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+          >
             <FormControl>
               <FormLabel htmlFor="username">Username</FormLabel>
               <TextField
@@ -108,7 +112,7 @@ export default function Login() {
                 required
                 fullWidth
                 error={passwordError}
-                helperText={passwordError ? 'Password must be at least 6 characters' : ''}
+                helperText={passwordError ? 'Password is required' : ''}
               />
             </FormControl>
 
@@ -121,7 +125,7 @@ export default function Login() {
               type="button"
               variant="body2"
               sx={{ alignSelf: 'center' }}
-              onClick={() => alert('Forgot password flow not implemented yet')}
+              onClick={() => alert('Forgot password not implemented yet')}
             >
               Forgot your password?
             </Link>
