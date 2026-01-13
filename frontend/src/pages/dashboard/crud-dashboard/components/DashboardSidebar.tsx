@@ -16,10 +16,7 @@ import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 import DashboardSidebarPageItem from './DashboardSidebarPageItem';
 import DashboardSidebarHeaderItem from './DashboardSidebarHeaderItem';
 import DashboardSidebarDividerItem from './DashboardSidebarDividerItem';
-import {
-  getDrawerSxTransitionMixin,
-  getDrawerWidthTransitionMixin,
-} from '../mixins';
+import { getDrawerSxTransitionMixin, getDrawerWidthTransitionMixin } from '../mixins';
 
 export interface DashboardSidebarProps {
   expanded?: boolean;
@@ -88,9 +85,7 @@ export default function DashboardSidebar({
       if (hasNestedNavigation && !mini) {
         setExpandedItemIds((previousValue) =>
           previousValue.includes(itemId)
-            ? previousValue.filter(
-                (previousValueItemId) => previousValueItemId !== itemId,
-              )
+            ? previousValue.filter((previousValueItemId) => previousValueItemId !== itemId)
             : [...previousValue, itemId],
         );
       } else if (!isOverSmViewport && !hasNestedNavigation) {
@@ -100,8 +95,7 @@ export default function DashboardSidebar({
     [mini, setExpanded, isOverSmViewport],
   );
 
-  const hasDrawerTransitions =
-    isOverSmViewport && (!disableCollapsibleSidebar || isOverMdViewport);
+  const hasDrawerTransitions = isOverSmViewport && (!disableCollapsibleSidebar || isOverMdViewport);
 
   const getDrawerContent = React.useCallback(
     (viewport: 'phone' | 'tablet' | 'desktop') => (
@@ -119,9 +113,7 @@ export default function DashboardSidebar({
             scrollbarGutter: mini ? 'stable' : 'auto',
             overflowX: 'hidden',
             pt: !mini ? 0 : 2,
-            ...(hasDrawerTransitions
-              ? getDrawerSxTransitionMixin(isFullyExpanded, 'padding')
-              : {}),
+            ...(hasDrawerTransitions ? getDrawerSxTransitionMixin(isFullyExpanded, 'padding') : {}),
           }}
         >
           <List
@@ -138,7 +130,11 @@ export default function DashboardSidebar({
               title="Employees"
               icon={<PersonIcon />}
               href="/dashboard/employees"
-              selected={!!matchPath('/dashboard/employees/*', pathname) || pathname === '/dashboard' || pathname === '/dashboard/'}
+              selected={
+                !!matchPath('/dashboard/employees/*', pathname) ||
+                pathname === '/dashboard' ||
+                pathname === '/dashboard/'
+              }
             />
             <DashboardSidebarDividerItem />
             <DashboardSidebarHeaderItem>Example items</DashboardSidebarHeaderItem>
@@ -221,13 +217,7 @@ export default function DashboardSidebar({
       fullyCollapsed: isFullyCollapsed,
       hasDrawerTransitions,
     };
-  }, [
-    handlePageItemClick,
-    mini,
-    isFullyExpanded,
-    isFullyCollapsed,
-    hasDrawerTransitions,
-  ]);
+  }, [handlePageItemClick, mini, isFullyExpanded, isFullyCollapsed, hasDrawerTransitions]);
 
   return (
     <DashboardSidebarContext.Provider value={sidebarContextValue}>

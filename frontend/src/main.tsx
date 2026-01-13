@@ -8,6 +8,7 @@ import { getTheme } from './theme/getTheme';
 import React from 'react';
 import { ColorSchemeProvider, useColorScheme } from './context/ColorSchemeContext';
 
+// eslint-disable-next-line react-refresh/only-export-components
 function ThemedApp() {
   const { effectiveMode } = useColorScheme();
   const theme = React.useMemo(() => getTheme(effectiveMode), [effectiveMode]);
@@ -20,6 +21,7 @@ function ThemedApp() {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 function Root() {
   return (
     <ColorSchemeProvider>

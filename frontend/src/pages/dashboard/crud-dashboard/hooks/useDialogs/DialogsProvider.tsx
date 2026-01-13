@@ -24,11 +24,11 @@ export interface DialogProviderProps {
  */
 export default function DialogsProvider(props: DialogProviderProps) {
   const { children, unmountAfter = 1000 } = props;
-  const [stack, setStack] = React.useState<DialogStackEntry<any, any>[]>([]);
+  const [stack, setStack] = React.useState<DialogStackEntry<unknown, unknown>[]>([]);
   const keyPrefix = React.useId();
   const nextId = React.useRef(0);
   const dialogMetadata = React.useRef(
-    new WeakMap<Promise<any>, DialogStackEntry<any, any>>(),
+    new WeakMap<Promise<unknown>, DialogStackEntry<unknown, unknown>>(),
   );
 
   const requestDialog = useEventCallback<OpenDialog>(function open<P, R>(
@@ -66,13 +66,9 @@ export default function DialogsProvider(props: DialogProviderProps) {
     return promise;
   });
 
-  const closeDialogUi = useEventCallback(function closeDialogUi<R>(
-    dialog: Promise<R>,
-  ) {
+  const closeDialogUi = useEventCallback(function closeDialogUi<R>(dialog: Promise<R>) {
     setStack((prevStack) =>
-      prevStack.map((entry) =>
-        entry.promise === dialog ? { ...entry, open: false } : entry,
-      ),
+      prevStack.map((entry) => (entry.promise === dialog ? { ...entry, open: false } : entry)),
     );
     setTimeout(() => {
       // wait for closing animation

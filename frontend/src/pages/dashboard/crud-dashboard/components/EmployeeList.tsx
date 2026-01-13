@@ -46,9 +46,7 @@ export default function EmployeeList() {
       : INITIAL_PAGE_SIZE,
   });
   const [filterModel, setFilterModel] = React.useState<GridFilterModel>(
-    searchParams.get('filter')
-      ? JSON.parse(searchParams.get('filter') ?? '')
-      : { items: [] },
+    searchParams.get('filter') ? JSON.parse(searchParams.get('filter') ?? '') : { items: [] },
   );
   const [sortModel, setSortModel] = React.useState<GridSortModel>(
     searchParams.get('sort') ? JSON.parse(searchParams.get('sort') ?? '') : [],
@@ -74,9 +72,7 @@ export default function EmployeeList() {
 
       const newSearchParamsString = searchParams.toString();
 
-      navigate(
-        `${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`,
-      );
+      navigate(`${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`);
     },
     [navigate, pathname, searchParams],
   );
@@ -96,9 +92,7 @@ export default function EmployeeList() {
 
       const newSearchParamsString = searchParams.toString();
 
-      navigate(
-        `${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`,
-      );
+      navigate(`${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`);
     },
     [navigate, pathname, searchParams],
   );
@@ -115,9 +109,7 @@ export default function EmployeeList() {
 
       const newSearchParamsString = searchParams.toString();
 
-      navigate(
-        `${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`,
-      );
+      navigate(`${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`);
     },
     [navigate, pathname, searchParams],
   );
@@ -174,15 +166,12 @@ export default function EmployeeList() {
 
   const handleRowDelete = React.useCallback(
     (employee: Employee) => async () => {
-      const confirmed = await dialogs.confirm(
-        `Do you wish to delete ${employee.name}?`,
-        {
-          title: `Delete employee?`,
-          severity: 'error',
-          okText: 'Delete',
-          cancelText: 'Cancel',
-        },
-      );
+      const confirmed = await dialogs.confirm(`Do you wish to delete ${employee.name}?`, {
+        title: `Delete employee?`,
+        severity: 'error',
+        okText: 'Delete',
+        cancelText: 'Cancel',
+      });
 
       if (confirmed) {
         setIsLoading(true);
@@ -275,11 +264,7 @@ export default function EmployeeList() {
               </IconButton>
             </div>
           </Tooltip>
-          <Button
-            variant="contained"
-            onClick={handleCreateClick}
-            startIcon={<AddIcon />}
-          >
+          <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             Create
           </Button>
         </Stack>

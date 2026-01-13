@@ -60,15 +60,12 @@ export default function EmployeeShow() {
       return;
     }
 
-    const confirmed = await dialogs.confirm(
-      `Do you wish to delete ${employee.name}?`,
-      {
-        title: `Delete employee?`,
-        severity: 'error',
-        okText: 'Delete',
-        cancelText: 'Cancel',
-      },
-    );
+    const confirmed = await dialogs.confirm(`Do you wish to delete ${employee.name}?`, {
+      title: `Delete employee?`,
+      severity: 'error',
+      okText: 'Delete',
+      cancelText: 'Cancel',
+    });
 
     if (confirmed) {
       setIsLoading(true);
@@ -170,19 +167,11 @@ export default function EmployeeShow() {
         </Grid>
         <Divider sx={{ my: 3 }} />
         <Stack direction="row" spacing={2} justifyContent="space-between">
-          <Button
-            variant="contained"
-            startIcon={<ArrowBackIcon />}
-            onClick={handleBack}
-          >
+          <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
             Back
           </Button>
           <Stack direction="row" spacing={2}>
-            <Button
-              variant="contained"
-              startIcon={<EditIcon />}
-              onClick={handleEmployeeEdit}
-            >
+            <Button variant="contained" startIcon={<EditIcon />} onClick={handleEmployeeEdit}>
               Edit
             </Button>
             <Button
@@ -197,24 +186,14 @@ export default function EmployeeShow() {
         </Stack>
       </Box>
     ) : null;
-  }, [
-    isLoading,
-    error,
-    employee,
-    handleBack,
-    handleEmployeeEdit,
-    handleEmployeeDelete,
-  ]);
+  }, [isLoading, error, employee, handleBack, handleEmployeeEdit, handleEmployeeDelete]);
 
   const pageTitle = `Employee ${employeeId}`;
 
   return (
     <PageContainer
       title={pageTitle}
-      breadcrumbs={[
-        { title: 'Employees', path: '/dashboard/employees' },
-        { title: pageTitle },
-      ]}
+      breadcrumbs={[{ title: 'Employees', path: '/dashboard/employees' }, { title: pageTitle }]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>

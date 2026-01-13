@@ -10,10 +10,7 @@ import {
   validate as validateEmployee,
   type Employee,
 } from '../data/employees';
-import EmployeeForm, {
-  type FormFieldValue,
-  type EmployeeFormState,
-} from './EmployeeForm';
+import EmployeeForm, { type FormFieldValue, type EmployeeFormState } from './EmployeeForm';
 import PageContainer from './PageContainer';
 
 function EmployeeEditForm({
@@ -35,25 +32,19 @@ function EmployeeEditForm({
   const formValues = formState.values;
   const formErrors = formState.errors;
 
-  const setFormValues = React.useCallback(
-    (newFormValues: Partial<EmployeeFormState['values']>) => {
-      setFormState((previousState) => ({
-        ...previousState,
-        values: newFormValues,
-      }));
-    },
-    [],
-  );
+  const setFormValues = React.useCallback((newFormValues: Partial<EmployeeFormState['values']>) => {
+    setFormState((previousState) => ({
+      ...previousState,
+      values: newFormValues,
+    }));
+  }, []);
 
-  const setFormErrors = React.useCallback(
-    (newFormErrors: Partial<EmployeeFormState['errors']>) => {
-      setFormState((previousState) => ({
-        ...previousState,
-        errors: newFormErrors,
-      }));
-    },
-    [],
-  );
+  const setFormErrors = React.useCallback((newFormErrors: Partial<EmployeeFormState['errors']>) => {
+    setFormState((previousState) => ({
+      ...previousState,
+      errors: newFormErrors,
+    }));
+  }, []);
 
   const handleFormFieldChange = React.useCallback(
     (name: keyof EmployeeFormState['values'], value: FormFieldValue) => {
@@ -80,9 +71,7 @@ function EmployeeEditForm({
   const handleFormSubmit = React.useCallback(async () => {
     const { issues } = validateEmployee(formValues);
     if (issues && issues.length > 0) {
-      setFormErrors(
-        Object.fromEntries(issues.map((issue) => [issue.path?.[0], issue.message])),
-      );
+      setFormErrors(Object.fromEntries(issues.map((issue) => [issue.path?.[0], issue.message])));
       return;
     }
     setFormErrors({});
@@ -96,13 +85,10 @@ function EmployeeEditForm({
 
       navigate('/dashboard/employees');
     } catch (editError) {
-      notifications.show(
-        `Failed to edit employee. Reason: ${(editError as Error).message}`,
-        {
-          severity: 'error',
-          autoHideDuration: 3000,
-        },
-      );
+      notifications.show(`Failed to edit employee. Reason: ${(editError as Error).message}`, {
+        severity: 'error',
+        autoHideDuration: 3000,
+      });
       throw editError;
     }
   }, [formValues, navigate, notifications, onSubmit, setFormErrors]);
@@ -178,9 +164,7 @@ export default function EmployeeEdit() {
       );
     }
 
-    return employee ? (
-      <EmployeeEditForm initialValues={employee} onSubmit={handleSubmit} />
-    ) : null;
+    return employee ? <EmployeeEditForm initialValues={employee} onSubmit={handleSubmit} /> : null;
   }, [isLoading, error, employee, handleSubmit]);
 
   return (

@@ -9,18 +9,12 @@ export interface DashboardSidebarHeaderItemProps {
   children?: React.ReactNode;
 }
 
-export default function DashboardSidebarHeaderItem({
-  children,
-}: DashboardSidebarHeaderItemProps) {
+export default function DashboardSidebarHeaderItem({ children }: DashboardSidebarHeaderItemProps) {
   const sidebarContext = React.useContext(DashboardSidebarContext);
   if (!sidebarContext) {
     throw new Error('Sidebar context was used without a provider.');
   }
-  const {
-    mini = false,
-    fullyExpanded = true,
-    hasDrawerTransitions,
-  } = sidebarContext;
+  const { mini = false, fullyExpanded = true, hasDrawerTransitions } = sidebarContext;
 
   return (
     <ListSubheader
@@ -28,9 +22,7 @@ export default function DashboardSidebarHeaderItem({
         fontSize: 12,
         fontWeight: '600',
         height: mini ? 0 : 36,
-        ...(hasDrawerTransitions
-          ? getDrawerSxTransitionMixin(fullyExpanded, 'height')
-          : {}),
+        ...(hasDrawerTransitions ? getDrawerSxTransitionMixin(fullyExpanded, 'height') : {}),
         px: 1.5,
         py: 0,
         minWidth: DRAWER_WIDTH,

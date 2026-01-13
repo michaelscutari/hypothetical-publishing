@@ -29,10 +29,7 @@ export type FormFieldValue = string | string[] | number | boolean | File | null;
 
 export interface EmployeeFormProps {
   formState: EmployeeFormState;
-  onFieldChange: (
-    name: keyof EmployeeFormState['values'],
-    value: FormFieldValue,
-  ) => void;
+  onFieldChange: (name: keyof EmployeeFormState['values'], value: FormFieldValue) => void;
   onSubmit: (formValues: Partial<EmployeeFormState['values']>) => Promise<void>;
   onReset?: (formValues: Partial<EmployeeFormState['values']>) => void;
   submitButtonLabel: string;
@@ -40,14 +37,7 @@ export interface EmployeeFormProps {
 }
 
 export default function EmployeeForm(props: EmployeeFormProps) {
-  const {
-    formState,
-    onFieldChange,
-    onSubmit,
-    onReset,
-    submitButtonLabel,
-    backButtonPath,
-  } = props;
+  const { formState, onFieldChange, onSubmit, onReset, submitButtonLabel, backButtonPath } = props;
 
   const formValues = formState.values;
   const formErrors = formState.errors;
@@ -72,10 +62,7 @@ export default function EmployeeForm(props: EmployeeFormProps) {
 
   const handleTextFieldChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      onFieldChange(
-        event.target.name as keyof EmployeeFormState['values'],
-        event.target.value,
-      );
+      onFieldChange(event.target.name as keyof EmployeeFormState['values'], event.target.value);
     },
     [onFieldChange],
   );
@@ -110,10 +97,7 @@ export default function EmployeeForm(props: EmployeeFormProps) {
 
   const handleSelectFieldChange = React.useCallback(
     (event: SelectChangeEvent) => {
-      onFieldChange(
-        event.target.name as keyof EmployeeFormState['values'],
-        event.target.value,
-      );
+      onFieldChange(event.target.name as keyof EmployeeFormState['values'], event.target.value);
     },
     [onFieldChange],
   );
@@ -219,19 +203,10 @@ export default function EmployeeForm(props: EmployeeFormProps) {
         </Grid>
       </FormGroup>
       <Stack direction="row" spacing={2} justifyContent="space-between">
-        <Button
-          variant="contained"
-          startIcon={<ArrowBackIcon />}
-          onClick={handleBack}
-        >
+        <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
           Back
         </Button>
-        <Button
-          type="submit"
-          variant="contained"
-          size="large"
-          loading={isSubmitting}
-        >
+        <Button type="submit" variant="contained" size="large" loading={isSubmitting}>
           {submitButtonLabel}
         </Button>
       </Stack>

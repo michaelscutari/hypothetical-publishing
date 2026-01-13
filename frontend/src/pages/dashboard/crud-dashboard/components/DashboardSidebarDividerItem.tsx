@@ -18,9 +18,7 @@ export default function DashboardSidebarDividerItem() {
           borderBottomWidth: 1,
           my: 1,
           mx: -0.5,
-          ...(hasDrawerTransitions
-            ? getDrawerSxTransitionMixin(fullyExpanded, 'margin')
-            : {}),
+          ...(hasDrawerTransitions ? getDrawerSxTransitionMixin(fullyExpanded, 'margin') : {}),
         }}
       />
     </li>

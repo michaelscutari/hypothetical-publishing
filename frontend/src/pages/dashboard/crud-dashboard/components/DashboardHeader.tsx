@@ -23,11 +23,7 @@ export interface DashboardHeaderProps {
   onToggleMenu: (open: boolean) => void;
 }
 
-export default function DashboardHeader({
-  menuOpen,
-  onToggleMenu,
-}: DashboardHeaderProps) {
-
+export default function DashboardHeader({ menuOpen, onToggleMenu }: DashboardHeaderProps) {
   const handleMenuOpen = React.useCallback(() => {
     onToggleMenu(!menuOpen);
   }, [menuOpen, onToggleMenu]);

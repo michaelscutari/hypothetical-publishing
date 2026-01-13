@@ -83,9 +83,7 @@ export default function DashboardSidebarPageItem({
     };
   }
 
-  const hasExternalHref = href
-    ? href.startsWith('http://') || href.startsWith('https://')
-    : false;
+  const hasExternalHref = href ? href.startsWith('http://') || href.startsWith('https://') : false;
 
   const LinkComponent = hasExternalHref ? 'a' : Link;
 
@@ -213,9 +211,7 @@ export default function DashboardSidebarPageItem({
             />
           ) : null}
           {action && !mini && fullyExpanded ? action : null}
-          {nestedNavigation ? (
-            <ExpandMoreIcon sx={nestedNavigationCollapseSx} />
-          ) : null}
+          {nestedNavigation ? <ExpandMoreIcon sx={nestedNavigationCollapseSx} /> : null}
         </ListItemButton>
         {nestedNavigation && mini ? (
           <Grow in={isHovered}>
@@ -234,9 +230,7 @@ export default function DashboardSidebarPageItem({
                   transform: 'translateY(-50px)',
                 }}
               >
-                <DashboardSidebarContext.Provider
-                  value={miniNestedNavigationSidebarContextValue}
-                >
+                <DashboardSidebarContext.Provider value={miniNestedNavigationSidebarContextValue}>
                   {nestedNavigation}
                 </DashboardSidebarContext.Provider>
               </Paper>

@@ -72,10 +72,7 @@ export default function PageContainer(props: PageContainerProps) {
                       {breadcrumb.title}
                     </MuiLink>
                   ) : (
-                    <Typography
-                      key={index}
-                      sx={{ color: 'text.primary', fontWeight: 600 }}
-                    >
+                    <Typography key={index} sx={{ color: 'text.primary', fontWeight: 600 }}>
                       {breadcrumb.title}
                     </Typography>
                   );
@@ -87,9 +84,7 @@ export default function PageContainer(props: PageContainerProps) {
             <PageHeaderToolbar>{actions}</PageHeaderToolbar>
           </PageContentHeader>
         </Stack>
-        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-          {children}
-        </Box>
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>{children}</Box>
       </Stack>
     </Container>
   );

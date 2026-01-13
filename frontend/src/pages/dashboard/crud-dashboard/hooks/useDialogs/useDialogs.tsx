@@ -12,10 +12,15 @@ import DialogsContext, {
   type CloseDialog,
   type OpenDialogOptions,
   type DialogProps,
-  type DialogComponent,
 } from './DialogsContext';
 
-export type { OpenDialog, CloseDialog, OpenDialogOptions, DialogProps, DialogComponent } from './DialogsContext';
+export type {
+  OpenDialog,
+  CloseDialog,
+  OpenDialogOptions,
+  DialogProps,
+  DialogComponent,
+} from './DialogsContext';
 
 export interface AlertOptions extends OpenDialogOptions<void> {
   title?: React.ReactNode;
@@ -75,7 +80,7 @@ export interface AlertDialogPayload extends AlertOptions {
   msg: React.ReactNode;
 }
 
-export interface AlertDialogProps extends DialogProps<AlertDialogPayload, void> {}
+export type AlertDialogProps = DialogProps<AlertDialogPayload, void>;
 
 export function AlertDialog({ open, payload, onClose }: AlertDialogProps) {
   const okButtonProps = useDialogLoadingButton(() => onClose());
@@ -97,10 +102,7 @@ export interface ConfirmDialogPayload extends ConfirmOptions {
   msg: React.ReactNode;
 }
 
-export interface ConfirmDialogProps extends DialogProps<
-  ConfirmDialogPayload,
-  boolean
-> {}
+export type ConfirmDialogProps = DialogProps<ConfirmDialogPayload, boolean>;
 
 export function ConfirmDialog({ open, payload, onClose }: ConfirmDialogProps) {
   const cancelButtonProps = useDialogLoadingButton(() => onClose(false));
@@ -126,10 +128,7 @@ export interface PromptDialogPayload extends PromptOptions {
   msg: React.ReactNode;
 }
 
-export interface PromptDialogProps extends DialogProps<
-  PromptDialogPayload,
-  string | null
-> {}
+export type PromptDialogProps = DialogProps<PromptDialogPayload, string | null>;
 
 export function PromptDialog({ open, payload, onClose }: PromptDialogProps) {
   const [input, setInput] = React.useState('');
@@ -194,6 +193,7 @@ export function PromptDialog({ open, payload, onClose }: PromptDialogProps) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useDialogs(): DialogHook {
   const dialogsContext = React.useContext(DialogsContext);
   if (!dialogsContext) {
@@ -201,19 +201,16 @@ export function useDialogs(): DialogHook {
   }
   const { open, close } = dialogsContext;
 
-  const alert = useEventCallback<OpenAlertDialog>(
-    (msg, { onClose, ...options } = {}) =>
-      open(AlertDialog, { ...options, msg }, { onClose }),
+  const alert = useEventCallback<OpenAlertDialog>((msg, { onClose, ...options } = {}) =>
+    open(AlertDialog, { ...options, msg }, { onClose }),
   );
 
-  const confirm = useEventCallback<OpenConfirmDialog>(
-    (msg, { onClose, ...options } = {}) =>
-      open(ConfirmDialog, { ...options, msg }, { onClose }),
+  const confirm = useEventCallback<OpenConfirmDialog>((msg, { onClose, ...options } = {}) =>
+    open(ConfirmDialog, { ...options, msg }, { onClose }),
   );
 
-  const prompt = useEventCallback<OpenPromptDialog>(
-    (msg, { onClose, ...options } = {}) =>
-      open(PromptDialog, { ...options, msg }, { onClose }),
+  const prompt = useEventCallback<OpenPromptDialog>((msg, { onClose, ...options } = {}) =>
+    open(PromptDialog, { ...options, msg }, { onClose }),
   );
 
   return React.useMemo(

@@ -15,6 +15,7 @@ export function ColorSchemeProvider({ children }: { children: React.ReactNode })
   return <ColorSchemeContext.Provider value={value}>{children}</ColorSchemeContext.Provider>;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useColorScheme() {
   const context = React.useContext(ColorSchemeContext);
   if (!context) {

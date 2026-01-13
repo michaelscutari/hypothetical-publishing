@@ -12,18 +12,21 @@ export function usePreferredColorScheme() {
   });
 
   const [prefersDark, setPrefersDark] = useState<boolean>(() =>
-    typeof window !== 'undefined' ? window.matchMedia?.('(prefers-color-scheme: dark)').matches : false
+    typeof window !== 'undefined'
+      ? window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      : false,
   );
 
-  const effectiveMode = useMemo(() => (preferred === 'system' ? (prefersDark ? 'dark' : 'light') : preferred), [
-    preferred,
-    prefersDark,
-  ]) as 'light' | 'dark';
+  const effectiveMode = useMemo(
+    () => (preferred === 'system' ? (prefersDark ? 'dark' : 'light') : preferred),
+    [preferred, prefersDark],
+  ) as 'light' | 'dark';
 
   useEffect(() => {
     try {
       localStorage.setItem(KEY, preferred);
     } catch {
+      // Ignore localStorage errors (e.g., in private browsing)
     }
   }, [preferred]);
 
@@ -32,10 +35,11 @@ export function usePreferredColorScheme() {
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e: MediaQueryListEvent) => setPrefersDark(e.matches);
     mql.addEventListener?.('change', handler);
-    if (!mql.addEventListener) mql.addListener?.(handler as any);
+    if (!mql.addEventListener) mql.addListener?.(handler as (e: MediaQueryListEvent) => void);
     return () => {
       mql.removeEventListener?.('change', handler);
-      if (!mql.removeEventListener) mql.removeListener?.(handler as any);
+      if (!mql.removeEventListener)
+        mql.removeListener?.(handler as (e: MediaQueryListEvent) => void);
     };
   }, []);
 

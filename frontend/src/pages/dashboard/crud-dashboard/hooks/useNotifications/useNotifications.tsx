@@ -4,7 +4,11 @@ import NotificationsContext, {
   type CloseNotification,
 } from './NotificationsContext';
 
-export type { ShowNotification, CloseNotification, ShowNotificationOptions } from './NotificationsContext';
+export type {
+  ShowNotification,
+  CloseNotification,
+  ShowNotificationOptions,
+} from './NotificationsContext';
 
 interface UseNotifications {
   show: ShowNotification;

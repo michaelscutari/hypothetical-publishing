@@ -16,9 +16,7 @@ import type {
   ShowNotificationOptions,
 } from './useNotifications';
 
-const RootPropsContext = React.createContext<NotificationsProviderProps | null>(
-  null,
-);
+const RootPropsContext = React.createContext<NotificationsProviderProps | null>(null);
 
 interface NotificationProps {
   notificationKey: string;
@@ -28,13 +26,7 @@ interface NotificationProps {
   options: ShowNotificationOptions;
 }
 
-function Notification({
-  notificationKey,
-  open,
-  message,
-  options,
-  badge,
-}: NotificationProps) {
+function Notification({ notificationKey, open, message, options, badge }: NotificationProps) {
   const notificationsContext = React.useContext(NotificationsContext);
   if (!notificationsContext) {
     throw new Error('Notifications context was used without a provider.');
@@ -146,8 +138,7 @@ export default function NotificationsProvider(props: NotificationsProviderProps)
   const [state, setState] = React.useState<NotificationsState>({ queue: [] });
 
   const show = React.useCallback<ShowNotification>((message, options = {}) => {
-    const notificationKey =
-      options.key ?? `::toolpad-internal::notification::${generateId()}`;
+    const notificationKey = options.key ?? `::toolpad-internal::notification::${generateId()}`;
     setState((prev) => {
       if (prev.queue.some((n) => n.notificationKey === notificationKey)) {
         // deduplicate by key

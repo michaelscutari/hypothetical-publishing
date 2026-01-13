@@ -18,11 +18,7 @@ export interface OpenDialog {
     payload?: P,
     options?: OpenDialogOptions<R>,
   ): Promise<R>;
-  <P, R>(
-    Component: DialogComponent<P, R>,
-    payload: P,
-    options?: OpenDialogOptions<R>,
-  ): Promise<R>;
+  <P, R>(Component: DialogComponent<P, R>, payload: P, options?: OpenDialogOptions<R>): Promise<R>;
 }
 
 export interface CloseDialog {

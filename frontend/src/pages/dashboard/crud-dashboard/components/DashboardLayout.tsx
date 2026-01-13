@@ -10,10 +10,9 @@ import DashboardSidebar from './DashboardSidebar';
 export default function DashboardLayout() {
   const theme = useTheme();
 
-  const [isDesktopNavigationExpanded, setIsDesktopNavigationExpanded] =
-    React.useState(true);
-  const [isMobileNavigationExpanded, setIsMobileNavigationExpanded] =
-    React.useState(false);
+  const [isDesktopNavigationExpanded, setIsDesktopNavigationExpanded] = React.useState(true);
+  const [isMobileNavigationExpanded, setIsMobileNavigationExpanded] = React.useState(false);
+  const [containerElement, setContainerElement] = React.useState<HTMLDivElement | null>(null);
 
   const isOverMdViewport = useMediaQuery(theme.breakpoints.up('md'));
 
@@ -29,11 +28,7 @@ export default function DashboardLayout() {
         setIsMobileNavigationExpanded(newExpanded);
       }
     },
-    [
-      isOverMdViewport,
-      setIsDesktopNavigationExpanded,
-      setIsMobileNavigationExpanded,
-    ],
+    [isOverMdViewport, setIsDesktopNavigationExpanded, setIsMobileNavigationExpanded],
   );
 
   const handleToggleHeaderMenu = React.useCallback(
@@ -43,7 +38,9 @@ export default function DashboardLayout() {
     [setIsNavigationExpanded],
   );
 
-  const layoutRef = React.useRef<HTMLDivElement>(null);
+  const layoutRef = React.useCallback((node: HTMLDivElement | null) => {
+    setContainerElement(node);
+  }, []);
 
   return (
     <Box
@@ -56,14 +53,11 @@ export default function DashboardLayout() {
         width: '100%',
       }}
     >
-      <DashboardHeader
-        menuOpen={isNavigationExpanded}
-        onToggleMenu={handleToggleHeaderMenu}
-      />
+      <DashboardHeader menuOpen={isNavigationExpanded} onToggleMenu={handleToggleHeaderMenu} />
       <DashboardSidebar
         expanded={isNavigationExpanded}
         setExpanded={setIsNavigationExpanded}
-        container={layoutRef?.current ?? undefined}
+        container={containerElement ?? undefined}
       />
       <Box
         sx={{
