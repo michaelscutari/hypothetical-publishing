@@ -23,9 +23,7 @@ describe('BackendStatus', () => {
 
     const indicator = screen.getByLabelText('Checking backend...');
     expect(indicator).toBeInTheDocument();
-    expect(getComputedStyle(indicator).backgroundColor).toBe(
-      STATUS_COLORS.checking,
-    );
+    expect(getComputedStyle(indicator).backgroundColor).toBe(STATUS_COLORS.checking);
     expect(fetchMock).toHaveBeenCalledWith('/api/health');
   });
 
@@ -36,9 +34,7 @@ describe('BackendStatus', () => {
     render(<BackendStatus />);
 
     const indicator = await screen.findByLabelText('Backend connected');
-    expect(getComputedStyle(indicator).backgroundColor).toBe(
-      STATUS_COLORS.connected,
-    );
+    expect(getComputedStyle(indicator).backgroundColor).toBe(STATUS_COLORS.connected);
     expect(fetchMock).toHaveBeenCalledWith('/api/health');
   });
 
@@ -49,9 +45,7 @@ describe('BackendStatus', () => {
     render(<BackendStatus />);
 
     const indicator = await screen.findByLabelText('Backend unavailable');
-    expect(getComputedStyle(indicator).backgroundColor).toBe(
-      STATUS_COLORS.error,
-    );
+    expect(getComputedStyle(indicator).backgroundColor).toBe(STATUS_COLORS.error);
     expect(fetchMock).toHaveBeenCalledWith('/api/health');
   });
 });
