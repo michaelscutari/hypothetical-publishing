@@ -26,6 +26,25 @@ services:
       retries: 5
     restart: unless-stopped
 
+  # Frontend for local development - Vite dev server with HMR
+  frontend:
+    build:
+      context: ./frontend
+      target: dev
+    profiles: [dev]
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # Frontend for production - nginx serving static files
+  frontend-prod:
+    build:
+      context: ./frontend
+      target: prod
+    profiles: [prod]
+    restart: unless-stopped
+
   # Local development - no SSL
   nginx:
     image: nginx:alpine
@@ -36,6 +55,7 @@ services:
       - ./deployment/nginx-dev.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backend
+      - frontend
     restart: unless-stopped
 
   # Production - with SSL
@@ -50,6 +70,7 @@ services:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - backend
+      - frontend-prod
     restart: unless-stopped
 
 volumes:
