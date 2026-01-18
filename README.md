@@ -1,4 +1,4 @@
-# Hypothetical Publishing
+# Hypothetical Publishing Accounting System
 [![Quality Check](https://github.com/michaelscutari/hypothetical-publishing/actions/workflows/check.yml/badge.svg)](https://github.com/michaelscutari/hypothetical-publishing/actions/workflows/check.yml)
 
 A web based **Book Publishing Accounting System** designed to help small publishers track books, sales records, and author royalty payments.
@@ -9,7 +9,7 @@ Michael Scutari
 Daniel Rodriguez-Florido  
 Paula Barrow  
 
-Duke University – ECE 458 Senior Design Project
+**Duke University – ECE 458 Senior Design Project**
 
 ## Development Setup
 Choose one of the following workflows:
