@@ -15,3 +15,5 @@ lint:
 format:
     cd backend && ./gradlew spotlessApply
     cd frontend && npm run format
+
+check: format lint test

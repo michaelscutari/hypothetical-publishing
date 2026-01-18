@@ -63,6 +63,7 @@ URLs:
 ### Tests and Formatting
 With `just` (optional helper):
 ```bash
+just check
 just test
 just test-backend
 just test-frontend
