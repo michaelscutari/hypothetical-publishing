@@ -22,5 +22,14 @@
   "[json]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "java.compile.nullAnalysis.mode": "automatic"
+  "java.compile.nullAnalysis.mode": "disabled",
+  "java.compile.nullAnalysis.nonnull": [
+    "org.springframework.lang.NonNull",
+    "jakarta.annotation.Nonnull"
+  ],
+  "java.compile.nullAnalysis.nullable": [
+    "org.springframework.lang.Nullable",
+    "jakarta.annotation.Nullable"
+  ],
+  "java.configuration.updateBuildConfiguration": "automatic"
 }
