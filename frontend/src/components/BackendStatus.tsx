@@ -9,9 +9,16 @@ export default function BackendStatus() {
   const [status, setStatus] = useState<Status>('checking');
 
   useEffect(() => {
-    fetch('/api/health')
-      .then((res) => setStatus(res.ok ? 'connected' : 'error'))
-      .catch(() => setStatus('error'));
+    const check = () => {
+      fetch('/api/health')
+        .then((res) => setStatus(res.ok ? 'connected' : 'error'))
+        .catch(() => setStatus('error'));
+    };
+
+    check();
+    const interval = setInterval(check, 15000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const colors = { checking: '#eab308', connected: '#22c55e', error: '#ef4444' };
