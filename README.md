@@ -19,3 +19,10 @@ Paula Barrow
 
 This repository pins the Node version using `.nvmrc`.
 
+### Optional: `just` helper commands
+Install `just` if you want a single entry point for common tasks. Then run:
+- `just test` (backend + frontend)
+- `just test-backend`
+- `just test-frontend`
+- `just lint`
+- `just format`

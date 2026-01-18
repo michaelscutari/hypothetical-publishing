@@ -24,6 +24,10 @@ jobs:
         working-directory: ./frontend
         run: npm run lint
 
+      - name: Run tests
+        working-directory: ./frontend
+        run: npm run test -- --run
+
   check-backend:
     runs-on: ubuntu-latest
     steps:
@@ -40,3 +44,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew spotlessCheck
+
+      - name: Run tests
+        working-directory: ./backend
+        run: ./gradlew test
