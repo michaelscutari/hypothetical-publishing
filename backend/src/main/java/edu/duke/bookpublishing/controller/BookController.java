@@ -3,7 +3,7 @@ package edu.duke.bookpublishing.controller;
 import edu.duke.bookpublishing.dto.BookRequest;
 import edu.duke.bookpublishing.dto.BookResponse;
 import edu.duke.bookpublishing.model.Book;
-import edu.duke.bookpublishing.repository.BookRepository;
+import edu.duke.bookpublishing.service.BookService;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class BookController {
 
-  private final BookRepository bookRepository;
+  private final BookService bookService;
 
   @GetMapping
-  public List<BookResponse> getAllBooks() {
-    return bookRepository.findAll().stream().map(BookResponse::from).toList();
+  public List<BookResponse> getBooks(@RequestParam(required = false) String query) {
+    return bookService.search(query).stream().map(BookResponse::from).toList();
   }
 
   @PostMapping
@@ -36,6 +36,6 @@ public class BookController {
             .royaltyRate(
                 request.royaltyRate() != null ? request.royaltyRate() : new BigDecimal("0.5"))
             .build();
-    return BookResponse.from(bookRepository.save(book));
+    return BookResponse.from(bookService.save(book));
   }
 }

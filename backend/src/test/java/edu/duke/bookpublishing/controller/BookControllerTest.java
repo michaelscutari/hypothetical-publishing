@@ -84,6 +84,68 @@ class BookControllerTest {
   }
 
   @Test
+  void searchBooksReturnsFilteredResults() throws Exception {
+    // Create multiple books
+    mockMvc.perform(
+        post("/api/books")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                objectMapper.writeValueAsString(
+                    new BookRequest(
+                        "Harry Potter and the Sorcerer's Stone",
+                        "Rowling, J.K.",
+                        "9780590353427",
+                        null,
+                        LocalDate.of(1997, 6, 26),
+                        new BigDecimal("0.15")))));
+
+    mockMvc.perform(
+        post("/api/books")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                objectMapper.writeValueAsString(
+                    new BookRequest(
+                        "The Great Gatsby",
+                        "Fitzgerald, F. Scott",
+                        "9780743273565",
+                        null,
+                        LocalDate.of(1925, 4, 10),
+                        new BigDecimal("0.12")))));
+
+    mockMvc.perform(
+        post("/api/books")
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                objectMapper.writeValueAsString(
+                    new BookRequest(
+                        "Harry Potter and the Chamber of Secrets",
+                        "Rowling, J.K.",
+                        "9780439064873",
+                        null,
+                        LocalDate.of(1998, 7, 2),
+                        new BigDecimal("0.15")))));
+
+    // Search with reversed word order - should still find Harry Potter books
+    mockMvc
+        .perform(get("/api/books").param("query", "Stone Harry"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0].title").value("Harry Potter and the Sorcerer's Stone"));
+
+    // Search by author - should find both Harry Potter books
+    mockMvc
+        .perform(get("/api/books").param("query", "Rowling"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(2)));
+
+    // Search with no matches
+    mockMvc
+        .perform(get("/api/books").param("query", "Tolkien"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(0)));
+  }
+
+  @Test
   void createBookReturnsCreatedBook() throws Exception {
     BookRequest request =
         new BookRequest(
