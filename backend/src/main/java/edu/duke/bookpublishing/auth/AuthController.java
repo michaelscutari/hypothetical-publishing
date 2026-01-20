@@ -1,7 +1,10 @@
 package edu.duke.bookpublishing.auth;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.security.Principal;
 import java.time.Duration;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -15,9 +18,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
-import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
-import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -37,11 +37,13 @@ public class AuthController {
   private boolean cookieSecure;
 
   @PostMapping("/login")
-  public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request,
-      jakarta.servlet.http.HttpServletResponse response) {
+  public ResponseEntity<?> login(
+      @Valid @RequestBody LoginRequest request, jakarta.servlet.http.HttpServletResponse response) {
 
-    User user = userRepository.findByUsername(request.username())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+    User user =
+        userRepository
+            .findByUsername(request.username())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
 
     if (!passwordEncoder.matches(request.password(), user.getPassword())) {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
@@ -49,7 +51,8 @@ public class AuthController {
 
     String token = jwtUtil.generateToken(user.getUsername());
 
-    response.addHeader(HttpHeaders.SET_COOKIE,
+    response.addHeader(
+        HttpHeaders.SET_COOKIE,
         buildAuthCookie(token, Duration.ofHours(expirationHours)).toString());
     return ResponseEntity.ok().build();
   }
@@ -69,15 +72,17 @@ public class AuthController {
   }
 
   @PutMapping("/password")
-  public ResponseEntity<?> changePassword(@Valid @RequestBody ChangePasswordRequest request,
-      Principal principal) {
+  public ResponseEntity<?> changePassword(
+      @Valid @RequestBody ChangePasswordRequest request, Principal principal) {
 
     if (principal == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
 
-    User user = userRepository.findByUsername(principal.getName())
-        .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+    User user =
+        userRepository
+            .findByUsername(principal.getName())
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
     if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
       throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Current password incorrect");
@@ -93,18 +98,22 @@ public class AuthController {
   }
 
   // DTOs as records
-  record LoginRequest(@NotBlank String username, @NotBlank String password) {
-  }
+  record LoginRequest(@NotBlank String username, @NotBlank String password) {}
 
-  record ChangePasswordRequest(@NotBlank String currentPassword, @NotBlank String newPassword,
-      @NotBlank String confirmPassword) {
-  }
+  record ChangePasswordRequest(
+      @NotBlank String currentPassword,
+      @NotBlank String newPassword,
+      @NotBlank String confirmPassword) {}
 
-  record UserResponse(String username) {
-  }
+  record UserResponse(String username) {}
 
   private ResponseCookie buildAuthCookie(String token, Duration maxAge) {
-    return ResponseCookie.from(TOKEN_COOKIE_NAME, token).httpOnly(true).secure(cookieSecure)
-        .path("/").maxAge(maxAge).sameSite("Strict").build();
+    return ResponseCookie.from(TOKEN_COOKIE_NAME, token)
+        .httpOnly(true)
+        .secure(cookieSecure)
+        .path("/")
+        .maxAge(maxAge)
+        .sameSite("Strict")
+        .build();
   }
 }
