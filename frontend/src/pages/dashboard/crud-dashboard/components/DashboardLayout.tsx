@@ -49,7 +49,7 @@ export default function DashboardLayout() {
         position: 'relative',
         display: 'flex',
         overflow: 'hidden',
-        height: '100%',
+        minHeight: '100vh',
         width: '100%',
       }}
     >
