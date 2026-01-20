@@ -15,11 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import {
-  deleteOne as deleteBook,
-  getOne as getBook,
-  type Book,
-} from '../data/books';
+import { deleteOne as deleteBook, getOne as getBook, type Book } from '../data/books';
 import PageContainer from './PageContainer';
 
 export default function BookShow() {
@@ -79,13 +75,10 @@ export default function BookShow() {
           autoHideDuration: 3000,
         });
       } catch (deleteError) {
-        notifications.show(
-          `Failed to delete book. Reason:' ${(deleteError as Error).message}`,
-          {
-            severity: 'error',
-            autoHideDuration: 3000,
-          },
-        );
+        notifications.show(`Failed to delete book. Reason:' ${(deleteError as Error).message}`, {
+          severity: 'error',
+          autoHideDuration: 3000,
+        });
       }
       setIsLoading(false);
     }

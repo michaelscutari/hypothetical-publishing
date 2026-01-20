@@ -22,11 +22,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import {
-  deleteOne as deleteBook,
-  getMany as getBooks,
-  type Book,
-} from '../data/books';
+import { deleteOne as deleteBook, getMany as getBooks, type Book } from '../data/books';
 import PageContainer from './PageContainer';
 
 const INITIAL_PAGE_SIZE = 10;
@@ -184,13 +180,10 @@ export default function BookList() {
           });
           loadData();
         } catch (deleteError) {
-          notifications.show(
-            `Failed to delete book. Reason:' ${(deleteError as Error).message}`,
-            {
-              severity: 'error',
-              autoHideDuration: 3000,
-            },
-          );
+          notifications.show(`Failed to delete book. Reason:' ${(deleteError as Error).message}`, {
+            severity: 'error',
+            autoHideDuration: 3000,
+          });
         }
         setIsLoading(false);
       }

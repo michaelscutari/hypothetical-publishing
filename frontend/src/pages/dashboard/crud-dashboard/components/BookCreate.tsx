@@ -1,11 +1,7 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import {
-  createOne as createBook,
-  validate as validateBook,
-  type Book,
-} from '../data/books';
+import { createOne as createBook, validate as validateBook, type Book } from '../data/books';
 import BookForm, { type FormFieldValue, type BookFormState } from './BookForm';
 import PageContainer from './PageContainer';
 
