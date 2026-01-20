@@ -6,6 +6,8 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/book_publishing
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-production}
+      - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
     depends_on:
       db:
         condition: service_healthy
