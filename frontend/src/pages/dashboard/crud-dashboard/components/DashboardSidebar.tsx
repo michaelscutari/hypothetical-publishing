@@ -6,7 +6,7 @@ import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
 import Toolbar from '@mui/material/Toolbar';
 import type {} from '@mui/material/themeCssVarsAugmentation';
-import PersonIcon from '@mui/icons-material/Person';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LayersIcon from '@mui/icons-material/Layers';
@@ -126,12 +126,12 @@ export default function DashboardSidebar({
           >
             <DashboardSidebarHeaderItem>Main items</DashboardSidebarHeaderItem>
             <DashboardSidebarPageItem
-              id="employees"
-              title="Employees"
-              icon={<PersonIcon />}
-              href="/dashboard/employees"
+              id="books"
+              title="Books"
+              icon={<MenuBookIcon />}
+              href="/dashboard/books"
               selected={
-                !!matchPath('/dashboard/employees/*', pathname) ||
+                !!matchPath('/dashboard/books/*', pathname) ||
                 pathname === '/dashboard' ||
                 pathname === '/dashboard/'
               }

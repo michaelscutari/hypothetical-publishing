@@ -16,20 +16,20 @@ import dayjs from 'dayjs';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import {
-  deleteOne as deleteEmployee,
-  getOne as getEmployee,
-  type Employee,
-} from '../data/employees';
+  deleteOne as deleteBook,
+  getOne as getBook,
+  type Book,
+} from '../data/books';
 import PageContainer from './PageContainer';
 
-export default function EmployeeShow() {
-  const { employeeId } = useParams();
+export default function BookShow() {
+  const { bookId } = useParams();
   const navigate = useNavigate();
 
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
-  const [employee, setEmployee] = React.useState<Employee | null>(null);
+  const [book, setBook] = React.useState<Book | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
@@ -38,30 +38,30 @@ export default function EmployeeShow() {
     setIsLoading(true);
 
     try {
-      const showData = await getEmployee(Number(employeeId));
+      const showData = await getBook(Number(bookId));
 
-      setEmployee(showData);
+      setBook(showData);
     } catch (showDataError) {
       setError(showDataError as Error);
     }
     setIsLoading(false);
-  }, [employeeId]);
+  }, [bookId]);
 
   React.useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const handleEmployeeEdit = React.useCallback(() => {
-    navigate(`/dashboard/employees/${employeeId}/edit`);
-  }, [navigate, employeeId]);
+  const handleBookEdit = React.useCallback(() => {
+    navigate(`/dashboard/books/${bookId}/edit`);
+  }, [navigate, bookId]);
 
-  const handleEmployeeDelete = React.useCallback(async () => {
-    if (!employee) {
+  const handleBookDelete = React.useCallback(async () => {
+    if (!book) {
       return;
     }
 
-    const confirmed = await dialogs.confirm(`Do you wish to delete ${employee.name}?`, {
-      title: `Delete employee?`,
+    const confirmed = await dialogs.confirm(`Do you wish to delete ${book.title}?`, {
+      title: `Delete book?`,
       severity: 'error',
       okText: 'Delete',
       cancelText: 'Cancel',
@@ -70,17 +70,17 @@ export default function EmployeeShow() {
     if (confirmed) {
       setIsLoading(true);
       try {
-        await deleteEmployee(Number(employeeId));
+        await deleteBook(Number(bookId));
 
-        navigate('/dashboard/employees');
+        navigate('/dashboard/books');
 
-        notifications.show('Employee deleted successfully.', {
+        notifications.show('Book deleted successfully.', {
           severity: 'success',
           autoHideDuration: 3000,
         });
       } catch (deleteError) {
         notifications.show(
-          `Failed to delete employee. Reason:' ${(deleteError as Error).message}`,
+          `Failed to delete book. Reason:' ${(deleteError as Error).message}`,
           {
             severity: 'error',
             autoHideDuration: 3000,
@@ -89,10 +89,10 @@ export default function EmployeeShow() {
       }
       setIsLoading(false);
     }
-  }, [employee, dialogs, employeeId, navigate, notifications]);
+  }, [book, dialogs, bookId, navigate, notifications]);
 
   const handleBack = React.useCallback(() => {
-    navigate('/dashboard/employees');
+    navigate('/dashboard/books');
   }, [navigate]);
 
   const renderShow = React.useMemo(() => {
@@ -121,46 +121,54 @@ export default function EmployeeShow() {
       );
     }
 
-    return employee ? (
+    return book ? (
       <Box sx={{ flexGrow: 1, width: '100%' }}>
         <Grid container spacing={2} sx={{ width: '100%' }}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Name</Typography>
+              <Typography variant="overline">Title</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {employee.name}
+                {book.title}
               </Typography>
             </Paper>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Age</Typography>
+              <Typography variant="overline">Author</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {employee.age}
+                {book.author}
               </Typography>
             </Paper>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Join date</Typography>
+              <Typography variant="overline">ISBN-13</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {dayjs(employee.joinDate).format('MMMM D, YYYY')}
+                {book.isbn13}
               </Typography>
             </Paper>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Department</Typography>
+              <Typography variant="overline">ISBN-10</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {employee.role}
+                {book.isbn10 ?? '—'}
               </Typography>
             </Paper>
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Full-time</Typography>
+              <Typography variant="overline">Publication date</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {employee.isFullTime ? 'Yes' : 'No'}
+                {dayjs(book.publicationDate).format('MMMM D, YYYY')}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Royalty rate</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {book.royaltyRate}
               </Typography>
             </Paper>
           </Grid>
@@ -171,14 +179,14 @@ export default function EmployeeShow() {
             Back
           </Button>
           <Stack direction="row" spacing={2}>
-            <Button variant="contained" startIcon={<EditIcon />} onClick={handleEmployeeEdit}>
+            <Button variant="contained" startIcon={<EditIcon />} onClick={handleBookEdit}>
               Edit
             </Button>
             <Button
               variant="contained"
               color="error"
               startIcon={<DeleteIcon />}
-              onClick={handleEmployeeDelete}
+              onClick={handleBookDelete}
             >
               Delete
             </Button>
@@ -186,14 +194,14 @@ export default function EmployeeShow() {
         </Stack>
       </Box>
     ) : null;
-  }, [isLoading, error, employee, handleBack, handleEmployeeEdit, handleEmployeeDelete]);
+  }, [isLoading, error, book, handleBack, handleBookEdit, handleBookDelete]);
 
-  const pageTitle = `Employee ${employeeId}`;
+  const pageTitle = `Book ${bookId}`;
 
   return (
     <PageContainer
       title={pageTitle}
-      breadcrumbs={[{ title: 'Employees', path: '/dashboard/employees' }, { title: pageTitle }]}
+      breadcrumbs={[{ title: 'Books', path: '/dashboard/books' }, { title: pageTitle }]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>

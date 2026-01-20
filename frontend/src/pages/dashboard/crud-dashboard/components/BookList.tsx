@@ -23,15 +23,15 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import {
-  deleteOne as deleteEmployee,
-  getMany as getEmployees,
-  type Employee,
-} from '../data/employees';
+  deleteOne as deleteBook,
+  getMany as getBooks,
+  type Book,
+} from '../data/books';
 import PageContainer from './PageContainer';
 
 const INITIAL_PAGE_SIZE = 10;
 
-export default function EmployeeList() {
+export default function BookList() {
   const { pathname } = useLocation();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ export default function EmployeeList() {
   );
 
   const [rowsState, setRowsState] = React.useState<{
-    rows: Employee[];
+    rows: Book[];
     rowCount: number;
   }>({
     rows: [],
@@ -119,7 +119,7 @@ export default function EmployeeList() {
     setIsLoading(true);
 
     try {
-      const listData = await getEmployees({
+      const listData = await getBooks({
         paginationModel,
         sortModel,
         filterModel,
@@ -148,26 +148,26 @@ export default function EmployeeList() {
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }) => {
-      navigate(`/dashboard/employees/${row.id}`);
+      navigate(`/dashboard/books/${row.id}`);
     },
     [navigate],
   );
 
   const handleCreateClick = React.useCallback(() => {
-    navigate('/dashboard/employees/new');
+    navigate('/dashboard/books/new');
   }, [navigate]);
 
   const handleRowEdit = React.useCallback(
-    (employee: Employee) => () => {
-      navigate(`/dashboard/employees/${employee.id}/edit`);
+    (book: Book) => () => {
+      navigate(`/dashboard/books/${book.id}/edit`);
     },
     [navigate],
   );
 
   const handleRowDelete = React.useCallback(
-    (employee: Employee) => async () => {
-      const confirmed = await dialogs.confirm(`Do you wish to delete ${employee.name}?`, {
-        title: `Delete employee?`,
+    (book: Book) => async () => {
+      const confirmed = await dialogs.confirm(`Do you wish to delete ${book.title}?`, {
+        title: `Delete book?`,
         severity: 'error',
         okText: 'Delete',
         cancelText: 'Cancel',
@@ -176,16 +176,16 @@ export default function EmployeeList() {
       if (confirmed) {
         setIsLoading(true);
         try {
-          await deleteEmployee(Number(employee.id));
+          await deleteBook(Number(book.id));
 
-          notifications.show('Employee deleted successfully.', {
+          notifications.show('Book deleted successfully.', {
             severity: 'success',
             autoHideDuration: 3000,
           });
           loadData();
         } catch (deleteError) {
           notifications.show(
-            `Failed to delete employee. Reason:' ${(deleteError as Error).message}`,
+            `Failed to delete book. Reason:' ${(deleteError as Error).message}`,
             {
               severity: 'error',
               autoHideDuration: 3000,
@@ -208,23 +208,18 @@ export default function EmployeeList() {
   const columns = React.useMemo<GridColDef[]>(
     () => [
       { field: 'id', headerName: 'ID' },
-      { field: 'name', headerName: 'Name', width: 140 },
-      { field: 'age', headerName: 'Age', type: 'number' },
+      { field: 'title', headerName: 'Title', width: 200 },
+      { field: 'author', headerName: 'Author', width: 180 },
+      { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
+      { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
       {
-        field: 'joinDate',
-        headerName: 'Join date',
+        field: 'publicationDate',
+        headerName: 'Publication date',
         type: 'date',
         valueGetter: (value) => value && new Date(value),
-        width: 140,
-      },
-      {
-        field: 'role',
-        headerName: 'Department',
-        type: 'singleSelect',
-        valueOptions: ['Market', 'Finance', 'Development'],
         width: 160,
       },
-      { field: 'isFullTime', headerName: 'Full-time', type: 'boolean' },
+      { field: 'royaltyRate', headerName: 'Royalty', type: 'number', width: 120 },
       {
         field: 'actions',
         type: 'actions',
@@ -249,7 +244,7 @@ export default function EmployeeList() {
     [handleRowEdit, handleRowDelete],
   );
 
-  const pageTitle = 'Employees';
+  const pageTitle = 'Books';
 
   return (
     <PageContainer

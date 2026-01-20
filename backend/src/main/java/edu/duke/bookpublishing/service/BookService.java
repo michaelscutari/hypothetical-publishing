@@ -4,6 +4,7 @@ import edu.duke.bookpublishing.model.Book;
 import edu.duke.bookpublishing.repository.BookRepository;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -42,5 +43,13 @@ public class BookService {
 
   public Book save(Book book) {
     return bookRepository.save(book);
+  }
+
+  public Optional<Book> findById(Long id) {
+    return bookRepository.findById(id);
+  }
+
+  public void deleteById(Long id) {
+    bookRepository.deleteById(id);
   }
 }

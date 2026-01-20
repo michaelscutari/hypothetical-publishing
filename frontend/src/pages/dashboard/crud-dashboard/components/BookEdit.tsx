@@ -5,41 +5,41 @@ import CircularProgress from '@mui/material/CircularProgress';
 import { useNavigate, useParams } from 'react-router-dom';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import {
-  getOne as getEmployee,
-  updateOne as updateEmployee,
-  validate as validateEmployee,
-  type Employee,
-} from '../data/employees';
-import EmployeeForm, { type FormFieldValue, type EmployeeFormState } from './EmployeeForm';
+  getOne as getBook,
+  updateOne as updateBook,
+  validate as validateBook,
+  type Book,
+} from '../data/books';
+import BookForm, { type FormFieldValue, type BookFormState } from './BookForm';
 import PageContainer from './PageContainer';
 
-function EmployeeEditForm({
+function BookEditForm({
   initialValues,
   onSubmit,
 }: {
-  initialValues: Partial<EmployeeFormState['values']>;
-  onSubmit: (formValues: Partial<EmployeeFormState['values']>) => Promise<void>;
+  initialValues: Partial<BookFormState['values']>;
+  onSubmit: (formValues: Partial<BookFormState['values']>) => Promise<void>;
 }) {
-  const { employeeId } = useParams();
+  const { bookId } = useParams();
   const navigate = useNavigate();
 
   const notifications = useNotifications();
 
-  const [formState, setFormState] = React.useState<EmployeeFormState>(() => ({
+  const [formState, setFormState] = React.useState<BookFormState>(() => ({
     values: initialValues,
     errors: {},
   }));
   const formValues = formState.values;
   const formErrors = formState.errors;
 
-  const setFormValues = React.useCallback((newFormValues: Partial<EmployeeFormState['values']>) => {
+  const setFormValues = React.useCallback((newFormValues: Partial<BookFormState['values']>) => {
     setFormState((previousState) => ({
       ...previousState,
       values: newFormValues,
     }));
   }, []);
 
-  const setFormErrors = React.useCallback((newFormErrors: Partial<EmployeeFormState['errors']>) => {
+  const setFormErrors = React.useCallback((newFormErrors: Partial<BookFormState['errors']>) => {
     setFormState((previousState) => ({
       ...previousState,
       errors: newFormErrors,
@@ -47,9 +47,9 @@ function EmployeeEditForm({
   }, []);
 
   const handleFormFieldChange = React.useCallback(
-    (name: keyof EmployeeFormState['values'], value: FormFieldValue) => {
-      const validateField = async (values: Partial<EmployeeFormState['values']>) => {
-        const { issues } = validateEmployee(values);
+    (name: keyof BookFormState['values'], value: FormFieldValue) => {
+      const validateField = async (values: Partial<BookFormState['values']>) => {
+        const { issues } = validateBook(values);
         setFormErrors({
           ...formErrors,
           [name]: issues?.find((issue) => issue.path?.[0] === name)?.message,
@@ -69,7 +69,7 @@ function EmployeeEditForm({
   }, [initialValues, setFormValues]);
 
   const handleFormSubmit = React.useCallback(async () => {
-    const { issues } = validateEmployee(formValues);
+    const { issues } = validateBook(formValues);
     if (issues && issues.length > 0) {
       setFormErrors(Object.fromEntries(issues.map((issue) => [issue.path?.[0], issue.message])));
       return;
@@ -78,14 +78,14 @@ function EmployeeEditForm({
 
     try {
       await onSubmit(formValues);
-      notifications.show('Employee edited successfully.', {
+      notifications.show('Book edited successfully.', {
         severity: 'success',
         autoHideDuration: 3000,
       });
 
-      navigate('/dashboard/employees');
+      navigate('/dashboard/books');
     } catch (editError) {
-      notifications.show(`Failed to edit employee. Reason: ${(editError as Error).message}`, {
+      notifications.show(`Failed to edit book. Reason: ${(editError as Error).message}`, {
         severity: 'error',
         autoHideDuration: 3000,
       });
@@ -94,21 +94,21 @@ function EmployeeEditForm({
   }, [formValues, navigate, notifications, onSubmit, setFormErrors]);
 
   return (
-    <EmployeeForm
+    <BookForm
       formState={formState}
       onFieldChange={handleFormFieldChange}
       onSubmit={handleFormSubmit}
       onReset={handleFormReset}
       submitButtonLabel="Save"
-      backButtonPath={`/dashboard/employees/${employeeId}`}
+      backButtonPath={`/dashboard/books/${bookId}`}
     />
   );
 }
 
-export default function EmployeeEdit() {
-  const { employeeId } = useParams();
+export default function BookEdit() {
+  const { bookId } = useParams();
 
-  const [employee, setEmployee] = React.useState<Employee | null>(null);
+  const [book, setBook] = React.useState<Book | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
@@ -117,25 +117,25 @@ export default function EmployeeEdit() {
     setIsLoading(true);
 
     try {
-      const showData = await getEmployee(Number(employeeId));
+      const showData = await getBook(Number(bookId));
 
-      setEmployee(showData);
+      setBook(showData);
     } catch (showDataError) {
       setError(showDataError as Error);
     }
     setIsLoading(false);
-  }, [employeeId]);
+  }, [bookId]);
 
   React.useEffect(() => {
     loadData();
   }, [loadData]);
 
   const handleSubmit = React.useCallback(
-    async (formValues: Partial<EmployeeFormState['values']>) => {
-      const updatedData = await updateEmployee(Number(employeeId), formValues);
-      setEmployee(updatedData);
+    async (formValues: Partial<BookFormState['values']>) => {
+      const updatedData = await updateBook(Number(bookId), formValues);
+      setBook(updatedData);
     },
-    [employeeId],
+    [bookId],
   );
 
   const renderEdit = React.useMemo(() => {
@@ -164,15 +164,15 @@ export default function EmployeeEdit() {
       );
     }
 
-    return employee ? <EmployeeEditForm initialValues={employee} onSubmit={handleSubmit} /> : null;
-  }, [isLoading, error, employee, handleSubmit]);
+    return book ? <BookEditForm initialValues={book} onSubmit={handleSubmit} /> : null;
+  }, [isLoading, error, book, handleSubmit]);
 
   return (
     <PageContainer
-      title={`Edit Employee ${employeeId}`}
+      title={`Edit Book ${bookId}`}
       breadcrumbs={[
-        { title: 'Employees', path: '/dashboard/employees' },
-        { title: `Employee ${employeeId}`, path: `/dashboard/employees/${employeeId}` },
+        { title: 'Books', path: '/dashboard/books' },
+        { title: `Book ${bookId}`, path: `/dashboard/books/${bookId}` },
         { title: 'Edit' },
       ]}
     >

@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.duke.bookpublishing.dto.BookRequest;
+import edu.duke.bookpublishing.dto.BookResponse;
 import edu.duke.bookpublishing.repository.BookRepository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -16,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -260,5 +262,95 @@ class BookControllerTest {
                 .content(objectMapper.writeValueAsString(duplicateRequest)))
         .andExpect(status().isConflict())
         .andExpect(jsonPath("$.isbn13").exists());
+  }
+
+  @Test
+  void getBookByIdReturnsBook() throws Exception {
+    Long bookId =
+        createBook(
+            new BookRequest(
+                "Test Book",
+                "Test Author",
+                "9780743273565",
+                null,
+                LocalDate.of(2020, 1, 15),
+                new BigDecimal("0.5")));
+
+    mockMvc
+        .perform(get("/api/books/{id}", bookId))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(bookId))
+        .andExpect(jsonPath("$.title").value("Test Book"));
+  }
+
+  @Test
+  void updateBookUpdatesFields() throws Exception {
+    Long bookId =
+        createBook(
+            new BookRequest(
+                "Old Title",
+                "Old Author",
+                "9780743273565",
+                null,
+                LocalDate.of(2020, 1, 15),
+                new BigDecimal("0.5")));
+
+    BookRequest updateRequest =
+        new BookRequest(
+            "New Title",
+            "New Author",
+            "9780743273565",
+            "0743273567",
+            LocalDate.of(2021, 5, 1),
+            new BigDecimal("0.75"));
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", bookId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value("New Title"))
+        .andExpect(jsonPath("$.author").value("New Author"))
+        .andExpect(jsonPath("$.isbn10").value("0743273567"))
+        .andExpect(jsonPath("$.publicationDate").value("2021-05-01"))
+        .andExpect(jsonPath("$.royaltyRate").value(0.75));
+  }
+
+  @Test
+  void deleteBookRemovesIt() throws Exception {
+    Long bookId =
+        createBook(
+            new BookRequest(
+                "Test Book",
+                "Test Author",
+                "9780743273565",
+                null,
+                LocalDate.of(2020, 1, 15),
+                new BigDecimal("0.5")));
+
+    mockMvc.perform(delete("/api/books/{id}", bookId)).andExpect(status().isNoContent());
+
+    mockMvc.perform(get("/api/books/{id}", bookId)).andExpect(status().isNotFound());
+  }
+
+  @Test
+  void getBookByIdMissingReturns404() throws Exception {
+    mockMvc.perform(get("/api/books/{id}", 9999)).andExpect(status().isNotFound());
+  }
+
+  private Long createBook(BookRequest request) throws Exception {
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/api/books")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(request)))
+            .andExpect(status().isCreated())
+            .andReturn();
+
+    BookResponse response =
+        objectMapper.readValue(result.getResponse().getContentAsString(), BookResponse.class);
+    return response.id();
   }
 }

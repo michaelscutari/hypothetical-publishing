@@ -2,38 +2,37 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import {
-  createOne as createEmployee,
-  validate as validateEmployee,
-  type Employee,
-} from '../data/employees';
-import EmployeeForm, { type FormFieldValue, type EmployeeFormState } from './EmployeeForm';
+  createOne as createBook,
+  validate as validateBook,
+  type Book,
+} from '../data/books';
+import BookForm, { type FormFieldValue, type BookFormState } from './BookForm';
 import PageContainer from './PageContainer';
 
-const INITIAL_FORM_VALUES: Partial<EmployeeFormState['values']> = {
-  role: 'Market',
-  isFullTime: true,
+const INITIAL_FORM_VALUES: Partial<BookFormState['values']> = {
+  royaltyRate: 0.5,
 };
 
-export default function EmployeeCreate() {
+export default function BookCreate() {
   const navigate = useNavigate();
 
   const notifications = useNotifications();
 
-  const [formState, setFormState] = React.useState<EmployeeFormState>(() => ({
+  const [formState, setFormState] = React.useState<BookFormState>(() => ({
     values: INITIAL_FORM_VALUES,
     errors: {},
   }));
   const formValues = formState.values;
   const formErrors = formState.errors;
 
-  const setFormValues = React.useCallback((newFormValues: Partial<EmployeeFormState['values']>) => {
+  const setFormValues = React.useCallback((newFormValues: Partial<BookFormState['values']>) => {
     setFormState((previousState) => ({
       ...previousState,
       values: newFormValues,
     }));
   }, []);
 
-  const setFormErrors = React.useCallback((newFormErrors: Partial<EmployeeFormState['errors']>) => {
+  const setFormErrors = React.useCallback((newFormErrors: Partial<BookFormState['errors']>) => {
     setFormState((previousState) => ({
       ...previousState,
       errors: newFormErrors,
@@ -41,9 +40,9 @@ export default function EmployeeCreate() {
   }, []);
 
   const handleFormFieldChange = React.useCallback(
-    (name: keyof EmployeeFormState['values'], value: FormFieldValue) => {
-      const validateField = async (values: Partial<EmployeeFormState['values']>) => {
-        const { issues } = validateEmployee(values);
+    (name: keyof BookFormState['values'], value: FormFieldValue) => {
+      const validateField = async (values: Partial<BookFormState['values']>) => {
+        const { issues } = validateBook(values);
         setFormErrors({
           ...formErrors,
           [name]: issues?.find((issue) => issue.path?.[0] === name)?.message,
@@ -63,7 +62,7 @@ export default function EmployeeCreate() {
   }, [setFormValues]);
 
   const handleFormSubmit = React.useCallback(async () => {
-    const { issues } = validateEmployee(formValues);
+    const { issues } = validateBook(formValues);
     if (issues && issues.length > 0) {
       setFormErrors(Object.fromEntries(issues.map((issue) => [issue.path?.[0], issue.message])));
       return;
@@ -71,15 +70,15 @@ export default function EmployeeCreate() {
     setFormErrors({});
 
     try {
-      await createEmployee(formValues as Omit<Employee, 'id'>);
-      notifications.show('Employee created successfully.', {
+      await createBook(formValues as Omit<Book, 'id'>);
+      notifications.show('Book created successfully.', {
         severity: 'success',
         autoHideDuration: 3000,
       });
 
-      navigate('/dashboard/employees');
+      navigate('/dashboard/books');
     } catch (createError) {
-      notifications.show(`Failed to create employee. Reason: ${(createError as Error).message}`, {
+      notifications.show(`Failed to create book. Reason: ${(createError as Error).message}`, {
         severity: 'error',
         autoHideDuration: 3000,
       });
@@ -89,10 +88,10 @@ export default function EmployeeCreate() {
 
   return (
     <PageContainer
-      title="New Employee"
-      breadcrumbs={[{ title: 'Employees', path: '/dashboard/employees' }, { title: 'New' }]}
+      title="New Book"
+      breadcrumbs={[{ title: 'Books', path: '/dashboard/books' }, { title: 'New' }]}
     >
-      <EmployeeForm
+      <BookForm
         formState={formState}
         onFieldChange={handleFormFieldChange}
         onSubmit={handleFormSubmit}
