@@ -8,6 +8,7 @@ services:
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET:-change-this-in-production}
       - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
     depends_on:
       db:
         condition: service_healthy
