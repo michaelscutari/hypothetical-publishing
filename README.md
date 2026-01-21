@@ -81,3 +81,14 @@ cd frontend && npm test -- --run
 PRs are expected to pass:
 - Frontend lint + tests
 - Backend format check + tests
+
+### Updating the OpenAPI Contract
+Rule of thumb:
+“If you touch the backend API (controllers/DTOs), run 
+
+curl ... > openapi.json
+npm run generate-api
+
+then commit those changes.”
+
+This way, the frontend will receive the generate code for the new backend features while being totally agnostic to them.
