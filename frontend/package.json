@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
+    "api:generate": "openapi-typescript ${API_DOCS_URL:-http://localhost/api-docs} -o src/api/schema.d.ts",
+    "predev": "wait-on ${API_DOCS_URL:-http://localhost/api-docs} && npm run api:generate || true",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -23,6 +25,7 @@
     "@mui/x-data-grid": "^8.24.0",
     "@mui/x-date-pickers": "^8.24.0",
     "dayjs": "^1.11.19",
+    "openapi-fetch": "^0.15.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router": "^7.12.0",
@@ -53,10 +56,12 @@
     "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "lint-staged": "^16.2.7",
+    "openapi-typescript": "^7.10.1",
     "prettier": "^3.7.4",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.17",
+    "wait-on": "^9.0.3"
   }
 }

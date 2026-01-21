@@ -32,6 +32,8 @@ services:
       context: ./frontend
       target: dev
     profiles: [dev]
+    environment:
+      - API_DOCS_URL=http://nginx/api-docs
     volumes:
       - ./frontend:/app
       - /app/node_modules
