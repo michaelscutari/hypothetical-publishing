@@ -84,11 +84,15 @@ PRs are expected to pass:
 
 ### Updating the OpenAPI Contract
 Rule of thumb:
-“If you touch the backend API (controllers/DTOs), run 
+If you touch the backend API,
 
-curl ... > openapi.json
+cd backend
+./gradlew bootRun
+curl http://localhost:8080/v3/api-docs.yaml > openapi.yaml
+
+cd frontend
 npm run generate-api
 
-then commit those changes.”
+then commit those changes.
 
 This way, the frontend will receive the generate code for the new backend features while being totally agnostic to them.

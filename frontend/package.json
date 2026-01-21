@@ -13,7 +13,8 @@
     "lint:fix": "eslint \"src/**/*.{ts,tsx,js,jsx}\" --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "vitest",
-    "clean:all": "npm run format && npm run lint:fix && npm run type-check"
+    "clean:all": "npm run format && npm run lint:fix && npm run type-check",
+    "generate-api": "openapi --input ../openapi.yaml --output src/api --client axios"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -22,7 +23,9 @@
     "@mui/material": "^7.3.7",
     "@mui/x-data-grid": "^8.24.0",
     "@mui/x-date-pickers": "^8.24.0",
+    "axios": "^1.13.2",
     "dayjs": "^1.11.19",
+    "form-data": "^4.0.5",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router": "^7.12.0",
