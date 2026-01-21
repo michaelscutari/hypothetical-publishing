@@ -14,7 +14,7 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
     "test": "vitest",
     "clean:all": "npm run format && npm run lint:fix && npm run type-check",
-    "generate-api": "openapi --input ../openapi.yaml --output src/api --client axios"
+    "generate-api": "openapi --input ../openapi.yaml --output src/api --client axios && prettier --write src/api"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

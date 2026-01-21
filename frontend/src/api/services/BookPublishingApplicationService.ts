@@ -6,24 +6,24 @@ import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class BookPublishingApplicationService {
-    /**
-     * @returns string OK
-     * @throws ApiError
-     */
-    public static test(): CancelablePromise<Record<string, string>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/test',
-        });
-    }
-    /**
-     * @returns string OK
-     * @throws ApiError
-     */
-    public static health(): CancelablePromise<Record<string, string>> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/health',
-        });
-    }
+  /**
+   * @returns string OK
+   * @throws ApiError
+   */
+  public static test(): CancelablePromise<Record<string, string>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/test',
+    });
+  }
+  /**
+   * @returns string OK
+   * @throws ApiError
+   */
+  public static health(): CancelablePromise<Record<string, string>> {
+    return __request(OpenAPI, {
+      method: 'GET',
+      url: '/api/health',
+    });
+  }
 }
