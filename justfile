@@ -1,3 +1,6 @@
+api:
+    cd frontend && npm run api:generate
+
 test:
     cd backend && ./gradlew test
     cd frontend && npm run test -- --run
@@ -16,4 +19,4 @@ format:
     cd backend && ./gradlew spotlessApply
     cd frontend && npm run format
 
-check: format lint test
+check: api format lint test

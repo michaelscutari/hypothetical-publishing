@@ -11,6 +11,7 @@ module.exports = {
     ignorePatterns: [
     "node_modules/",
     "dist/",
+    "src/api/generated/",
     ".vscode/",
     ".idea/",
   ],
