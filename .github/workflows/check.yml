@@ -33,8 +33,8 @@ jobs:
         working-directory: ./frontend
         run: |
           API_DOCS_URL=http://localhost:8080/api-docs npm run api:generate
-          git diff --exit-code src/api/schema.d.ts || {
-            echo "schema.d.ts is outdated. Run 'just api' and commit the changes."
+          git diff --exit-code src/api/generated || {
+            echo "generated api client is outdated. Run 'just api' and commit the changes."
             exit 1
           }
 
