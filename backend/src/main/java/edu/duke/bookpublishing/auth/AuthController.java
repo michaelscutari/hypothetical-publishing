@@ -1,7 +1,11 @@
 package edu.duke.bookpublishing.auth;
 
+import edu.duke.bookpublishing.auth.dto.ChangePasswordRequest;
+import edu.duke.bookpublishing.auth.dto.LoginRequest;
+import edu.duke.bookpublishing.auth.dto.UserResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotBlank;
 import java.security.Principal;
 import java.time.Duration;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +26,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Auth", description = "Authentication endpoints")
 public class AuthController {
 
   private static final String TOKEN_COOKIE_NAME = "token";
@@ -36,8 +41,9 @@ public class AuthController {
   @Value("${app.cookie-secure:false}")
   private boolean cookieSecure;
 
+  @Operation(operationId = "login", summary = "Authenticate user and set session cookie")
   @PostMapping("/login")
-  public ResponseEntity<?> login(
+  public ResponseEntity<Void> login(
       @Valid @RequestBody LoginRequest request, jakarta.servlet.http.HttpServletResponse response) {
 
     User user =
@@ -57,22 +63,25 @@ public class AuthController {
     return ResponseEntity.ok().build();
   }
 
+  @Operation(operationId = "logout", summary = "Clear session cookie and log out")
   @PostMapping("/logout")
-  public ResponseEntity<?> logout(jakarta.servlet.http.HttpServletResponse response) {
+  public ResponseEntity<Void> logout(jakarta.servlet.http.HttpServletResponse response) {
     response.addHeader(HttpHeaders.SET_COOKIE, buildAuthCookie("", Duration.ZERO).toString());
     return ResponseEntity.ok().build();
   }
 
+  @Operation(operationId = "getCurrentUser", summary = "Get current authenticated user")
   @GetMapping("/me")
-  public ResponseEntity<?> me(Principal principal) {
+  public ResponseEntity<UserResponse> me(Principal principal) {
     if (principal == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     return ResponseEntity.ok(new UserResponse(principal.getName()));
   }
 
+  @Operation(operationId = "changePassword", summary = "Change current user password")
   @PutMapping("/password")
-  public ResponseEntity<?> changePassword(
+  public ResponseEntity<Void> changePassword(
       @Valid @RequestBody ChangePasswordRequest request, Principal principal) {
 
     if (principal == null) {
@@ -96,16 +105,6 @@ public class AuthController {
     userRepository.save(user);
     return ResponseEntity.ok().build();
   }
-
-  // DTOs as records
-  record LoginRequest(@NotBlank String username, @NotBlank String password) {}
-
-  record ChangePasswordRequest(
-      @NotBlank String currentPassword,
-      @NotBlank String newPassword,
-      @NotBlank String confirmPassword) {}
-
-  record UserResponse(String username) {}
 
   private ResponseCookie buildAuthCookie(String token, Duration maxAge) {
     return ResponseCookie.from(TOKEN_COOKIE_NAME, token)

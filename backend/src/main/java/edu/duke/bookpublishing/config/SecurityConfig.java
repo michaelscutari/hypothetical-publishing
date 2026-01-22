@@ -29,6 +29,8 @@ public class SecurityConfig {
                     .permitAll()
                     .requestMatchers("/api/health")
                     .permitAll()
+                    .requestMatchers("/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                    .permitAll()
                     .anyRequest()
                     .authenticated())
         .exceptionHandling(

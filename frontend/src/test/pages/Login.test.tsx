@@ -13,10 +13,24 @@ afterEach(() => {
 function renderLogin() {
   // Mock initial auth check as not authenticated
   const fetchMock = vi.fn((url: string) => {
-    if (url === '/api/auth/me') {
-      return Promise.resolve({ ok: false, status: 401 } as Response);
+    if (url.includes('/api/auth/me')) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          statusText: 'Unauthorized',
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
     }
-    return Promise.resolve({ ok: true } as Response);
+    if (url.includes('/api/auth/login')) {
+      return Promise.resolve(
+        new Response(null, {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+    }
+    return Promise.resolve(new Response(null, { status: 200 }));
   });
   vi.stubGlobal('fetch', fetchMock);
 
@@ -71,26 +85,42 @@ describe('Login Page', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        '/api/auth/login',
-        expect.objectContaining({
-          method: 'POST',
-          credentials: 'include',
-          body: JSON.stringify({ username: 'admin', password: 'admin' }),
-        }),
+      const loginCall = fetchMock.mock.calls.find((call) =>
+        (typeof call[0] === 'string' ? call[0] : '').includes('/api/auth/login'),
       );
+      expect(loginCall).toBeDefined();
+      expect(loginCall![1]).toMatchObject({
+        method: 'POST',
+        credentials: 'include',
+      });
+      expect(JSON.parse(loginCall![1].body as string)).toEqual({
+        username: 'admin',
+        password: 'admin',
+      });
     });
   });
 
   it('shows error message on failed login', async () => {
     const fetchMock = vi.fn((url: string) => {
-      if (url === '/api/auth/me') {
-        return Promise.resolve({ ok: false, status: 401 } as Response);
+      if (url.includes('/api/auth/me')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
       }
-      if (url === '/api/auth/login') {
-        return Promise.resolve({ ok: false, status: 401 } as Response);
+      if (url.includes('/api/auth/login')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: 'Unauthorized' }), {
+            status: 401,
+            statusText: 'Unauthorized',
+            headers: { 'Content-Type': 'application/json' },
+          }),
+        );
       }
-      return Promise.resolve({ ok: true } as Response);
+      return Promise.resolve(new Response(null, { status: 200 }));
     });
     vi.stubGlobal('fetch', fetchMock);
 

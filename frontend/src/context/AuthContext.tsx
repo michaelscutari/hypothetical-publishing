@@ -1,5 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { AuthService } from '../api';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -24,18 +25,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Check if user is already logged in on mount
   const checkAuth = useCallback(async () => {
     try {
-      const res = await fetch('/api/auth/me', {
-        credentials: 'include',
-      });
-
-      if (res.ok) {
-        const data = await res.json();
-        setIsAuthenticated(true);
-        setUsername(data.username);
-      } else {
-        setIsAuthenticated(false);
-        setUsername(null);
-      }
+      const user = await AuthService.getCurrentUser();
+      setIsAuthenticated(true);
+      setUsername(user.username ?? null);
     } catch {
       setIsAuthenticated(false);
       setUsername(null);
@@ -48,28 +40,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     checkAuth();
   }, [checkAuth]);
 
-  const login = async (username: string, password: string) => {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-
-    if (!res.ok) {
+  const login = async (usernameInput: string, password: string) => {
+    try {
+      await AuthService.login({ username: usernameInput, password });
+      await checkAuth();
+    } catch {
       throw new Error('Invalid credentials');
     }
-
-    // Refresh auth state
-    await checkAuth();
   };
 
   const logout = async () => {
-    await fetch('/api/auth/logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
-
+    await AuthService.logout();
     setIsAuthenticated(false);
     setUsername(null);
   };
@@ -79,16 +60,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     newPassword: string,
     confirmPassword: string,
   ) => {
-    const res = await fetch('/api/auth/password', {
-      method: 'PUT',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
-    });
-
-    if (!res.ok) {
-      const error = await res.text();
-      throw new Error(error || 'Failed to change password');
+    try {
+      await AuthService.changePassword({ currentPassword, newPassword, confirmPassword });
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to change password');
     }
   };
 

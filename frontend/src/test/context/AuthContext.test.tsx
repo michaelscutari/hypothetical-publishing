@@ -39,6 +39,8 @@ describe('AuthContext', () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve({
         ok: true,
+        status: 200,
+        headers: new Headers({ 'Content-Type': 'application/json' }),
         json: () => Promise.resolve({ username: 'admin' }),
       } as Response),
     );
@@ -60,7 +62,15 @@ describe('AuthContext', () => {
   });
 
   it('sets not authenticated when /me returns 401', async () => {
-    const fetchMock = vi.fn(() => Promise.resolve({ ok: false, status: 401 } as Response));
+    const fetchMock = vi.fn(() =>
+      Promise.resolve({
+        ok: false,
+        status: 401,
+        statusText: 'Unauthorized',
+        headers: new Headers({ 'Content-Type': 'application/json' }),
+        json: () => Promise.resolve({ error: 'Unauthorized' }),
+      } as Response),
+    );
     vi.stubGlobal('fetch', fetchMock);
 
     render(
