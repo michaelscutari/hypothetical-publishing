@@ -5,6 +5,7 @@ import Dashboard from './pages/dashboard';
 import ApiTest from './pages/api-test';
 import ColorModeIconDropdown from './components/ColorModeIconDropdown';
 import BackendStatus from './components/BackendStatus';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -20,9 +21,28 @@ function App() {
         <ColorModeIconDropdown size="small" />
       </Box>
       <Routes>
+        {/* Public routes */}
         <Route path="/" element={<Auth />} />
-        <Route path="/dashboard/*" element={<Dashboard />} />
-        <Route path="/api-test" element={<ApiTest />} />
+
+        {/* Protected routes */}
+        <Route
+          path="/dashboard/*"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/api-test"
+          element={
+            <ProtectedRoute>
+              <ApiTest />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Catch-all redirect to login */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BackendStatus />
