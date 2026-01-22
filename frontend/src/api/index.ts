@@ -1,2 +1,7 @@
-export { api } from './client';
-export type { paths, components } from './schema';
+import { OpenAPI } from './generated';
+
+OpenAPI.WITH_CREDENTIALS = true;
+OpenAPI.CREDENTIALS = 'include';
+OpenAPI.BASE = '';
+
+export * from './generated';

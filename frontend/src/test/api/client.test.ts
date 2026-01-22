@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import createClient from 'openapi-fetch';
-import type { paths } from '../../api/schema';
+import { ApiError, OpenAPI, SystemService } from '../../api';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -19,13 +18,14 @@ describe('api client', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    const api = createClient<paths>({ baseUrl: 'http://localhost' });
-    const { data, error } = await api.GET('/api/health');
+    OpenAPI.BASE = 'http://localhost';
+    const data = await SystemService.getHealth();
 
-    expect(error).toBeUndefined();
     expect(data).toEqual(mockResponse);
     expect(fetchMock).toHaveBeenCalledOnce();
-    expect((fetchMock.mock.calls[0][0] as Request).url).toContain('/api/health');
+    const request = fetchMock.mock.calls[0][0] as Request | string;
+    const url = typeof request === 'string' ? request : request.url;
+    expect(url).toContain('/api/health');
   });
 
   it('returns error on non-2xx response', async () => {
@@ -39,10 +39,7 @@ describe('api client', () => {
     );
     vi.stubGlobal('fetch', fetchMock);
 
-    const api = createClient<paths>({ baseUrl: 'http://localhost' });
-    const { data, error } = await api.GET('/api/health');
-
-    expect(data).toBeUndefined();
-    expect(error).toBeDefined();
+    OpenAPI.BASE = 'http://localhost';
+    await expect(SystemService.getHealth()).rejects.toBeInstanceOf(ApiError);
   });
 });

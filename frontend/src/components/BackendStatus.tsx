@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import Tooltip from '@mui/material/Tooltip';
 import Box from '@mui/material/Box';
-import { api } from '../api';
+import { SystemService } from '../api';
 
 type Status = 'checking' | 'connected' | 'error';
 
@@ -11,8 +11,12 @@ export default function BackendStatus() {
 
   useEffect(() => {
     const check = async () => {
-      const { error } = await api.GET('/api/health');
-      setStatus(error ? 'error' : 'connected');
+      try {
+        await SystemService.getHealth();
+        setStatus('connected');
+      } catch {
+        setStatus('error');
+      }
     };
 
     check();
