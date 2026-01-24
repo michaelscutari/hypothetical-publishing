@@ -1,0 +1,96 @@
+package edu.duke.bookpublishing.books;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+import java.math.BigDecimal;
+import org.junit.jupiter.api.Test;
+
+class BookTest {
+
+  @Test
+  void normalizeFieldsTrimsWhitespace() {
+    Book book =
+        Book.builder()
+            .title("  Dune  ")
+            .author("  Herbert, Frank  ")
+            .isbn13("9780441172719")
+            .publicationYear(1965)
+            .publicationMonth(8)
+            .royaltyRate(new BigDecimal("0.15"))
+            .build();
+
+    book.normalizeFields();
+
+    assertEquals("Dune", book.getTitle());
+    assertEquals("Herbert, Frank", book.getAuthor());
+  }
+
+  @Test
+  void normalizeFieldsNormalizesAuthorWhitespace() {
+    Book book =
+        Book.builder()
+            .title("Test Book")
+            .author("  Author   with   multiple   spaces  ")
+            .isbn13("9780441172719")
+            .publicationYear(2020)
+            .publicationMonth(1)
+            .royaltyRate(new BigDecimal("0.15"))
+            .build();
+
+    book.normalizeFields();
+
+    assertEquals("Author with multiple spaces", book.getAuthor());
+  }
+
+  @Test
+  void normalizeFieldsStripsDashesIsbn13() {
+    Book book =
+        Book.builder()
+            .title("Test Book")
+            .author("Test Author")
+            .isbn13("978-0-7432-7356-5")
+            .publicationYear(2020)
+            .publicationMonth(1)
+            .royaltyRate(new BigDecimal("0.5"))
+            .build();
+
+    book.normalizeFields();
+
+    assertEquals("9780743273565", book.getIsbn13());
+  }
+
+  @Test
+  void normalizeFieldsStripsDashesIsbn10() {
+    Book book =
+        Book.builder()
+            .title("Test Book")
+            .author("Test Author")
+            .isbn13("9780743273565")
+            .isbn10("0-7432-7356-7")
+            .publicationYear(2020)
+            .publicationMonth(1)
+            .royaltyRate(new BigDecimal("0.5"))
+            .build();
+
+    book.normalizeFields();
+
+    assertEquals("0743273567", book.getIsbn10());
+  }
+
+  @Test
+  void normalizeFieldsHandlesNullOptionalFields() {
+    Book book =
+        Book.builder()
+            .title("Test Book")
+            .author("Test Author")
+            .isbn13("9780743273565")
+            .isbn10(null)
+            .publicationYear(2024)
+            .publicationMonth(1)
+            .royaltyRate(new BigDecimal("0.15"))
+            .build();
+
+    assertDoesNotThrow(book::normalizeFields);
+    assertNull(book.getIsbn10());
+  }
+}

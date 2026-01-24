@@ -130,3 +130,40 @@ The frontend TypeScript API client is auto-generated from the backend's OpenAPI 
 PRs are expected to pass:
 - Frontend lint + tests
 - Backend format check + tests
+
+## Book Management
+
+The book management module provides CRUD operations for books in the publishing catalog.
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/books` | List books (paginated, sortable, searchable) |
+| GET | `/api/books/{id}` | Get book by ID |
+| POST | `/api/books` | Create a new book |
+| PUT | `/api/books/{id}` | Update a book |
+| DELETE | `/api/books/{id}` | Delete a book |
+
+### Query Parameters (GET /api/books)
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| page | int | 0 | Page number (0-indexed) |
+| size | int | 25 | Page size |
+| showAll | boolean | false | Return all records (ignores pagination) |
+| query | string | - | Search across title, author, ISBN (dashes ignored) |
+| sortField | string | - | Field to sort by |
+| sortDirection | string | asc | Sort direction (asc/desc) |
+
+### Book Fields
+
+| Field | Type | Required | Validation |
+|-------|------|----------|------------|
+| title | string | Yes | Not blank |
+| author | string | Yes | Not blank, whitespace normalized |
+| isbn13 | string | Yes | Valid ISBN-13 format (unique) |
+| isbn10 | string | No | Valid ISBN-10 format if provided (unique) |
+| publicationYear | int | Yes | 1900-2100 |
+| publicationMonth | int | Yes | 1-12 |
+| royaltyRate | decimal | Yes | 0.0 to 1.0, defaults to 0.50 |
