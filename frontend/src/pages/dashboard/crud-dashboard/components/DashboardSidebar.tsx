@@ -1,6 +1,3 @@
-import * as React from 'react';
-import { useTheme } from '@mui/material/styles';
-import useMediaQuery from '@mui/material/useMediaQuery';
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
 import List from '@mui/material/List';
@@ -8,22 +5,30 @@ import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
 import Toolbar from '@mui/material/Toolbar';
+import { useTheme } from '@mui/material/styles';
 import type {} from '@mui/material/themeCssVarsAugmentation';
-import PersonIcon from '@mui/icons-material/Person';
-import MenuBookIcon from '@mui/icons-material/MenuBook';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import * as React from 'react';
+
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import DescriptionIcon from '@mui/icons-material/Description';
 import LayersIcon from '@mui/icons-material/Layers';
-import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
-import { matchPath, useLocation } from 'react-router-dom';
-import DashboardSidebarContext from '../context/DashboardSidebarContext';
-import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
-import DashboardSidebarPageItem from './DashboardSidebarPageItem';
-import DashboardSidebarHeaderItem from './DashboardSidebarHeaderItem';
-import DashboardSidebarDividerItem from './DashboardSidebarDividerItem';
-import { getDrawerSxTransitionMixin, getDrawerWidthTransitionMixin } from '../mixins';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import PersonIcon from '@mui/icons-material/Person';
+
+import { matchPath, useLocation, useNavigate } from 'react-router-dom';
+
 import { useAuth } from '../../../../context/AuthContext';
+import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
+import DashboardSidebarContext from '../context/DashboardSidebarContext';
+import { getDrawerSxTransitionMixin, getDrawerWidthTransitionMixin } from '../mixins';
+import DashboardSidebarDividerItem from './DashboardSidebarDividerItem';
+import DashboardSidebarHeaderItem from './DashboardSidebarHeaderItem';
+import DashboardSidebarPageItem from './DashboardSidebarPageItem';
 
 export interface DashboardSidebarProps {
   expanded?: boolean;
@@ -39,6 +44,7 @@ export default function DashboardSidebar({
   container,
 }: DashboardSidebarProps) {
   const theme = useTheme();
+  const navigate = useNavigate();
   const { logout } = useAuth();
 
   const { pathname } = useLocation();
@@ -50,6 +56,10 @@ export default function DashboardSidebar({
 
   const [isFullyExpanded, setIsFullyExpanded] = React.useState(expanded);
   const [isFullyCollapsed, setIsFullyCollapsed] = React.useState(!expanded);
+
+  // Profile menu state
+  const [profileAnchorEl, setProfileAnchorEl] = React.useState<null | HTMLElement>(null);
+  const profileMenuOpen = Boolean(profileAnchorEl);
 
   React.useEffect(() => {
     if (expanded) {
@@ -109,6 +119,28 @@ export default function DashboardSidebar({
       setExpanded(false);
     }
   }, [logout, isOverSmViewport, setExpanded]);
+
+  // Profile menu handlers
+  const handleProfileClick = React.useCallback((event: React.MouseEvent<HTMLElement>) => {
+    setProfileAnchorEl(event.currentTarget);
+  }, []);
+
+  const handleProfileClose = React.useCallback(() => {
+    setProfileAnchorEl(null);
+  }, []);
+
+  const handleChangePassword = React.useCallback(() => {
+    setProfileAnchorEl(null);
+    navigate('/dashboard/change-password');
+    if (!isOverSmViewport) {
+      setExpanded(false);
+    }
+  }, [navigate, isOverSmViewport, setExpanded]);
+
+  const handleLogoutFromMenu = React.useCallback(() => {
+    setProfileAnchorEl(null);
+    handleLogout();
+  }, [handleLogout]);
 
   const hasDrawerTransitions = isOverSmViewport && (!disableCollapsibleSidebar || isOverMdViewport);
 
@@ -217,6 +249,8 @@ export default function DashboardSidebar({
               />
             </List>
           </Box>
+
+          {/* Bottom section */}
           <List
             dense
             sx={{
@@ -225,10 +259,12 @@ export default function DashboardSidebar({
             }}
           >
             <DashboardSidebarDividerItem />
+
+            {/* Profile button */}
             <ListItem disablePadding sx={{ px: 1 }}>
               <ListItemButton
-                onClick={handleLogout}
-                title={mini ? 'Logout' : undefined}
+                onClick={handleProfileClick}
+                title={mini ? 'Profile' : undefined}
                 sx={{
                   height: mini ? 50 : 'auto',
                   justifyContent: mini ? 'center' : 'flex-start',
@@ -240,16 +276,46 @@ export default function DashboardSidebar({
                     justifyContent: 'center',
                   }}
                 >
-                  <LogoutOutlinedIcon fontSize="small" />
+                  <AccountCircleIcon fontSize="small" />
                 </ListItemIcon>
-                {!mini ? <ListItemText primary="Logout" /> : null}
+                {!mini ? <ListItemText primary="Profile" /> : null}
               </ListItemButton>
             </ListItem>
           </List>
+
+          {/* Profile menu popover */}
+          <Menu
+            anchorEl={profileAnchorEl}
+            open={profileMenuOpen}
+            onClose={handleProfileClose}
+            anchorOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            transformOrigin={{
+              vertical: 'bottom',
+              horizontal: 'left',
+            }}
+          >
+            <MenuItem onClick={handleChangePassword}>Change Password</MenuItem>
+            <MenuItem onClick={handleLogoutFromMenu}>Logout</MenuItem>
+          </Menu>
         </Box>
       </Box>
     ),
-    [mini, hasDrawerTransitions, isFullyExpanded, expandedItemIds, pathname, handleLogout],
+    [
+      mini,
+      hasDrawerTransitions,
+      isFullyExpanded,
+      expandedItemIds,
+      pathname,
+      handleProfileClick,
+      handleProfileClose,
+      profileAnchorEl,
+      profileMenuOpen,
+      handleChangePassword,
+      handleLogoutFromMenu,
+    ],
   );
 
   const getDrawerSharedSx = React.useCallback(
@@ -309,6 +375,7 @@ export default function DashboardSidebar({
       >
         {getDrawerContent('phone')}
       </Drawer>
+
       <Drawer
         variant="permanent"
         sx={{
@@ -322,6 +389,7 @@ export default function DashboardSidebar({
       >
         {getDrawerContent('tablet')}
       </Drawer>
+
       <Drawer
         variant="permanent"
         sx={{
