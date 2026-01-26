@@ -1,15 +1,16 @@
-import NotificationsProvider from './hooks/useNotifications/NotificationsProvider';
-import DialogsProvider from './hooks/useDialogs/DialogsProvider';
-import { Routes, Route } from 'react-router-dom';
-import DashboardLayout from './components/DashboardLayout';
-import BookList from './components/BookList';
-import BookShow from './components/BookShow';
+import { Route, Routes } from 'react-router-dom';
 import BookCreate from './components/BookCreate';
 import BookEdit from './components/BookEdit';
-import EmployeeList from './components/EmployeeList';
-import EmployeeShow from './components/EmployeeShow';
+import BookList from './components/BookList';
+import BookShow from './components/BookShow';
+import ChangePassword from './components/ChangePassword';
+import DashboardLayout from './components/DashboardLayout';
 import EmployeeCreate from './components/EmployeeCreate';
 import EmployeeEdit from './components/EmployeeEdit';
+import EmployeeList from './components/EmployeeList';
+import EmployeeShow from './components/EmployeeShow';
+import DialogsProvider from './hooks/useDialogs/DialogsProvider';
+import NotificationsProvider from './hooks/useNotifications/NotificationsProvider';
 
 export default function CrudDashboard() {
   return (
@@ -26,6 +27,7 @@ export default function CrudDashboard() {
             <Route path="employees/new" element={<EmployeeCreate />} />
             <Route path="employees/:employeeId" element={<EmployeeShow />} />
             <Route path="employees/:employeeId/edit" element={<EmployeeEdit />} />
+            <Route path="change-password" element={<ChangePassword />} />
           </Route>
         </Routes>
       </DialogsProvider>
