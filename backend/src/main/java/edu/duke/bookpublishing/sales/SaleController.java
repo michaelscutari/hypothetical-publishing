@@ -1,0 +1,106 @@
+package edu.duke.bookpublishing.sales;
+
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+import edu.duke.bookpublishing.common.dto.PagedResponse;
+import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+
+/**
+ * Rest Controller for Sale CRUD Operations
+ * 
+ * @author Daniel Rodriguez-Florido
+ */
+
+@RestController
+@RequestMapping("/api/sales")
+@RequiredArgsConstructor
+@Tag(name = "Sales", description = "Sale management endpoints")
+public class SaleController {
+
+    private final SaleService saleService;
+
+    @GetMapping
+    public PagedResponse<SaleResponse> getSales(@RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "25") int size,
+            @RequestParam(defaultValue = "false") boolean showAll,
+            @RequestParam(required = false) String sortField,
+            @RequestParam(defaultValue = "asc") String sortDirection,
+            @RequestParam(required = false) 
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) 
+                @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+
+        Sort sort = 
+            sortField != null 
+                ? Sort.by(Sort.Direction.fromString(sortDirection), sortField)
+                : Sort.unsorted();
+
+        if (showAll) {
+            List<Sale> sales = saleService.getAllSales(startDate, endDate, sort);
+            return PagedResponse.unpaged(sales, SaleResponse::from);
+        }
+
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<Sale> sales = saleService.getPagedSales(startDate, endDate, pageable);
+        return PagedResponse.paged(sales, SaleResponse::from);
+    }
+
+    @Operation(operationId = "getSaleById", summary = "Gets a sale by its ID")
+    @GetMapping("/{id}")
+    public SaleResponse getSale(@PathVariable Long id) {
+        return SaleResponse.from(saleService.getSaleById(id));
+    }
+
+    @Operation(operationId = "createSale", summary = "Creates a new sale")
+    @PostMapping
+    public SaleResponse createSale(@Valid @RequestBody SaleRequest sale) {
+        return SaleResponse.from(saleService.createSale(sale));
+    }
+
+    @Operation(operationId = "updateSale", summary = "Updates an existing sale")
+    @PutMapping("/{id}")
+    public SaleResponse updateSale(@PathVariable Long id, @Valid @RequestBody SaleRequest sale) {
+        return SaleResponse.from(saleService.updateSale(id, sale));
+    }
+
+    @Operation(operationId = "deleteSale", summary = "Deletes an existing sale")
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteSale(@PathVariable Long id) {
+        saleService.deleteById(id);
+    }
+
+    /*
+    Possible API. I don't think it is necessary, however, due to the update API accepting a DTO with hasAuthorBeenPaid. 
+    Leaving since already implemented in case we want to stick to original design doc.
+
+    @Operation(operationId = "togglePaid", summary = "Toggles if an author has been paid for a sale")
+    @PutMapping("/togglePaid/{id}")
+    public SaleResponse togglePaid(@PathVariable Long id) {
+        return SaleResponse.from(saleService.togglePaid(id));
+    }
+    */
+
+}

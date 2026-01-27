@@ -1,0 +1,42 @@
+/* generated using openapi-typescript-codegen -- do not edit */
+/* istanbul ignore file */
+/* tslint:disable */
+/* eslint-disable */
+/**
+ * Sale response data
+ */
+export type SaleResponse = {
+    /**
+     * Unique sale identifier id
+     */
+    id?: number;
+    /**
+     * Unique identifier for the sold book
+     */
+    bookId?: number;
+    /**
+     * Month of the sale
+     */
+    saleMonth?: number;
+    /**
+     * Year of the sale
+     */
+    saleYear?: number;
+    /**
+     * Quantity of books sold
+     */
+    quantitySold?: number;
+    /**
+     * Revenue of the publisher
+     */
+    publisherRevenue?: number;
+    /**
+     * The amount the author was paid
+     */
+    authorRoyalty?: number;
+    /**
+     * Indicates whether the author has been paid or not
+     */
+    hasAuthorBeenPaid?: boolean;
+};
+

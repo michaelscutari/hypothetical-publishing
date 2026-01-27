@@ -9,6 +9,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import edu.duke.bookpublishing.exception.custom.NotFoundException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -44,4 +45,14 @@ public class GlobalExceptionHandler {
 
     return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
   }
+
+  @ExceptionHandler(NotFoundException.class)
+  public ResponseEntity<Map<String, String>> handleNotFound(
+      NotFoundException ex) {
+
+    return ResponseEntity
+        .status(HttpStatus.NOT_FOUND)
+        .body(Map.of("error", ex.getMessage()));
+  }
+
 }
