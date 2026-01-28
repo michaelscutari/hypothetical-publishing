@@ -116,6 +116,8 @@ public class SaleService {
   }
 
   /*
+  TODO: Implement markAllPaid(author) API
+  
   Implementation of togglePaid. See SaleController.java Line 89.
 
   @Transactional

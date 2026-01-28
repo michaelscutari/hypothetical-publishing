@@ -93,6 +93,8 @@ public class SaleController {
   }
 
   /*
+  TODO: Implement markAllPaid(author) API
+
   Possible API. I don't think it is necessary, however, due to the update API accepting a DTO with hasAuthorBeenPaid.
   Leaving since already implemented in case we want to stick to original design doc.
 
