@@ -7,6 +7,15 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.duke.bookpublishing.auth.User;
+import edu.duke.bookpublishing.auth.UserRepository;
+import edu.duke.bookpublishing.books.Book;
+import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.YearMonth;
@@ -20,14 +29,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import edu.duke.bookpublishing.auth.User;
-import edu.duke.bookpublishing.auth.UserRepository;
-import edu.duke.bookpublishing.books.Book;
-import edu.duke.bookpublishing.books.BookRepository;
-import edu.duke.bookpublishing.sales.dto.SaleRequest;
-import edu.duke.bookpublishing.sales.dto.SaleResponse;
-import jakarta.servlet.http.Cookie;
 
 /**
  * Test class for SaleController.

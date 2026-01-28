@@ -30,7 +30,7 @@ import org.springframework.data.jpa.domain.Specification;
 
 /**
  * Test class for the Sales service
- * 
+ *
  * @author Daniel Rodriguez-Florido
  */
 @ExtendWith(MockitoExtension.class)
