@@ -30,6 +30,5 @@ export type SaleRequest = {
      * Indicates whether the author has been paid
      */
     hasAuthorBeenPaid?: boolean;
-    pastOrPresent?: boolean;
 };
 

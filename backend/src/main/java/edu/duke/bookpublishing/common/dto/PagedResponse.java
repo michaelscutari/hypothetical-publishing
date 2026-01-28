@@ -4,6 +4,13 @@ import java.util.List;
 import java.util.function.Function;
 import org.springframework.data.domain.Page;
 
+/**
+ * Generic Paged Response type. Allows for returns of custom paginated objects,
+ * such as Sale, Book, etc.
+ * Gives the option to paginate or unpaginated and allows for mapping input.
+ * 
+ * @author Daniel Rodriguez-Florido
+ */
 public record PagedResponse<T>(
     List<T> content,
     int pageNumber,

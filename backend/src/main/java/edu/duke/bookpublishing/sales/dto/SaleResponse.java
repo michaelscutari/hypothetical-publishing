@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 
 /**
- * DTO For a Sale Resposne
+ * DTO For a Sale Response
  *
  * @author Daniel Rodriguez-Florido
  */

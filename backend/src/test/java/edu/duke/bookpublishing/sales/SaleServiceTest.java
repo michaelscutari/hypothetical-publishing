@@ -28,6 +28,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
+/**
+ * Test class for the Sales service
+ * 
+ * @author Daniel Rodriguez-Florido
+ */
 @ExtendWith(MockitoExtension.class)
 class SaleServiceTest {
 

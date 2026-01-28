@@ -49,7 +49,8 @@ public record SaleRequest(
   }
 
   @AssertTrue(message = "Sale date must be this month and year or earlier")
-  public boolean isPastOrPresent() {
+  @Schema(hidden = true)
+  public boolean validateSaleDate() {
     if (saleYear == null || saleMonth == null) return true;
     YearMonth requested = YearMonth.of(saleYear, saleMonth);
     return !requested.isAfter(YearMonth.now());

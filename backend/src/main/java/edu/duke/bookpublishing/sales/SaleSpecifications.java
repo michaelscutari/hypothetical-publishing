@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * Spec to filter Sale queries by date. Written by ChatGPT.
+ * Spec to filter Sale queries by date.
  *
  * @author Daniel Rodriguez-Florido
  */

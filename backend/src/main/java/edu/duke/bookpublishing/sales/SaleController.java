@@ -39,6 +39,7 @@ public class SaleController {
 
   private final SaleService saleService;
 
+  @Operation(operationId = "getSales", summary = "Retrieves all sales, paginated")
   @GetMapping
   public PagedResponse<SaleResponse> getSales(
       @RequestParam(defaultValue = "0") int page,

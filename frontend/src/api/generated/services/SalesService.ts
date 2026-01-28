@@ -65,6 +65,7 @@ export class SalesService {
         });
     }
     /**
+     * Retrieves all sales, paginated
      * @param page
      * @param size
      * @param showAll
