@@ -67,22 +67,23 @@ public class SaleService {
   public Sale createSale(SaleRequest request) {
     Book book = getOrThrowBookFromRepoById(request.bookId());
 
-    // Compute Royalty (Per definition 16)
-    BigDecimal authorRoyalty =
-        computeAuthorRoyalty(request.publisherRevenue(), book.getRoyaltyRate());
+    // want to use override if provided, otherwise compute --> so depends on if
+    // request got
+    BigDecimal authorRoyalty = request.authorRoyalty() != null
+        ? request.authorRoyalty().setScale(2, RoundingMode.HALF_UP)
+        : computeAuthorRoyalty(request.publisherRevenue(), book.getRoyaltyRate());
 
     boolean hasAuthorBeenPaid = Boolean.TRUE.equals(request.hasAuthorBeenPaid());
 
-    Sale sale =
-        Sale.builder()
-            .book(book)
-            .saleMonth(request.saleMonth())
-            .saleYear(request.saleYear())
-            .quantitySold(request.quantitySold())
-            .publisherRevenue(request.publisherRevenue())
-            .authorRoyalty(authorRoyalty)
-            .hasAuthorBeenPaid(hasAuthorBeenPaid)
-            .build();
+    Sale sale = Sale.builder()
+        .book(book)
+        .saleMonth(request.saleMonth())
+        .saleYear(request.saleYear())
+        .quantitySold(request.quantitySold())
+        .publisherRevenue(request.publisherRevenue())
+        .authorRoyalty(authorRoyalty)
+        .hasAuthorBeenPaid(hasAuthorBeenPaid)
+        .build();
 
     return saleRepository.save(sale);
   }
@@ -92,8 +93,11 @@ public class SaleService {
     Sale sale = getOrThrowSaleFromRepoById(id);
     Book newBook = getOrThrowBookFromRepoById(request.bookId());
 
-    BigDecimal authorRoyalty =
-        computeAuthorRoyalty(request.publisherRevenue(), newBook.getRoyaltyRate());
+    // if the client doesnt get an input then default, if client does use the
+    // clients
+    BigDecimal authorRoyalty = request.authorRoyalty() != null
+        ? request.authorRoyalty().setScale(2, RoundingMode.HALF_UP)
+        : computeAuthorRoyalty(request.publisherRevenue(), newBook.getRoyaltyRate());
 
     sale.setBook(newBook);
     sale.setSaleMonth(request.saleMonth());
@@ -116,20 +120,20 @@ public class SaleService {
   }
 
   /*
-  TODO: Implement markAllPaid(author) API
-
-  Implementation of togglePaid. See SaleController.java Line 89.
-
-  @Transactional
-  public Sale togglePaid(Long id) {
-      Sale sale = getOrThrowSaleFromRepoById(id);
-
-      boolean currentlyPaid = Boolean.TRUE.equals(sale.getHasAuthorBeenPaid());
-      sale.setHasAuthorBeenPaid(!currentlyPaid); // "Not" the current standing
-
-      return saleRepository.save(sale);
-  }
-  */
+   * TODO: Implement markAllPaid(author) API
+   * 
+   * Implementation of togglePaid. See SaleController.java Line 89.
+   * 
+   * @Transactional
+   * public Sale togglePaid(Long id) {
+   * Sale sale = getOrThrowSaleFromRepoById(id);
+   * 
+   * boolean currentlyPaid = Boolean.TRUE.equals(sale.getHasAuthorBeenPaid());
+   * sale.setHasAuthorBeenPaid(!currentlyPaid); // "Not" the current standing
+   * 
+   * return saleRepository.save(sale);
+   * }
+   */
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
     return saleRepository.findById(id).orElseThrow(() -> new NotFoundException("Sale not found"));
