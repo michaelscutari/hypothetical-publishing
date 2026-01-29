@@ -1,4 +1,6 @@
-import * as React from 'react';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -8,14 +10,13 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { deleteOne as deleteBook, getOne as getBook, type Book } from '../data/books';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import { deleteOne as deleteBook, getOne as getBook, type Book } from '../data/books';
 import PageContainer from './PageContainer';
+import FullPageLoader from '../../../../components/FullPageLoader';
 
 const MONTH_NAMES = [
   'January',
@@ -221,12 +222,22 @@ export default function BookShow() {
     ) : null;
   }, [isLoading, error, book, handleBack, handleBookEdit, handleBookDelete]);
 
-  const pageTitle = `Book ${bookId}`;
+  const truncate = React.useCallback((value: string | undefined, maxLength = 30) => {
+    if (!value) return value;
+    return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
+  }, []);
 
+  const breadcrumbTitle = truncate(book?.title, 30) ?? 'Book';
+
+  if (isLoading) {
+    return (
+        <FullPageLoader />
+    );
+  }
   return (
     <PageContainer
-      title={pageTitle}
-      breadcrumbs={[{ title: 'Books', path: '/dashboard/books' }, { title: pageTitle }]}
+      title={book?.title}
+      breadcrumbs={[{ title: 'Books', path: '/dashboard/books' }, { title: breadcrumbTitle }]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>
