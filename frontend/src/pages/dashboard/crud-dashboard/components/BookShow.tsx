@@ -230,9 +230,7 @@ export default function BookShow() {
   const breadcrumbTitle = truncate(book?.title, 30) ?? 'Book';
 
   if (isLoading) {
-    return (
-        <FullPageLoader />
-    );
+    return <FullPageLoader />;
   }
   return (
     <PageContainer

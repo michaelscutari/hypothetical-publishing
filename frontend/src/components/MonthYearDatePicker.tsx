@@ -20,9 +20,7 @@ export default function MonthYearPicker({
         value={value}
         onChange={(newValue) => onChange(newValue)}
         slots={{ textField: TextField }}
-        slotProps={
-          {textField: { helperText: 'MM/YYYY', fullWidth: true } }
-        }
+        slotProps={{ textField: { helperText: 'MM/YYYY', fullWidth: true } }}
       />
     </LocalizationProvider>
   );
