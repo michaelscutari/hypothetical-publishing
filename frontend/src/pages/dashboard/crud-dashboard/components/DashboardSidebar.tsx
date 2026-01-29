@@ -288,7 +288,7 @@ export default function DashboardSidebar({
     [expanded, mini],
   );
 
-    const sidebarContextValue = React.useMemo(() => {
+  const sidebarContextValue = React.useMemo(() => {
     return {
       onPageItemClick: handlePageItemClick,
       mini,
@@ -297,10 +297,18 @@ export default function DashboardSidebar({
       hasDrawerTransitions,
       expandedItemIds, // expose current expanded ids
       toggleExpandedItemId: (id: string) =>
-        setExpandedItemIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
+        setExpandedItemIds((prev) =>
+          prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+        ),
     };
-  }, [handlePageItemClick, mini, isFullyExpanded, isFullyCollapsed, hasDrawerTransitions, expandedItemIds]);
-
+  }, [
+    handlePageItemClick,
+    mini,
+    isFullyExpanded,
+    isFullyCollapsed,
+    hasDrawerTransitions,
+    expandedItemIds,
+  ]);
 
   return (
     <DashboardSidebarContext.Provider value={sidebarContextValue}>
