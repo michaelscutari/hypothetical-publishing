@@ -19,6 +19,7 @@ import DescriptionIcon from '@mui/icons-material/Description';
 import LayersIcon from '@mui/icons-material/Layers';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PersonIcon from '@mui/icons-material/Person';
+import ReceiptIcon from '@mui/icons-material/Receipt';
 
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 
@@ -202,6 +203,13 @@ export default function DashboardSidebar({
                 icon={<PersonIcon />}
                 href="/dashboard/employees"
                 selected={!!matchPath('/dashboard/employees/*', pathname)}
+              />
+              <DashboardSidebarPageItem
+                id="sales"
+                title="Sales Records"
+                icon={<ReceiptIcon />}
+                href="/dashboard/sales"
+                selected={!!matchPath('/dashboard/sales/*', pathname)}
               />
               <DashboardSidebarDividerItem />
               <DashboardSidebarHeaderItem>Example items</DashboardSidebarHeaderItem>

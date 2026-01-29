@@ -11,6 +11,8 @@ import EmployeeList from './components/EmployeeList';
 import EmployeeShow from './components/EmployeeShow';
 import DialogsProvider from './hooks/useDialogs/DialogsProvider';
 import NotificationsProvider from './hooks/useNotifications/NotificationsProvider';
+import SaleList from './components/SaleList';
+import SaleCreate from './components/SaleCreate';
 
 export default function CrudDashboard() {
   return (
@@ -28,6 +30,8 @@ export default function CrudDashboard() {
             <Route path="employees/:employeeId" element={<EmployeeShow />} />
             <Route path="employees/:employeeId/edit" element={<EmployeeEdit />} />
             <Route path="change-password" element={<ChangePassword />} />
+            <Route path="sales" element={<SaleList />} />
+            <Route path="sales/new" element={<SaleCreate />} />
           </Route>
         </Routes>
       </DialogsProvider>
