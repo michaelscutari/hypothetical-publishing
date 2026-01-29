@@ -1,17 +1,18 @@
-import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
+import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import useNotifications from '../hooks/useNotifications/useNotifications';
 import {
   getOne as getBook,
   updateOne as updateBook,
   validate as validateBook,
   type Book,
 } from '../data/books';
-import BookForm, { type FormFieldValue, type BookFormState } from './BookForm';
+import useNotifications from '../hooks/useNotifications/useNotifications';
+import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from './PageContainer';
+import FullPageLoader from '../../../../components/FullPageLoader';
 
 function BookEditForm({
   initialValues,
@@ -33,36 +34,34 @@ function BookEditForm({
   const formErrors = formState.errors;
 
   const setFormValues = React.useCallback((newFormValues: Partial<BookFormState['values']>) => {
-    setFormState((previousState) => ({
-      ...previousState,
-      values: newFormValues,
-    }));
-  }, []);
+  setFormState((previousState) => ({
+    ...previousState,
+    values: { ...previousState.values, ...newFormValues },
+  }));
+}, []);
+
 
   const setFormErrors = React.useCallback((newFormErrors: Partial<BookFormState['errors']>) => {
     setFormState((previousState) => ({
       ...previousState,
-      errors: newFormErrors,
+      errors: { ...previousState.errors, ...newFormErrors },
     }));
   }, []);
 
   const handleFormFieldChange = React.useCallback(
-    (name: keyof BookFormState['values'], value: FormFieldValue) => {
-      const validateField = async (values: Partial<BookFormState['values']>) => {
-        const { issues } = validateBook(values);
-        setFormErrors({
-          ...formErrors,
-          [name]: issues?.find((issue) => issue.path?.[0] === name)?.message,
-        });
-      };
+  (name: keyof BookFormState['values'], value: FormFieldValue) => {
+    const newFormValues = { ...formState.values, [name]: value };
+    setFormState((prev) => ({ ...prev, values: newFormValues }));
+    const { issues } = validateBook(newFormValues);
+    const fieldError = issues?.find((issue) => issue.path?.[0] === name)?.message ?? undefined;
+    setFormState((prev) => ({
+      ...prev,
+      errors: { ...prev.errors, [name]: fieldError },
+    }));
+  },
+  [setFormState],
+);
 
-      const newFormValues = { ...formValues, [name]: value };
-
-      setFormValues(newFormValues);
-      validateField(newFormValues);
-    },
-    [formValues, formErrors, setFormErrors, setFormValues],
-  );
 
   const handleFormReset = React.useCallback(() => {
     setFormValues(initialValues);
@@ -118,12 +117,12 @@ export default function BookEdit() {
 
     try {
       const showData = await getBook(Number(bookId));
-
       setBook(showData);
     } catch (showDataError) {
       setError(showDataError as Error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [bookId]);
 
   React.useEffect(() => {
@@ -156,6 +155,7 @@ export default function BookEdit() {
         </Box>
       );
     }
+
     if (error) {
       return (
         <Box sx={{ flexGrow: 1 }}>
@@ -167,12 +167,18 @@ export default function BookEdit() {
     return book ? <BookEditForm initialValues={book} onSubmit={handleSubmit} /> : null;
   }, [isLoading, error, book, handleSubmit]);
 
+  const truncate = (value: string | undefined, maxLength = 30) =>
+    value && value.length > maxLength ? `${value.slice(0, maxLength)}…` : (value ?? '');
+
+  if (isLoading) {
+    return <FullPageLoader />;
+  }
   return (
     <PageContainer
-      title={`Edit Book ${bookId}`}
+      title={`${book!.title}`}
       breadcrumbs={[
         { title: 'Books', path: '/dashboard/books' },
-        { title: `Book ${bookId}`, path: `/dashboard/books/${bookId}` },
+        { title: truncate(book!.title), path: `/dashboard/books/${bookId}` },
         { title: 'Edit' },
       ]}
     >
