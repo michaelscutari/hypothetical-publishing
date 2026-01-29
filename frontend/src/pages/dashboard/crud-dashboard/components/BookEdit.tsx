@@ -31,7 +31,6 @@ function BookEditForm({
     errors: {},
   }));
   const formValues = formState.values;
-  const formErrors = formState.errors;
 
   const setFormValues = React.useCallback((newFormValues: Partial<BookFormState['values']>) => {
   setFormState((previousState) => ({
@@ -50,17 +49,21 @@ function BookEditForm({
 
   const handleFormFieldChange = React.useCallback(
   (name: keyof BookFormState['values'], value: FormFieldValue) => {
-    const newFormValues = { ...formState.values, [name]: value };
-    setFormState((prev) => ({ ...prev, values: newFormValues }));
-    const { issues } = validateBook(newFormValues);
-    const fieldError = issues?.find((issue) => issue.path?.[0] === name)?.message ?? undefined;
-    setFormState((prev) => ({
-      ...prev,
-      errors: { ...prev.errors, [name]: fieldError },
-    }));
+    setFormState((prev) => {
+      const newValues = { ...prev.values, [name]: value };
+      const { issues } = validateBook(newValues);
+      const fieldError = issues?.find((issue) => issue.path?.[0] === name)?.message ?? undefined;
+
+      return {
+        ...prev,
+        values: newValues,
+        errors: { ...prev.errors, [name]: fieldError },
+      };
+    });
   },
-  [setFormState],
+  [],
 );
+
 
 
   const handleFormReset = React.useCallback(() => {

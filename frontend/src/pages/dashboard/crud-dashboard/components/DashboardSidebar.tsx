@@ -14,11 +14,7 @@ import useMediaQuery from '@mui/material/useMediaQuery';
 import * as React from 'react';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import BarChartIcon from '@mui/icons-material/BarChart';
-import DescriptionIcon from '@mui/icons-material/Description';
-import LayersIcon from '@mui/icons-material/Layers';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
-import PersonIcon from '@mui/icons-material/Person';
 
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 
@@ -256,7 +252,6 @@ export default function DashboardSidebar({
       mini,
       hasDrawerTransitions,
       isFullyExpanded,
-      expandedItemIds,
       pathname,
       handleProfileClick,
       handleProfileClose,
@@ -293,15 +288,19 @@ export default function DashboardSidebar({
     [expanded, mini],
   );
 
-  const sidebarContextValue = React.useMemo(() => {
+    const sidebarContextValue = React.useMemo(() => {
     return {
       onPageItemClick: handlePageItemClick,
       mini,
       fullyExpanded: isFullyExpanded,
       fullyCollapsed: isFullyCollapsed,
       hasDrawerTransitions,
+      expandedItemIds, // expose current expanded ids
+      toggleExpandedItemId: (id: string) =>
+        setExpandedItemIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])),
     };
-  }, [handlePageItemClick, mini, isFullyExpanded, isFullyCollapsed, hasDrawerTransitions]);
+  }, [handlePageItemClick, mini, isFullyExpanded, isFullyCollapsed, hasDrawerTransitions, expandedItemIds]);
+
 
   return (
     <DashboardSidebarContext.Provider value={sidebarContextValue}>
