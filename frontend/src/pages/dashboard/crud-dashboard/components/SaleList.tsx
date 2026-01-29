@@ -1,3 +1,4 @@
+
 import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -71,6 +72,16 @@ const loadData = React.useCallback(async () => {
     const startDateParam = startDate ? startDate.format('YYYY-MM-DD') : undefined;
     const endDateParam = endDate ? endDate.format('YYYY-MM-DD') : undefined;
 
+
+    //   const response = await SalesService.getSales(
+    //     paginationModel.page,
+    //     paginationModel.pageSize,
+    //     showAll,
+    //     sortField,
+    //     sortDirection,
+    //     startDate,
+    //     endDate,
+    //   );
     const response = await SalesService.getSales(
     paginationModel.page,
     paginationModel.pageSize,
