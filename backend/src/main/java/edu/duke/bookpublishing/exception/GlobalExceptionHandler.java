@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.exception;
 
+import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import java.util.HashMap;
 import java.util.Map;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -43,5 +44,11 @@ public class GlobalExceptionHandler {
     }
 
     return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+  }
+
+  @ExceptionHandler(NotFoundException.class)
+  public ResponseEntity<Map<String, String>> handleNotFound(NotFoundException ex) {
+
+    return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", ex.getMessage()));
   }
 }
