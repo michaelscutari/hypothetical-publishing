@@ -277,6 +277,67 @@ class BookControllerTest {
   }
 
   @Test
+  void searchAuthorsReturnsDistinctSortedResults() throws Exception {
+    Cookie token = login();
+    mockMvc.perform(
+        post("/api/books")
+            .cookie(token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                objectMapper.writeValueAsString(
+                    new BookRequest(
+                        "Book One",
+                        "Author One",
+                        "9780743273565",
+                        null,
+                        2020,
+                        1,
+                        new BigDecimal("0.5")))));
+
+    mockMvc.perform(
+        post("/api/books")
+            .cookie(token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                objectMapper.writeValueAsString(
+                    new BookRequest(
+                        "Book Two",
+                        "Author Two",
+                        "9780743273566",
+                        null,
+                        2020,
+                        2,
+                        new BigDecimal("0.5")))));
+
+    mockMvc.perform(
+        post("/api/books")
+            .cookie(token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                objectMapper.writeValueAsString(
+                    new BookRequest(
+                        "Book Three",
+                        "Author One",
+                        "9780743273567",
+                        null,
+                        2020,
+                        3,
+                        new BigDecimal("0.5")))));
+
+    mockMvc
+        .perform(
+            get("/api/books/authors")
+                .cookie(token)
+                .param("query", "Author")
+                .param("showAll", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(2)))
+        .andExpect(jsonPath("$.content[0]").value("Author One"))
+        .andExpect(jsonPath("$.content[1]").value("Author Two"))
+        .andExpect(jsonPath("$.paged").value(false));
+  }
+
+  @Test
   void createBookReturnsCreatedBook() throws Exception {
     BookRequest request =
         new BookRequest(

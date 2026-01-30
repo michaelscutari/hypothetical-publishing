@@ -4,7 +4,9 @@ import java.math.BigDecimal;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -63,4 +65,15 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
             where s.book.id = :bookId
             """)
   BigDecimal totalAuthorRoyaltyByBook(Long bookId);
+
+  // ---- Requirement 3.2 Author Payments ----
+  @Modifying(clearAutomatically = true)
+  @Query(
+      """
+            update Sale s
+            set s.hasAuthorBeenPaid = true
+            where s.hasAuthorBeenPaid = false
+              and s.book.author = :author
+            """)
+  int markAllPaidByAuthor(@Param("author") String author);
 }
