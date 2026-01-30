@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -29,11 +28,19 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import type { Dayjs } from 'dayjs';
 
-
-
 const MONTH_NAMES = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 const INITIAL_PAGE_SIZE = 25;
@@ -50,17 +57,16 @@ export default function SaleList() {
   const [sortModel, setSortModel] = React.useState<GridSortModel>([
     { field: 'saleYear', sort: 'desc' },
   ]);
- 
 
   const [sales, setSales] = React.useState<SaleResponse[]>([]);
   const [totalCount, setTotalCount] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
   const [booksMap, setBooksMap] = React.useState<Map<number, BookResponse>>(new Map());
-const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
-const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
+  const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
+  const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
 
-const loadData = React.useCallback(async () => {
+  const loadData = React.useCallback(async () => {
     setError(null);
     setIsLoading(true);
 
@@ -69,41 +75,39 @@ const loadData = React.useCallback(async () => {
       const sortDirection = sortModel?.[0]?.sort ?? 'desc';
 
       // Date range filter placeholder - requirement 3.1.2
-    const startDateParam = startDate ? startDate.format('YYYY-MM-DD') : undefined;
-    const endDateParam = endDate ? endDate.format('YYYY-MM-DD') : undefined;
+      const startDateParam = startDate ? startDate.format('YYYY-MM-DD') : undefined;
+      const endDateParam = endDate ? endDate.format('YYYY-MM-DD') : undefined;
 
-
-    //   const response = await SalesService.getSales(
-    //     paginationModel.page,
-    //     paginationModel.pageSize,
-    //     showAll,
-    //     sortField,
-    //     sortDirection,
-    //     startDate,
-    //     endDate,
-    //   );
-    const response = await SalesService.getSales(
-    paginationModel.page,
-    paginationModel.pageSize,
-    showAll,
-    sortField,
-    sortDirection,
-    startDateParam,
-    endDateParam,
-);
-
+      //   const response = await SalesService.getSales(
+      //     paginationModel.page,
+      //     paginationModel.pageSize,
+      //     showAll,
+      //     sortField,
+      //     sortDirection,
+      //     startDate,
+      //     endDate,
+      //   );
+      const response = await SalesService.getSales(
+        paginationModel.page,
+        paginationModel.pageSize,
+        showAll,
+        sortField,
+        sortDirection,
+        startDateParam,
+        endDateParam,
+      );
 
       setSales(response.content ?? []);
       setTotalCount(response.totalElements ?? 0);
 
       // Fetch book details for all sales records
       const uniqueBookIds = Array.from(
-        new Set((response.content ?? []).map((sale) => sale.bookId).filter(Boolean))
+        new Set((response.content ?? []).map((sale) => sale.bookId).filter(Boolean)),
       ) as number[];
 
       if (uniqueBookIds.length > 0) {
         const bookPromises = uniqueBookIds.map((bookId) =>
-          BooksService.getBookById(bookId).catch(() => null)
+          BooksService.getBookById(bookId).catch(() => null),
         );
         const books = await Promise.all(bookPromises);
 
@@ -151,37 +155,36 @@ const loadData = React.useCallback(async () => {
 
   const columns = React.useMemo<GridColDef<SaleResponse>[]>(
     () => [
-        {
-            field: 'bookTitle',
-            headerName: 'Book Title',
-            width: 200,
-            valueGetter: (_value, row) => {
-                const book = booksMap.get(row.bookId ?? 0);
-                return book?.title ?? `Book ${row.bookId}`;
-            },
-            },
-            {
-            field: 'bookAuthor',
-            headerName: 'Author',
-            width: 180,
-            valueGetter: (_value, row) => {
-                const book = booksMap.get(row.bookId ?? 0);
-                return book?.author ?? `Author ${row.bookId}`;
-            },
+      {
+        field: 'bookTitle',
+        headerName: 'Book Title',
+        width: 200,
+        valueGetter: (_value, row) => {
+          const book = booksMap.get(row.bookId ?? 0);
+          return book?.title ?? `Book ${row.bookId}`;
         },
+      },
+      {
+        field: 'bookAuthor',
+        headerName: 'Author',
+        width: 180,
+        valueGetter: (_value, row) => {
+          const book = booksMap.get(row.bookId ?? 0);
+          return book?.author ?? `Author ${row.bookId}`;
+        },
+      },
 
-    
-        {
-        field: 'saleYear',              
+      {
+        field: 'saleYear',
         headerName: 'Month/Year',
         width: 120,
         valueGetter: (_value, row) => {
-            if (row.saleYear && row.saleMonth) {
+          if (row.saleYear && row.saleMonth) {
             return `${MONTH_NAMES[row.saleMonth - 1]} ${row.saleYear}`;
-            }
-            return '';
+          }
+          return '';
         },
-        },
+      },
 
       {
         field: 'quantitySold',
@@ -257,19 +260,19 @@ const loadData = React.useCallback(async () => {
             </div>
           </Tooltip>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-  <DatePicker
-    label="Start"
-    value={startDate}
-    onChange={(v) => setStartDate(v)}
-    slotProps={{ textField: { size: 'small' } }}
-  />
-  <DatePicker
-    label="End"
-    value={endDate}
-    onChange={(v) => setEndDate(v)}
-    slotProps={{ textField: { size: 'small' } }}
-  />
-</LocalizationProvider>
+            <DatePicker
+              label="Start"
+              value={startDate}
+              onChange={(v) => setStartDate(v)}
+              slotProps={{ textField: { size: 'small' } }}
+            />
+            <DatePicker
+              label="End"
+              value={endDate}
+              onChange={(v) => setEndDate(v)}
+              slotProps={{ textField: { size: 'small' } }}
+            />
+          </LocalizationProvider>
 
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             New Sale
@@ -302,9 +305,10 @@ const loadData = React.useCallback(async () => {
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },
-              [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]: {
-                outline: 'none',
-              },
+              [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]:
+                {
+                  outline: 'none',
+                },
               [`& .${gridClasses.row}:hover`]: {
                 cursor: 'pointer',
               },

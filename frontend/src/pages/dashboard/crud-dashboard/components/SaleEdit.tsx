@@ -2,11 +2,9 @@ import * as React from 'react';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import FormHelperText from '@mui/material/FormHelperText';
 import Grid from '@mui/material/Grid';
 import InputAdornment from '@mui/material/InputAdornment';
 import InputLabel from '@mui/material/InputLabel';
@@ -106,8 +104,7 @@ export default function SaleEdit() {
       // Check if royalty was overridden (doesn't match computed value)
       if (book) {
         const expectedRoyalty = (
-          (saleData.publisherRevenue ?? 0) *
-          (book.royaltyRate ?? 0)
+          (saleData.publisherRevenue ?? 0) * (book.royaltyRate ?? 0)
         ).toFixed(2);
         setIsRoyaltyOverridden(String(saleData.authorRoyalty ?? 0) !== expectedRoyalty);
       }
@@ -176,15 +173,29 @@ export default function SaleEdit() {
 
         navigate(`/dashboard/sales/${saleId}`);
       } catch (updateError) {
-        notifications.show(`Failed to update sale record. Reason: ${(updateError as Error).message}`, {
-          severity: 'error',
-          autoHideDuration: 3000,
-        });
+        notifications.show(
+          `Failed to update sale record. Reason: ${(updateError as Error).message}`,
+          {
+            severity: 'error',
+            autoHideDuration: 3000,
+          },
+        );
       } finally {
         setIsSubmitting(false);
       }
     },
-    [selectedBook, saleMonth, saleYear, quantitySold, publisherRevenue, hasAuthorBeenPaid, saleId, royaltyError, notifications, navigate],
+    [
+      selectedBook,
+      saleMonth,
+      saleYear,
+      quantitySold,
+      publisherRevenue,
+      hasAuthorBeenPaid,
+      saleId,
+      royaltyError,
+      notifications,
+      navigate,
+    ],
   );
 
   const handleBack = React.useCallback(() => {
@@ -218,12 +229,7 @@ export default function SaleEdit() {
     }
 
     return sale ? (
-      <Box
-        component="form"
-        onSubmit={handleSubmit}
-        noValidate
-        sx={{ width: '100%' }}
-      >
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
         <Grid container spacing={2} sx={{ mb: 2, width: '100%' }}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth>
@@ -262,11 +268,13 @@ export default function SaleEdit() {
                 setSelectedBook(value);
                 setIsRoyaltyOverridden(false); // Reset override when book changes
               }}
-              getOptionLabel={(option) =>
-                `${option.title} - ${option.author} (${option.isbn13})`
-              }
+              getOptionLabel={(option) => `${option.title} - ${option.author} (${option.isbn13})`}
               renderInput={(params) => (
-                <TextField {...params} label="Book" placeholder="Search by title, author, or ISBN" />
+                <TextField
+                  {...params}
+                  label="Book"
+                  placeholder="Search by title, author, or ISBN"
+                />
               )}
               renderOption={(props, option) => (
                 <li {...props}>
@@ -365,7 +373,26 @@ export default function SaleEdit() {
         </Stack>
       </Box>
     ) : null;
-  }, [isLoading, error, sale, books, selectedBook, saleMonth, saleYear, quantitySold, publisherRevenue, authorRoyalty, hasAuthorBeenPaid, isSubmitting, isRoyaltyOverridden, computedRoyalty, royaltyError, handleRoyaltyChange, handleSubmit, handleBack]);
+  }, [
+    isLoading,
+    error,
+    sale,
+    books,
+    selectedBook,
+    saleMonth,
+    saleYear,
+    quantitySold,
+    publisherRevenue,
+    authorRoyalty,
+    hasAuthorBeenPaid,
+    isSubmitting,
+    isRoyaltyOverridden,
+    computedRoyalty,
+    royaltyError,
+    handleRoyaltyChange,
+    handleSubmit,
+    handleBack,
+  ]);
 
   return (
     <PageContainer
