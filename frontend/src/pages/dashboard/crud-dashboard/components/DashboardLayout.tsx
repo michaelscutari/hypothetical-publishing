@@ -28,7 +28,7 @@ export default function DashboardLayout() {
         setIsMobileNavigationExpanded(newExpanded);
       }
     },
-    [isOverMdViewport, setIsDesktopNavigationExpanded, setIsMobileNavigationExpanded],
+    [isOverMdViewport],
   );
 
   const handleToggleHeaderMenu = React.useCallback(
@@ -48,8 +48,8 @@ export default function DashboardLayout() {
       sx={{
         position: 'relative',
         display: 'flex',
-        overflow: 'hidden',
-        minHeight: '100vh',
+        overflow: 'hidden',       
+        height: '100vh',        
         width: '100%',
       }}
     >
@@ -65,16 +65,18 @@ export default function DashboardLayout() {
           flexDirection: 'column',
           flex: 1,
           minWidth: 0,
+          minHeight: 0,
         }}
       >
-        <Toolbar sx={{ displayPrint: 'none' }} />
+        <Toolbar sx={{ displayPrint: 'none', flexShrink: 0 }} />
         <Box
           component="main"
           sx={{
             display: 'flex',
             flexDirection: 'column',
             flex: 1,
-            overflow: 'auto',
+            minHeight: 0,
+            overflowY: 'auto',
           }}
         >
           <Outlet />
