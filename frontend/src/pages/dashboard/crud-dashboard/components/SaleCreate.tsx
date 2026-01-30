@@ -206,19 +206,18 @@ export default function SaleCreate() {
   );
 
   const handleRevenueChange = React.useCallback(
-  (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    const parsed = value === '' ? null : Number.parseFloat(value);
-    const publisherRevenue =
-      typeof parsed === 'number' && !Number.isNaN(parsed) ? parsed : null;
+    (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      const parsed = value === '' ? null : Number.parseFloat(value);
+      const publisherRevenue = typeof parsed === 'number' && !Number.isNaN(parsed) ? parsed : null;
 
-    updateRecord(index, {
-      publisherRevenue,
-      errors: {},
-    });
-  },
-  [updateRecord],
-);
+      updateRecord(index, {
+        publisherRevenue,
+        errors: {},
+      });
+    },
+    [updateRecord],
+  );
 
   // Requirement: editable royalty, override indicator, delete => revert to computed
   const handleRoyaltyChange = React.useCallback(
