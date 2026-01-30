@@ -5,6 +5,7 @@
 import type { BookRequest } from '../models/BookRequest';
 import type { BookResponse } from '../models/BookResponse';
 import type { PagedBookResponse } from '../models/PagedBookResponse';
+import type { PagedResponseString } from '../models/PagedResponseString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -110,6 +111,32 @@ export class BooksService {
             url: '/api/books',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * Search distinct author names
+     * @param query
+     * @param page
+     * @param size
+     * @param showAll
+     * @returns PagedResponseString OK
+     * @throws ApiError
+     */
+    public static searchAuthors(
+        query?: string,
+        page?: number,
+        size: number = 25,
+        showAll: boolean = false,
+    ): CancelablePromise<PagedResponseString> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/books/authors',
+            query: {
+                'query': query,
+                'page': page,
+                'size': size,
+                'showAll': showAll,
+            },
         });
     }
 }
