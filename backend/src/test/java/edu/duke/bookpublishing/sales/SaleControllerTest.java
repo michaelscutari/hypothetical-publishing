@@ -113,7 +113,7 @@ class SaleControllerTest {
     Book book = createBook();
 
     SaleRequest request =
-        new SaleRequest(book.getId(), 1, 2024, 50, new BigDecimal("100.00"), true);
+        new SaleRequest(book.getId(), 1, 2024, 50, new BigDecimal("100.00"), null, true);
 
     mockMvc
         .perform(
@@ -145,6 +145,7 @@ class SaleControllerTest {
             future.getYear(),
             1,
             new BigDecimal("10.00"),
+            null,
             false);
 
     mockMvc
@@ -163,7 +164,8 @@ class SaleControllerTest {
 
     SaleResponse created =
         createSale(
-            token, new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), false));
+            token,
+            new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), null, false));
 
     mockMvc
         .perform(get("/api/sales/{id}", created.id()).cookie(token))
@@ -179,9 +181,11 @@ class SaleControllerTest {
 
     SaleResponse created =
         createSale(
-            token, new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), false));
+            token,
+            new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), null, false));
 
-    SaleRequest update = new SaleRequest(book.getId(), 3, 2024, 25, new BigDecimal("200.00"), true);
+    SaleRequest update =
+        new SaleRequest(book.getId(), 3, 2024, 25, new BigDecimal("200.00"), null, true);
 
     mockMvc
         .perform(
@@ -204,7 +208,8 @@ class SaleControllerTest {
 
     SaleResponse created =
         createSale(
-            token, new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), false));
+            token,
+            new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), null, false));
 
     mockMvc
         .perform(delete("/api/sales/{id}", created.id()).cookie(token))
@@ -221,7 +226,8 @@ class SaleControllerTest {
     Book book = createBook();
 
     for (int i = 1; i <= 30; i++) {
-      createSale(token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), false));
+      createSale(
+          token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), null, false));
     }
 
     mockMvc
@@ -237,7 +243,8 @@ class SaleControllerTest {
     Book book = createBook();
 
     for (int i = 1; i <= 30; i++) {
-      createSale(token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), false));
+      createSale(
+          token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), null, false));
     }
 
     mockMvc
@@ -262,7 +269,8 @@ class SaleControllerTest {
     Book book = createBook();
 
     for (int i = 1; i <= 21; i++) {
-      createSale(token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), false));
+      createSale(
+          token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), null, false));
     }
 
     mockMvc
@@ -286,9 +294,12 @@ class SaleControllerTest {
     Cookie token = login();
     Book book = createBook();
 
-    createSale(token, new SaleRequest(book.getId(), 1, 2024, 5, new BigDecimal("10.00"), false));
-    createSale(token, new SaleRequest(book.getId(), 3, 2024, 5, new BigDecimal("10.00"), false));
-    createSale(token, new SaleRequest(book.getId(), 5, 2024, 5, new BigDecimal("10.00"), false));
+    createSale(
+        token, new SaleRequest(book.getId(), 1, 2024, 5, new BigDecimal("10.00"), null, false));
+    createSale(
+        token, new SaleRequest(book.getId(), 3, 2024, 5, new BigDecimal("10.00"), null, false));
+    createSale(
+        token, new SaleRequest(book.getId(), 5, 2024, 5, new BigDecimal("10.00"), null, false));
 
     LocalDate start = LocalDate.of(2024, 3, 1);
     LocalDate end = LocalDate.of(2024, 4, 30);

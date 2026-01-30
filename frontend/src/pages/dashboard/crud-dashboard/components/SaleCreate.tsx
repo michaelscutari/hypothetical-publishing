@@ -19,6 +19,8 @@ import {
   TableRow,
   TextField,
   Typography,
+  type AutocompleteRenderInputParams,
+  type SelectChangeEvent,
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -28,10 +30,19 @@ import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 import { FormControlLabel, Switch } from '@mui/material';
 
-
 const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 interface SaleRecordInput {
@@ -61,9 +72,7 @@ export default function SaleCreate() {
   const navigate = useNavigate();
   const notifications = useNotifications();
 
-  const [records, setRecords] = React.useState<SaleRecordInput[]>([
-    createEmptyRecord(),
-  ]);
+  const [records, setRecords] = React.useState<SaleRecordInput[]>([createEmptyRecord()]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [books, setBooks] = React.useState<BookResponse[]>([]);
   const [bookSearchInput, setBookSearchInput] = React.useState('');
@@ -86,12 +95,10 @@ export default function SaleCreate() {
       authorRoyalty: null,
       isRoyaltyOverridden: false,
       hasAuthorBeenPaid: defaults?.hasAuthorBeenPaid ?? false,
-      
+
       errors: {},
     };
   }
-
-  
 
   // Load books for autocomplete
   const loadBooks = React.useCallback(async (searchQuery: string) => {
@@ -123,45 +130,44 @@ export default function SaleCreate() {
     loadBooks('');
   }, [loadBooks]);
 
-  const updateRecord = React.useCallback(
-    (index: number, updates: Partial<SaleRecordInput>) => {
-      setRecords((prev) => {
-        const newRecords = [...prev];
-        const next = { ...newRecords[index], ...updates };
+  const updateRecord = React.useCallback((index: number, updates: Partial<SaleRecordInput>) => {
+    setRecords((prev) => {
+      const newRecords = [...prev];
+      const next = { ...newRecords[index], ...updates };
 
-        // Auto-calc royalty if NOT overridden and we have book+revenue.
-        // Trigger on revenue OR book change (not just revenue).
-        const revenueChanged = updates.publisherRevenue !== undefined;
-        const bookChanged = updates.book !== undefined;
+      // Auto-calc royalty if NOT overridden and we have book+revenue.
+      // Trigger on revenue OR book change (not just revenue).
+      const revenueChanged = updates.publisherRevenue !== undefined;
+      const bookChanged = updates.book !== undefined;
 
-        if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
-          next.authorRoyalty = computeRoyalty(next.book, next.publisherRevenue);
-        }
+      if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
+        next.authorRoyalty = computeRoyalty(next.book, next.publisherRevenue);
+      }
 
-        newRecords[index] = next;
+      newRecords[index] = next;
 
-        // Requirement 3.4.2: Auto-add new row when current row is being filled
-        const isLastRecord = index === newRecords.length - 1;
-        const hasMinimalData = !!(next.saleMonth && next.saleYear && next.book);
+      // Requirement 3.4.2: Auto-add new row when current row is being filled
+      const isLastRecord = index === newRecords.length - 1;
+      const hasMinimalData = !!(next.saleMonth && next.saleYear && next.book);
 
-        if (isLastRecord && hasMinimalData) {
-          newRecords.push(
-            createEmptyRecord({
-              saleMonth: next.saleMonth,
-              saleYear: next.saleYear,
-            }),
-          );
-        }
+      if (isLastRecord && hasMinimalData) {
+        newRecords.push(
+          createEmptyRecord({
+            saleMonth: next.saleMonth,
+            saleYear: next.saleYear,
+          }),
+        );
+      }
 
-        return newRecords;
-      });
-    },
-    [],
-  );
+      return newRecords;
+    });
+  }, []);
 
   const handleMonthChange = React.useCallback(
-    (index: number) => (event: any) => {
-      updateRecord(index, { saleMonth: event.target.value, errors: {} });
+    (index: number) => (event: SelectChangeEvent<number | string>) => {
+      const val = event.target.value;
+      const month = val === '' ? null : Number(val);
+      updateRecord(index, { saleMonth: month, errors: {} });
     },
     [updateRecord],
   );
@@ -178,10 +184,9 @@ export default function SaleCreate() {
   );
 
   const handleBookChange = React.useCallback(
-    (index: number) => (_event: any, value: BookResponse | null) => {
+    (index: number) => (_event: React.SyntheticEvent, value: BookResponse | null) => {
       updateRecord(index, {
         book: value,
-        // If the user had overridden, switching books should reset to computed
         isRoyaltyOverridden: false,
         errors: {},
       });
@@ -201,16 +206,19 @@ export default function SaleCreate() {
   );
 
   const handleRevenueChange = React.useCallback(
-    (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      const revenue = value === '' ? null : parseFloat(value);
-      updateRecord(index, {
-        publisherRevenue: Number.isNaN(revenue as any) ? null : revenue,
-        errors: {},
-      });
-    },
-    [updateRecord],
-  );
+  (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = event.target.value;
+    const parsed = value === '' ? null : Number.parseFloat(value);
+    const publisherRevenue =
+      typeof parsed === 'number' && !Number.isNaN(parsed) ? parsed : null;
+
+    updateRecord(index, {
+      publisherRevenue,
+      errors: {},
+    });
+  },
+  [updateRecord],
+);
 
   // Requirement: editable royalty, override indicator, delete => revert to computed
   const handleRoyaltyChange = React.useCallback(
@@ -240,12 +248,11 @@ export default function SaleCreate() {
   );
 
   const handlePaidChange = React.useCallback(
-  (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-    updateRecord(index, { hasAuthorBeenPaid: event.target.checked, errors: {} });
-  },
-  [updateRecord],
-);
-
+    (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      updateRecord(index, { hasAuthorBeenPaid: event.target.checked, errors: {} });
+    },
+    [updateRecord],
+  );
 
   const handleDeleteRecord = React.useCallback(
     (index: number) => () => {
@@ -306,14 +313,10 @@ export default function SaleCreate() {
       (r) => r.saleMonth || r.saleYear || r.book || r.quantitySold || r.publisherRevenue,
     );
 
-    const validatedRecords = filledRecords.map((record) => ({
-      ...record,
-      isValid: validateRecord(record),
-    }));
+    const allValid = filledRecords.every((record) => validateRecord(record));
 
-    setRecords(validatedRecords as any);
+    setRecords(filledRecords);
 
-    const allValid = validatedRecords.every((r) => r.isValid);
     if (!allValid) {
       notifications.show('Please fix validation errors before submitting', {
         severity: 'error',
@@ -325,22 +328,22 @@ export default function SaleCreate() {
     setIsSubmitting(true);
 
     try {
-      const promises = validatedRecords.map((record) =>
-        SalesService.createSale({
+      const promises = filledRecords.map((record) => {
+        const req: SalesService.createSale = {
           bookId: record.book!.id!,
           saleMonth: record.saleMonth!,
           saleYear: record.saleYear!,
           quantitySold: record.quantitySold!,
           publisherRevenue: record.publisherRevenue!,
           hasAuthorBeenPaid: record.hasAuthorBeenPaid,
-          authorRoyalty: record.authorRoyalty,
-        } as any),
-      );
-      
+          authorRoyalty: record.authorRoyalty ?? undefined,
+        };
+        return SalesService.createSale(req);
+      });
 
       await Promise.all(promises);
 
-      notifications.show(`Successfully created ${validatedRecords.length} sale record(s)`, {
+      notifications.show(`Successfully created ${filledRecords.length} sale record(s)`, {
         severity: 'success',
         autoHideDuration: 3000,
       });
@@ -363,16 +366,12 @@ export default function SaleCreate() {
   return (
     <PageContainer
       title="New Sales Records"
-      breadcrumbs={[
-        { title: 'Sales Records', path: '/dashboard/sales' },
-        { title: 'New' },
-      ]}
+      breadcrumbs={[{ title: 'Sales Records', path: '/dashboard/sales' }, { title: 'New' }]}
     >
       <Stack spacing={3} sx={{ width: '100%' }}>
         <Typography variant="body2" color="text.secondary">
-          Enter multiple sale records efficiently. The month/year will carry forward to
-          help you input multiple sales from the same period. Use Tab to navigate between
-          fields.
+          Enter multiple sale records efficiently. The month/year will carry forward to help you
+          input multiple sales from the same period. Use Tab to navigate between fields.
         </Typography>
 
         <TableContainer component={Paper}>
@@ -396,29 +395,29 @@ export default function SaleCreate() {
                   <TableCell>
                     <FormControl fullWidth size="small" error={!!record.errors.saleMonth}>
                       <Select
-                    value={record.saleMonth ?? ''}
-                    onChange={handleMonthChange(index)}
-                    displayEmpty
-                    renderValue={(selected) => {
-                        if (!selected) {
-                        return (
-                            <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
-                            Month
-                            </Typography>
-                        );
-                        }
-                        return MONTH_NAMES[(selected as number) - 1];
-                    }}
->
-  <MenuItem value="" disabled>
-    Month
-  </MenuItem>
-  {MONTH_NAMES.map((month, idx) => (
-    <MenuItem key={idx + 1} value={idx + 1}>
-      {month}
-    </MenuItem>
-  ))}
-</Select>
+                        value={record.saleMonth ?? ''}
+                        onChange={handleMonthChange(index)}
+                        displayEmpty
+                        renderValue={(selected) => {
+                          if (!selected) {
+                            return (
+                              <Typography color="text.secondary" sx={{ fontSize: '0.875rem' }}>
+                                Month
+                              </Typography>
+                            );
+                          }
+                          return MONTH_NAMES[(selected as number) - 1];
+                        }}
+                      >
+                        <MenuItem value="" disabled>
+                          Month
+                        </MenuItem>
+                        {MONTH_NAMES.map((month, idx) => (
+                          <MenuItem key={idx + 1} value={idx + 1}>
+                            {month}
+                          </MenuItem>
+                        ))}
+                      </Select>
 
                       {record.errors.saleMonth && (
                         <FormHelperText>{record.errors.saleMonth}</FormHelperText>
@@ -452,13 +451,8 @@ export default function SaleCreate() {
                         `${option.title} - ${option.author} (${option.isbn13})`
                       }
                       filterOptions={(x) => x}
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          placeholder="Search by title, author, or ISBN"
-                          error={!!record.errors.book}
-                          helperText={record.errors.book}
-                        />
+                      renderInput={(params: AutocompleteRenderInputParams) => (
+                        <TextField {...params} placeholder="Search by title, author, or ISBN" />
                       )}
                       renderOption={(props, option) => (
                         <li {...props}>
@@ -504,55 +498,54 @@ export default function SaleCreate() {
                       }}
                     />
                   </TableCell>
-                 <TableCell>
-  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-    <TextField
-      size="small"
-      type="number"
-      placeholder="0.00"
-      value={record.authorRoyalty ?? ''}
-      onChange={handleRoyaltyChange(index)}
-      error={!!record.errors.authorRoyalty}
-      helperText={
-        record.errors.authorRoyalty ||
-        (record.publisherRevenue == null || record.book == null
-        )
-      }
-      inputProps={{ min: 0, step: 0.01 }}
-      fullWidth
-      InputProps={{
-        startAdornment: <Typography>$</Typography>,
-      }}
-      sx={{
-        '& .MuiInputBase-root': record.isRoyaltyOverridden
-          ? { bgcolor: 'warning.lighter' }
-          : undefined,
-      }}
-    />
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <TextField
+                        size="small"
+                        type="number"
+                        placeholder="0.00"
+                        value={record.authorRoyalty ?? ''}
+                        onChange={handleRoyaltyChange(index)}
+                        error={!!record.errors.authorRoyalty}
+                        helperText={
+                          record.errors.authorRoyalty ||
+                          record.publisherRevenue == null ||
+                          record.book == null
+                        }
+                        inputProps={{ min: 0, step: 0.01 }}
+                        fullWidth
+                        InputProps={{
+                          startAdornment: <Typography>$</Typography>,
+                        }}
+                        sx={
+                          record.isRoyaltyOverridden
+                            ? { '& .MuiInputBase-root': { bgcolor: 'warning.lighter' } }
+                            : undefined
+                        }
+                      />
 
-    {record.isRoyaltyOverridden && (
-      <Chip
-        label="Override"
-        size="small"
-        color="warning"
-        sx={{ ml: 'auto', height: 20, fontSize: '0.7rem' }}
-      />
-    )}
-  </Box>
-</TableCell>
-<TableCell>
-                <FormControlLabel
-                    sx={{ m: 0 }}
-                    control={
-                    <Switch
-                        checked={record.hasAuthorBeenPaid}
-                        onChange={handlePaidChange(index)}
+                      {record.isRoyaltyOverridden && (
+                        <Chip
+                          label="Override"
+                          size="small"
+                          color="warning"
+                          sx={{ ml: 'auto', height: 20, fontSize: '0.7rem' }}
+                        />
+                      )}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <FormControlLabel
+                      sx={{ m: 0 }}
+                      control={
+                        <Switch
+                          checked={record.hasAuthorBeenPaid}
+                          onChange={handlePaidChange(index)}
+                        />
+                      }
+                      label={undefined}
                     />
-                    }
-                />
-                </TableCell>
-
-
+                  </TableCell>
 
                   <TableCell>
                     {records.length > 1 && (
@@ -572,11 +565,7 @@ export default function SaleCreate() {
         </TableContainer>
 
         <Stack direction="row" spacing={2} justifyContent="space-between">
-          <Button
-            variant="outlined"
-            startIcon={<ArrowBackIcon />}
-            onClick={handleBack}
-          >
+          <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBack}>
             Cancel
           </Button>
           <Button

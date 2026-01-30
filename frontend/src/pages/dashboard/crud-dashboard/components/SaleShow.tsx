@@ -101,10 +101,13 @@ export default function SaleShow() {
           autoHideDuration: 3000,
         });
       } catch (deleteError) {
-        notifications.show(`Failed to delete sale record. Reason: ${(deleteError as Error).message}`, {
-          severity: 'error',
-          autoHideDuration: 3000,
-        });
+        notifications.show(
+          `Failed to delete sale record. Reason: ${(deleteError as Error).message}`,
+          {
+            severity: 'error',
+            autoHideDuration: 3000,
+          },
+        );
       }
       setIsLoading(false);
     }

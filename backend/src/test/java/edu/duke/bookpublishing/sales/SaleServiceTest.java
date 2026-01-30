@@ -114,7 +114,7 @@ class SaleServiceTest {
     when(saleRepository.save(any(Sale.class)))
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
-    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, new BigDecimal("100.00"), false);
+    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, new BigDecimal("100.00"), null, false);
 
     Sale result = saleService.createSale(request);
 
@@ -134,7 +134,7 @@ class SaleServiceTest {
   void createSaleThrowsWhenBookMissing() {
     when(bookRepository.findById(1L)).thenReturn(Optional.empty());
 
-    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, new BigDecimal("100.00"), false);
+    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, new BigDecimal("100.00"), null, false);
 
     assertThrows(NotFoundException.class, () -> saleService.createSale(request));
   }
@@ -142,7 +142,7 @@ class SaleServiceTest {
   @Test
   void createSaleThrowsWhenPublisherRevenueNull() {
     when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
-    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, null, false);
+    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, null, null, false);
     assertThrows(DataIntegrityViolationException.class, () -> saleService.createSale(request));
   }
 
@@ -176,7 +176,7 @@ class SaleServiceTest {
     when(saleRepository.save(any(Sale.class)))
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
-    SaleRequest request = new SaleRequest(2L, 3, 2024, 25, new BigDecimal("200.00"), true);
+    SaleRequest request = new SaleRequest(2L, 3, 2024, 25, new BigDecimal("200.00"), null, true);
 
     Sale result = saleService.updateSale(10L, request);
 
