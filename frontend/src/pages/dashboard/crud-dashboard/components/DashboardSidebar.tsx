@@ -15,7 +15,6 @@ import * as React from 'react';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
-import PersonIcon from '@mui/icons-material/Person';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
@@ -25,7 +24,6 @@ import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
 import { getDrawerSxTransitionMixin, getDrawerWidthTransitionMixin } from '../mixins';
 import DashboardSidebarDividerItem from './DashboardSidebarDividerItem';
-import DashboardSidebarHeaderItem from './DashboardSidebarHeaderItem';
 import DashboardSidebarPageItem from './DashboardSidebarPageItem';
 
 export interface DashboardSidebarProps {
@@ -182,7 +180,6 @@ export default function DashboardSidebar({
                 width: mini ? MINI_DRAWER_WIDTH : 'auto',
               }}
             >
-              <DashboardSidebarHeaderItem>Main items</DashboardSidebarHeaderItem>
               <DashboardSidebarPageItem
                 id="books"
                 title="Books"
@@ -195,13 +192,6 @@ export default function DashboardSidebar({
                 }
               />
               <DashboardSidebarPageItem
-                id="employees"
-                title="Employees"
-                icon={<PersonIcon />}
-                href="/dashboard/employees"
-                selected={!!matchPath('/dashboard/employees/*', pathname)}
-              />
-              <DashboardSidebarPageItem
                 id="sales"
                 title="Sales Records"
                 icon={<ReceiptIcon />}
@@ -209,49 +199,6 @@ export default function DashboardSidebar({
                 selected={!!matchPath('/dashboard/sales/*', pathname)}
               />
               <DashboardSidebarDividerItem />
-              <DashboardSidebarHeaderItem>Example items</DashboardSidebarHeaderItem>
-              <DashboardSidebarPageItem
-                id="reports"
-                title="Reports"
-                icon={<BarChartIcon />}
-                href="/dashboard/reports"
-                selected={!!matchPath('/dashboard/reports', pathname)}
-                defaultExpanded={!!matchPath('/dashboard/reports', pathname)}
-                expanded={expandedItemIds.includes('reports')}
-                nestedNavigation={
-                  <List
-                    dense
-                    sx={{
-                      padding: 0,
-                      my: 1,
-                      pl: mini ? 0 : 1,
-                      minWidth: 240,
-                    }}
-                  >
-                    <DashboardSidebarPageItem
-                      id="sales"
-                      title="Sales"
-                      icon={<DescriptionIcon />}
-                      href="/dashboard/reports/sales"
-                      selected={!!matchPath('/dashboard/reports/sales', pathname)}
-                    />
-                    <DashboardSidebarPageItem
-                      id="traffic"
-                      title="Traffic"
-                      icon={<DescriptionIcon />}
-                      href="/dashboard/reports/traffic"
-                      selected={!!matchPath('/dashboard/reports/traffic', pathname)}
-                    />
-                  </List>
-                }
-              />
-              <DashboardSidebarPageItem
-                id="integrations"
-                title="Integrations"
-                icon={<LayersIcon />}
-                href="/dashboard/integrations"
-                selected={!!matchPath('/dashboard/integrations', pathname)}
-              />
             </List>
           </Box>
 
