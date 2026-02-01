@@ -25,20 +25,41 @@ import useNotifications from '../hooks/useNotifications/useNotifications';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 
 const MONTH_NAMES = [
-  'January','February','March','April','May','June','July','August','September','October','November','December'
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 type Props = {
   bookId?: number;
   onChange?: () => void;
-  sales?: salesData.Sale[];               
-  reloadSales?: () => Promise<void>;     
+  sales?: salesData.Sale[];
+  reloadSales?: () => Promise<void>;
 };
 
 type Order = 'asc' | 'desc';
-type OrderBy = 'saleDate' | 'quantitySold' | 'publisherRevenue' | 'authorRoyalty' | 'hasAuthorBeenPaid';
+type OrderBy =
+  | 'saleDate'
+  | 'quantitySold'
+  | 'publisherRevenue'
+  | 'authorRoyalty'
+  | 'hasAuthorBeenPaid';
 
-export default function BookSalesList({ bookId, onChange, sales: controlledSales, reloadSales }: Props) {
+export default function BookSalesList({
+  bookId,
+  onChange,
+  sales: controlledSales,
+  reloadSales,
+}: Props) {
   const navigate = useNavigate();
   const notifications = useNotifications();
   const dialogs = useDialogs();
@@ -110,13 +131,19 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
 
         onChange?.();
       } catch (e) {
-        notifications.show(`Failed to delete sale: ${(e as Error).message}`, { severity: 'error', autoHideDuration: 3000 });
+        notifications.show(`Failed to delete sale: ${(e as Error).message}`, {
+          severity: 'error',
+          autoHideDuration: 3000,
+        });
       }
     },
     [dialogs, load, notifications, onChange, reloadSales],
   );
 
-  const currency = React.useMemo(() => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }), []);
+  const currency = React.useMemo(
+    () => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
+    [],
+  );
 
   const parseMonth = React.useCallback((v: string | null) => {
     if (!v) return null;
@@ -180,7 +207,10 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
     };
   };
 
-  const stableSort = (array: salesData.Sale[], comparator: (a: salesData.Sale, b: salesData.Sale) => number) => {
+  const stableSort = (
+    array: salesData.Sale[],
+    comparator: (a: salesData.Sale, b: salesData.Sale) => number,
+  ) => {
     const stabilized = array.map((el, index) => [el, index] as [salesData.Sale, number]);
     stabilized.sort((a, b) => {
       const orderRes = comparator(a[0], b[0]);
@@ -231,7 +261,13 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
 
   return (
     <Paper sx={{ p: 2 }}>
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ mb: 2 }} spacing={2}>
+      <Stack
+        direction="row"
+        alignItems="center"
+        justifyContent="space-between"
+        sx={{ mb: 2 }}
+        spacing={2}
+      >
         <Typography variant="h6">Sales Records</Typography>
 
         <Stack direction="row" spacing={1} alignItems="center">
@@ -265,7 +301,11 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
             Clear
           </Button>
 
-          <Button variant="outlined" size="small" onClick={() => navigate(`/dashboard/sales/new?bookId=${bookId ?? ''}`)}>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={() => navigate(`/dashboard/sales/new?bookId=${bookId ?? ''}`)}
+          >
             Add sale
           </Button>
           <Button variant="outlined" size="small" onClick={() => navigate('/dashboard/sales/bulk')}>
@@ -279,7 +319,9 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
           <CircularProgress size={24} />
         </Box>
       ) : filteredSortedSales.length === 0 ? (
-        <Typography variant="body2">No sales recorded for this book (in the selected range).</Typography>
+        <Typography variant="body2">
+          No sales recorded for this book (in the selected range).
+        </Typography>
       ) : (
         <TableContainer>
           <Table size="small">
@@ -305,7 +347,10 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
                   </TableSortLabel>
                 </TableCell>
 
-                <TableCell align="right" sortDirection={orderBy === 'publisherRevenue' ? order : false}>
+                <TableCell
+                  align="right"
+                  sortDirection={orderBy === 'publisherRevenue' ? order : false}
+                >
                   <TableSortLabel
                     active={orderBy === 'publisherRevenue'}
                     direction={orderBy === 'publisherRevenue' ? order : 'desc'}
@@ -315,7 +360,10 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
                   </TableSortLabel>
                 </TableCell>
 
-                <TableCell align="right" sortDirection={orderBy === 'authorRoyalty' ? order : false}>
+                <TableCell
+                  align="right"
+                  sortDirection={orderBy === 'authorRoyalty' ? order : false}
+                >
                   <TableSortLabel
                     active={orderBy === 'authorRoyalty'}
                     direction={orderBy === 'authorRoyalty' ? order : 'desc'}
@@ -325,7 +373,10 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
                   </TableSortLabel>
                 </TableCell>
 
-                <TableCell align="center" sortDirection={orderBy === 'hasAuthorBeenPaid' ? order : false}>
+                <TableCell
+                  align="center"
+                  sortDirection={orderBy === 'hasAuthorBeenPaid' ? order : false}
+                >
                   <TableSortLabel
                     active={orderBy === 'hasAuthorBeenPaid'}
                     direction={orderBy === 'hasAuthorBeenPaid' ? order : 'desc'}
@@ -341,8 +392,10 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
 
             <TableBody>
               {filteredSortedSales.map((s) => {
-                const monthLabel = s.saleMonth && s.saleYear ? `${MONTH_NAMES[s.saleMonth - 1]} ${s.saleYear}` : '—';
-                const computedAuthorRoyalty = (s as any).authorRoyalty != null ? Number((s as any).authorRoyalty) : null;
+                const monthLabel =
+                  s.saleMonth && s.saleYear ? `${MONTH_NAMES[s.saleMonth - 1]} ${s.saleYear}` : '—';
+                const computedAuthorRoyalty =
+                  (s as any).authorRoyalty != null ? Number((s as any).authorRoyalty) : null;
                 return (
                   <TableRow
                     key={s.id}
@@ -358,8 +411,12 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
                     </TableCell>
 
                     <TableCell align="right">{s.quantitySold ?? 0}</TableCell>
-                    <TableCell align="right">{currency.format(Number(s.publisherRevenue ?? 0))}</TableCell>
-                    <TableCell align="right">{computedAuthorRoyalty != null ? currency.format(computedAuthorRoyalty) : '—'}</TableCell>
+                    <TableCell align="right">
+                      {currency.format(Number(s.publisherRevenue ?? 0))}
+                    </TableCell>
+                    <TableCell align="right">
+                      {computedAuthorRoyalty != null ? currency.format(computedAuthorRoyalty) : '—'}
+                    </TableCell>
 
                     <TableCell align="center">
                       {s.hasAuthorBeenPaid ? (
@@ -375,12 +432,20 @@ export default function BookSalesList({ bookId, onChange, sales: controlledSales
 
                     <TableCell align="center" onClick={(e) => e.stopPropagation()}>
                       <Tooltip title="Edit">
-                        <IconButton size="small" onClick={() => handleEdit(s.id)} aria-label="edit-sale">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleEdit(s.id)}
+                          aria-label="edit-sale"
+                        >
                           <EditOutlinedIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                       <Tooltip title="Delete">
-                        <IconButton size="small" onClick={() => handleDelete(s.id)} aria-label="delete-sale">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleDelete(s.id)}
+                          aria-label="delete-sale"
+                        >
                           <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>

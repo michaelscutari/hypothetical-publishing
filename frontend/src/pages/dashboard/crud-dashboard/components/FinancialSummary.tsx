@@ -17,7 +17,12 @@ type Props = {
   isLoading?: boolean;
 };
 
-export default function FinancialSummary({ bookId, royaltyRate, sales: controlledSales, isLoading: controlledLoading }: Props) {
+export default function FinancialSummary({
+  bookId,
+  royaltyRate,
+  sales: controlledSales,
+  isLoading: controlledLoading,
+}: Props) {
   const notifications = useNotifications();
 
   const [internalSales, setInternalSales] = React.useState<salesData.Sale[]>([]);
@@ -85,7 +90,8 @@ export default function FinancialSummary({ bookId, royaltyRate, sales: controlle
     const qty = Number(s.quantitySold ?? 0);
 
     const arFromField = (s as any).authorRoyalty != null ? Number((s as any).authorRoyalty) : null;
-    const arComputed = arFromField != null ? arFromField : royaltyRate != null ? pr * royaltyRate : 0;
+    const arComputed =
+      arFromField != null ? arFromField : royaltyRate != null ? pr * royaltyRate : 0;
 
     publisherRevenue += pr;
     totalQuantitySold += Number.isFinite(qty) ? qty : 0;
@@ -105,7 +111,10 @@ export default function FinancialSummary({ bookId, royaltyRate, sales: controlle
     totalQuantitySold,
   };
 
-  const currency = React.useMemo(() => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }), []);
+  const currency = React.useMemo(
+    () => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
+    [],
+  );
 
   if (loading) {
     return (

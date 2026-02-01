@@ -8,7 +8,6 @@ import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
 
 export type Sale = SaleResponse;
 
-
 export async function getMany({
   paginationModel,
   sortModel,
@@ -62,10 +61,7 @@ export async function createOne(data: SaleRequest): Promise<Sale> {
   });
 }
 
-export async function updateOne(
-  saleId: number,
-  data: Partial<SaleRequest>,
-): Promise<Sale> {
+export async function updateOne(saleId: number, data: Partial<SaleRequest>): Promise<Sale> {
   const request: SaleRequest = {
     bookId: data.bookId ?? 0,
     saleMonth: data.saleMonth ?? 1,
