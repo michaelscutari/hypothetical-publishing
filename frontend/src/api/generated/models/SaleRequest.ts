@@ -27,6 +27,10 @@ export type SaleRequest = {
      */
     publisherRevenue: number;
     /**
+     * Optional overridden author royalty in USD. If omitted, royalty is computed automatically.
+     */
+    authorRoyalty?: number;
+    /**
      * Indicates whether the author has been paid
      */
     hasAuthorBeenPaid?: boolean;
