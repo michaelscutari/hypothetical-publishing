@@ -158,55 +158,6 @@ export default function BookSalesList({
     return y * 100 + m;
   }, []);
 
-  const compareNumber = (a: number | undefined | null, b: number | undefined | null) => {
-    const na = Number(a ?? 0);
-    const nb = Number(b ?? 0);
-    if (na < nb) return -1;
-    if (na > nb) return 1;
-    return 0;
-  };
-
-  const compareBoolean = (a: boolean | undefined, b: boolean | undefined) => {
-    const va = a ? 1 : 0;
-    const vb = b ? 1 : 0;
-    if (va < vb) return -1;
-    if (va > vb) return 1;
-    return 0;
-  };
-
-  const getComparator = (ord: Order, ordBy: OrderBy) => {
-    return (a: salesData.Sale, b: salesData.Sale) => {
-      let cmp = 0;
-      switch (ordBy) {
-        case 'saleDate': {
-          cmp = saleToKey(a) - saleToKey(b);
-          break;
-        }
-        case 'quantitySold': {
-          cmp = compareNumber(a.quantitySold, b.quantitySold);
-          break;
-        }
-        case 'publisherRevenue': {
-          cmp = compareNumber(a.publisherRevenue, b.publisherRevenue);
-          break;
-        }
-        case 'authorRoyalty': {
-          const arA = (a as any).authorRoyalty != null ? Number((a as any).authorRoyalty) : 0;
-          const arB = (b as any).authorRoyalty != null ? Number((b as any).authorRoyalty) : 0;
-          cmp = compareNumber(arA, arB);
-          break;
-        }
-        case 'hasAuthorBeenPaid': {
-          cmp = compareBoolean(a.hasAuthorBeenPaid, b.hasAuthorBeenPaid);
-          break;
-        }
-        default:
-          cmp = 0;
-      }
-      return ord === 'asc' ? cmp : -cmp;
-    };
-  };
-
   const stableSort = (
     array: salesData.Sale[],
     comparator: (a: salesData.Sale, b: salesData.Sale) => number,
@@ -240,9 +191,49 @@ export default function BookSalesList({
   }, [sales, startMonth, endMonth, parseMonth, saleToKey]);
 
   const filteredSortedSales = React.useMemo(() => {
-    const comparator = getComparator(order, orderBy);
+    // helpers moved inside the memo so they don't appear in the hook deps
+    const compareNumber = (a: number | undefined | null, b: number | undefined | null) => {
+      const na = Number(a ?? 0);
+      const nb = Number(b ?? 0);
+      if (na < nb) return -1;
+      if (na > nb) return 1;
+      return 0;
+    };
+
+    const compareBoolean = (a: boolean | undefined, b: boolean | undefined) => {
+      const va = a ? 1 : 0;
+      const vb = b ? 1 : 0;
+      if (va < vb) return -1;
+      if (va > vb) return 1;
+      return 0;
+    };
+
+    const comparator = (a: salesData.Sale, b: salesData.Sale) => {
+      let cmp = 0;
+      switch (orderBy) {
+        case 'saleDate':
+          cmp = saleToKey(a) - saleToKey(b);
+          break;
+        case 'quantitySold':
+          cmp = compareNumber(a.quantitySold, b.quantitySold);
+          break;
+        case 'publisherRevenue':
+          cmp = compareNumber(a.publisherRevenue, b.publisherRevenue);
+          break;
+        case 'authorRoyalty':
+          cmp = compareNumber(a.authorRoyalty ?? 0, b.authorRoyalty ?? 0);
+          break;
+        case 'hasAuthorBeenPaid':
+          cmp = compareBoolean(a.hasAuthorBeenPaid, b.hasAuthorBeenPaid);
+          break;
+        default:
+          cmp = 0;
+      }
+      return order === 'asc' ? cmp : -cmp;
+    };
+
     return stableSort(filteredSales, comparator);
-  }, [filteredSales, order, orderBy]);
+  }, [filteredSales, order, orderBy, saleToKey]);
 
   const handleRequestSort = (property: OrderBy) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -394,8 +385,7 @@ export default function BookSalesList({
               {filteredSortedSales.map((s) => {
                 const monthLabel =
                   s.saleMonth && s.saleYear ? `${MONTH_NAMES[s.saleMonth - 1]} ${s.saleYear}` : '—';
-                const computedAuthorRoyalty =
-                  (s as any).authorRoyalty != null ? Number((s as any).authorRoyalty) : null;
+                const computedAuthorRoyalty = s.authorRoyalty != null ? s.authorRoyalty : null;
                 return (
                   <TableRow
                     key={s.id}

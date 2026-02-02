@@ -82,7 +82,7 @@ export default function BookShow() {
         return bKey - aKey;
       });
       setSales(sorted);
-    } catch (e) {
+    } catch {
       setSales([]);
     } finally {
       setIsSalesLoading(false);

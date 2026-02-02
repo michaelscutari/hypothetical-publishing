@@ -89,7 +89,7 @@ export default function FinancialSummary({
     const pr = Number(s.publisherRevenue ?? 0);
     const qty = Number(s.quantitySold ?? 0);
 
-    const arFromField = (s as any).authorRoyalty != null ? Number((s as any).authorRoyalty) : null;
+    const arFromField = s.authorRoyalty != null ? s.authorRoyalty : null;
     const arComputed =
       arFromField != null ? arFromField : royaltyRate != null ? pr * royaltyRate : 0;
 
