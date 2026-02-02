@@ -40,36 +40,27 @@ public class SaleService {
 
   public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, String query, Sort sort) {
     Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
-
-    if (spec == null) {
-      return saleRepository.findAll(sort);
-    }
     return saleRepository.findAll(spec, sort);
   }
 
   public Page<Sale> getPagedSales(
       LocalDate startDate, LocalDate endDate, String query, Pageable pageable) {
     Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
-
-    if (spec == null) {
-      return saleRepository.findAll(pageable);
-    }
     return saleRepository.findAll(spec, pageable);
   }
 
   private Specification<Sale> buildSaleSpecification(
       LocalDate startDate, LocalDate endDate, String query) {
-    Specification<Sale> spec = null;
+    Specification<Sale> spec = Specification.where(null);
 
     if (startDate != null || endDate != null) {
       LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
       LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
-      spec = SaleSpecifications.withinDateRange(specStartDate, specEndDate);
+      spec = spec.and(SaleSpecifications.withinDateRange(specStartDate, specEndDate));
     }
 
     if (query != null && !query.isBlank()) {
-      Specification<Sale> querySpec = SaleSpecifications.matchesQuery(query);
-      spec = spec == null ? querySpec : spec.and(querySpec);
+      spec = spec.and(SaleSpecifications.matchesQuery(query));
     }
 
     return spec;

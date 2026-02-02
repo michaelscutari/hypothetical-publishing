@@ -61,10 +61,11 @@ class SaleServiceTest {
   }
 
   @Test
-  void getAllSalesWithoutFiltersUsesSimpleFindAll() {
+  void getAllSalesWithoutFiltersUsesSpecification() {
     Sort sort = Sort.by("saleYear").descending();
     saleService.getAllSales(null, null, null, sort);
-    verify(saleRepository, times(1)).findAll(sort);
+    verify(saleRepository, times(1))
+        .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Sort.class));
   }
 
   @Test
@@ -86,10 +87,11 @@ class SaleServiceTest {
   }
 
   @Test
-  void getPagedSalesWithoutFiltersUsesSimpleFindAll() {
+  void getPagedSalesWithoutFiltersUsesSpecification() {
     Pageable pageable = mock(Pageable.class);
     saleService.getPagedSales(null, null, null, pageable);
-    verify(saleRepository, times(1)).findAll(pageable);
+    verify(saleRepository, times(1))
+        .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Pageable.class));
   }
 
   @Test
