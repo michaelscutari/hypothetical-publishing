@@ -20,29 +20,14 @@ import ViewListIcon from '@mui/icons-material/ViewList';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import { useNavigate } from 'react-router-dom';
-// import { SalesService, type SaleResponse } from '../../../../api';
 import PageContainer from './PageContainer';
 import { SalesService, BooksService, type SaleResponse, type BookResponse } from '../../../../api';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import type { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 
-const MONTH_NAMES = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
-
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const INITIAL_PAGE_SIZE = 25;
 
 export default function SaleList() {
@@ -53,18 +38,22 @@ export default function SaleList() {
     page: 0,
     pageSize: INITIAL_PAGE_SIZE,
   });
+
   // Default sort: descending by date (newest first) - requirement 3.1.1
-  const [sortModel, setSortModel] = React.useState<GridSortModel>([
-    { field: 'saleYear', sort: 'desc' },
-  ]);
+  const [sortModel, setSortModel] = React.useState<GridSortModel>([{ field: 'saleYear', sort: 'desc' }]);
 
   const [sales, setSales] = React.useState<SaleResponse[]>([]);
   const [totalCount, setTotalCount] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
   const [booksMap, setBooksMap] = React.useState<Map<number, BookResponse>>(new Map());
+
   const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
   const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
+
+  // ✅ NEW: remember the user's date filter when they temporarily switch to "Show All"
+  const [prevStartDate, setPrevStartDate] = React.useState<Dayjs | null>(null);
+  const [prevEndDate, setPrevEndDate] = React.useState<Dayjs | null>(null);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -74,22 +63,14 @@ export default function SaleList() {
       const sortField = sortModel?.[0]?.field;
       const sortDirection = sortModel?.[0]?.sort ?? 'desc';
 
-      // Date range filter placeholder - requirement 3.1.2
-      const startDateParam = startDate ? startDate.format('YYYY-MM-DD') : undefined;
-      const endDateParam = endDate ? endDate.format('YYYY-MM-DD') : undefined;
+      // Date range filter - requirement 3.1.2
+      // Convert to first day of month for start, last day of month for end
+      const startDateParam = startDate ? startDate.startOf('month').format('YYYY-MM-DD') : undefined;
+      const endDateParam = endDate ? endDate.endOf('month').format('YYYY-MM-DD') : undefined;
 
-      //   const response = await SalesService.getSales(
-      //     paginationModel.page,
-      //     paginationModel.pageSize,
-      //     showAll,
-      //     sortField,
-      //     sortDirection,
-      //     startDate,
-      //     endDate,
-      //   );
       const response = await SalesService.getSales(
-        paginationModel.page,
-        paginationModel.pageSize,
+        showAll ? undefined : paginationModel.page,
+        showAll ? 1000 : paginationModel.pageSize, // Use large number for showAll
         showAll,
         sortField,
         sortDirection,
@@ -101,29 +82,25 @@ export default function SaleList() {
       setTotalCount(response.totalElements ?? 0);
 
       // Fetch book details for all sales records
-      const uniqueBookIds = Array.from(
-        new Set((response.content ?? []).map((sale) => sale.bookId).filter(Boolean)),
-      ) as number[];
+      const uniqueBookIds = Array.from(new Set((response.content ?? []).map((s) => s.bookId).filter(Boolean))) as number[];
 
       if (uniqueBookIds.length > 0) {
-        const bookPromises = uniqueBookIds.map((bookId) =>
-          BooksService.getBookById(bookId).catch(() => null),
-        );
+        const bookPromises = uniqueBookIds.map((bookId) => BooksService.getBookById(bookId).catch(() => null));
         const books = await Promise.all(bookPromises);
 
         const newBooksMap = new Map<number, BookResponse>();
         books.forEach((book) => {
-          if (book && book.id) {
-            newBooksMap.set(book.id, book);
-          }
+          if (book && book.id) newBooksMap.set(book.id, book);
         });
         setBooksMap(newBooksMap);
+      } else {
+        setBooksMap(new Map());
       }
     } catch (loadError) {
       setError(loadError as Error);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }, [paginationModel, sortModel, showAll, startDate, endDate]);
 
   React.useEffect(() => {
@@ -131,14 +108,32 @@ export default function SaleList() {
   }, [loadData]);
 
   const handleRefresh = React.useCallback(() => {
-    if (!isLoading) {
-      loadData();
-    }
+    if (!isLoading) loadData();
   }, [isLoading, loadData]);
 
+  // ✅ UPDATED: toggle Show All, but preserve/restore prior date filter
   const handleShowAllToggle = React.useCallback(() => {
-    setShowAll((prev) => !prev);
-  }, []);
+    setShowAll((prev) => {
+      const next = !prev;
+
+      if (next) {
+        // going INTO "Show All": remember current filters, then clear them
+        setPrevStartDate(startDate);
+        setPrevEndDate(endDate);
+        setStartDate(null);
+        setEndDate(null);
+      } else {
+        // going BACK to filtered view: restore what user had before
+        setStartDate(prevStartDate);
+        setEndDate(prevEndDate);
+      }
+
+      return next;
+    });
+
+    // Reset to first page when toggling
+    setPaginationModel((p) => ({ ...p, page: 0 }));
+  }, [startDate, endDate, prevStartDate, prevEndDate]);
 
   // Requirement 3.1.3 - Navigate to detail/modify view
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
@@ -173,19 +168,15 @@ export default function SaleList() {
           return book?.author ?? `Author ${row.bookId}`;
         },
       },
-
       {
         field: 'saleYear',
         headerName: 'Month/Year',
         width: 120,
         valueGetter: (_value, row) => {
-          if (row.saleYear && row.saleMonth) {
-            return `${MONTH_NAMES[row.saleMonth - 1]} ${row.saleYear}`;
-          }
+          if (row.saleYear && row.saleMonth) return `${MONTH_NAMES[row.saleMonth - 1]} ${row.saleYear}`;
           return '';
         },
       },
-
       {
         field: 'quantitySold',
         headerName: 'Quantity Sold',
@@ -210,7 +201,6 @@ export default function SaleList() {
         field: 'hasAuthorBeenPaid',
         headerName: 'Paid Status',
         width: 140,
-        // Visual indicator with different color AND shape - requirement 3.1
         renderCell: (params) => {
           const isPaid = params.row.hasAuthorBeenPaid;
           return (
@@ -236,11 +226,7 @@ export default function SaleList() {
       breadcrumbs={[{ title: pageTitle }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Tooltip
-            title={showAll ? 'Switch to paginated view' : 'Show all records'}
-            placement="bottom"
-            enterDelay={1000}
-          >
+          <Tooltip title={showAll ? 'Switch to filtered view' : 'Show all records'} placement="bottom" enterDelay={1000}>
             <div>
               <Button
                 size="small"
@@ -248,10 +234,11 @@ export default function SaleList() {
                 onClick={handleShowAllToggle}
                 startIcon={<ViewListIcon />}
               >
-                {showAll ? 'Paginated' : 'Show All'}
+                {showAll ? 'Filtered' : 'Show All'}
               </Button>
             </div>
           </Tooltip>
+
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <div>
               <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
@@ -259,18 +246,37 @@ export default function SaleList() {
               </IconButton>
             </div>
           </Tooltip>
+
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Start"
               value={startDate}
               onChange={(v) => setStartDate(v)}
-              slotProps={{ textField: { size: 'small' } }}
+              views={['year', 'month']}
+              format="MMM YYYY"
+              openTo="year"
+              minDate={dayjs('1900-01-01')}
+              maxDate={dayjs('2026-02-28')}
+              disabled={showAll}
+              slotProps={{
+                textField: { size: 'small' },
+                toolbar: { hidden: true },
+              }}
             />
             <DatePicker
               label="End"
               value={endDate}
               onChange={(v) => setEndDate(v)}
-              slotProps={{ textField: { size: 'small' } }}
+              views={['year', 'month']}
+              format="MMM YYYY"
+              openTo="year"
+              minDate={dayjs('1900-01-01')}
+              maxDate={dayjs('2026-02-28')}
+              disabled={showAll}
+              slotProps={{
+                textField: { size: 'small' },
+                toolbar: { hidden: true },
+              }}
             />
           </LocalizationProvider>
 
@@ -288,11 +294,11 @@ export default function SaleList() {
         ) : (
           <DataGrid
             rows={sales}
-            rowCount={totalCount}
+            rowCount={showAll ? sales.length : totalCount}
             columns={columns}
-            pagination
+            pagination={!showAll}
             sortingMode="server"
-            paginationMode="server"
+            paginationMode={showAll ? 'client' : 'server'}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
@@ -305,10 +311,9 @@ export default function SaleList() {
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },
-              [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]:
-                {
-                  outline: 'none',
-                },
+              [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]: {
+                outline: 'none',
+              },
               [`& .${gridClasses.row}:hover`]: {
                 cursor: 'pointer',
               },
