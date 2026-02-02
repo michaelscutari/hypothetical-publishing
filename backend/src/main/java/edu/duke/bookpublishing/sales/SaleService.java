@@ -124,6 +124,55 @@ public class SaleService {
     return groups;
   }
 
+  /**
+   * Builds grouped author payments data in the required sort order.
+   *
+   * <p>Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
+   */
+  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(
+      LocalDate startDate, LocalDate endDate) {
+    Sort sort =
+        Sort.by(
+            Sort.Order.asc("book.author"),
+            Sort.Order.desc("saleYear"),
+            Sort.Order.desc("saleMonth"));
+
+    List<Sale> sales;
+    if (startDate == null && endDate == null) {
+      sales = saleRepository.findAll(sort);
+    } else {
+      LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
+      LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
+      Specification<Sale> spec = SaleSpecifications.withinDateRange(specStartDate, specEndDate);
+      sales = saleRepository.findAll(spec, sort);
+    }
+
+    // Group sales by author while preserving the sort order established above.
+    Map<String, List<Sale>> grouped = new LinkedHashMap<>();
+    for (Sale sale : sales) {
+      String author = sale.getBook().getAuthor();
+      grouped.computeIfAbsent(author, key -> new ArrayList<>()).add(sale);
+    }
+
+    // Build group responses with unpaid totals.
+    List<AuthorPaymentGroupResponse> groups = new ArrayList<>();
+    for (Map.Entry<String, List<Sale>> entry : grouped.entrySet()) {
+      BigDecimal unpaidTotal = BigDecimal.ZERO;
+      List<AuthorPaymentSaleResponse> saleRows = new ArrayList<>();
+
+      for (Sale sale : entry.getValue()) {
+        saleRows.add(AuthorPaymentSaleResponse.from(sale));
+        if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
+          unpaidTotal = unpaidTotal.add(sale.getAuthorRoyalty());
+        }
+      }
+
+      groups.add(new AuthorPaymentGroupResponse(entry.getKey(), unpaidTotal, saleRows));
+    }
+
+    return groups;
+  }
+
   public Sale getSaleById(Long id) {
     return getOrThrowSaleFromRepoById(id);
   }
