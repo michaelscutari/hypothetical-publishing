@@ -33,6 +33,23 @@ public class BookService {
     return bookRepository.findAll();
   }
 
+  // Distinct author search for autocomplete.
+  public List<String> findDistinctAuthors(String query) {
+    String normalizedQuery = normalizeWhitespace(query);
+    if (normalizedQuery == null || normalizedQuery.isBlank()) {
+      return List.of();
+    }
+    return bookRepository.findDistinctAuthors(normalizedQuery);
+  }
+
+  public Page<String> findDistinctAuthors(String query, Pageable pageable) {
+    String normalizedQuery = normalizeWhitespace(query);
+    if (normalizedQuery == null || normalizedQuery.isBlank()) {
+      return Page.empty(pageable);
+    }
+    return bookRepository.findDistinctAuthors(normalizedQuery, pageable);
+  }
+
   private Specification<Book> buildSearchSpec(String query) {
     String[] terms = query.trim().split("\\s+");
     Specification<Book> spec = Specification.where(null);
@@ -66,5 +83,13 @@ public class BookService {
 
   public void deleteById(Long id) {
     bookRepository.deleteById(id);
+  }
+
+  // Mirrors Book.normalizeFields() whitespace normalization (def 17).
+  private String normalizeWhitespace(String value) {
+    if (value == null) {
+      return null;
+    }
+    return String.join(" ", value.trim().split("\\s+"));
   }
 }

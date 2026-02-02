@@ -3,6 +3,7 @@ package edu.duke.bookpublishing.books;
 import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
 import edu.duke.bookpublishing.books.dto.PagedBookResponse;
+import edu.duke.bookpublishing.common.dto.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -50,6 +51,23 @@ public class BookController {
     Pageable pageable = PageRequest.of(page, size, sort);
     Page<Book> books = bookService.findAll(pageable, query);
     return PagedBookResponse.from(books);
+  }
+
+  @Operation(operationId = "searchAuthors", summary = "Search distinct author names")
+  @GetMapping("/authors")
+  public PagedResponse<String> searchAuthors(
+      @RequestParam(required = false) String query,
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "25") int size,
+      @RequestParam(defaultValue = "false") boolean showAll) {
+
+    if (showAll) {
+      List<String> authors = bookService.findDistinctAuthors(query);
+      return PagedResponse.unpaged(authors);
+    }
+
+    Pageable pageable = PageRequest.of(page, size);
+    return PagedResponse.paged(bookService.findDistinctAuthors(query, pageable));
   }
 
   @Operation(operationId = "getBookById", summary = "Get a book by ID")
