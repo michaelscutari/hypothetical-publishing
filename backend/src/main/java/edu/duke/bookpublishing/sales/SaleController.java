@@ -2,8 +2,8 @@ package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
-import edu.duke.bookpublishing.sales.dto.MarkPaidRequest;
-import edu.duke.bookpublishing.sales.dto.MarkPaidResponse;
+import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
+import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -103,9 +103,10 @@ public class SaleController {
       operationId = "markAuthorPaymentsPaid",
       summary = "Marks all unpaid sales for an author as paid")
   @PutMapping("/author-payments/mark-paid")
-  public MarkPaidResponse markAuthorPaymentsPaid(@Valid @RequestBody MarkPaidRequest request) {
+  public MarkAllPaidResponse markAuthorPaymentsPaid(
+      @Valid @RequestBody MarkAllPaidRequest request) {
     int updatedCount = saleService.markAllPaidByAuthor(request.author());
-    return new MarkPaidResponse(request.author(), updatedCount);
+    return new MarkAllPaidResponse(request.author(), updatedCount);
   }
 
   @Operation(operationId = "getSaleById", summary = "Gets a sale by its ID")
