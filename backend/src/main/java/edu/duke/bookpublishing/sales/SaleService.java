@@ -38,30 +38,32 @@ public class SaleService {
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
 
-  public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, Sort sort) {
-
-    if (startDate == null && endDate == null) {
-      return saleRepository.findAll(sort);
-    }
-
-    LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
-    LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
-
-    Specification<Sale> spec = SaleSpecifications.withinDateRange(specStartDate, specEndDate);
+  public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, String query, Sort sort) {
+    Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
     return saleRepository.findAll(spec, sort);
   }
 
-  public Page<Sale> getPagedSales(LocalDate startDate, LocalDate endDate, Pageable pageable) {
+  public Page<Sale> getPagedSales(
+      LocalDate startDate, LocalDate endDate, String query, Pageable pageable) {
+    Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
+    return saleRepository.findAll(spec, pageable);
+  }
 
-    if (startDate == null && endDate == null) {
-      return saleRepository.findAll(pageable);
+  private Specification<Sale> buildSaleSpecification(
+      LocalDate startDate, LocalDate endDate, String query) {
+    Specification<Sale> spec = Specification.where(null);
+
+    if (startDate != null || endDate != null) {
+      LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
+      LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
+      spec = spec.and(SaleSpecifications.withinDateRange(specStartDate, specEndDate));
     }
 
-    LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
-    LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
+    if (query != null && !query.isBlank()) {
+      spec = spec.and(SaleSpecifications.matchesQuery(query));
+    }
 
-    Specification<Sale> spec = SaleSpecifications.withinDateRange(specStartDate, specEndDate);
-    return saleRepository.findAll(spec, pageable);
+    return spec;
   }
 
   /**
