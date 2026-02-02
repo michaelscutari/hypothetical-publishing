@@ -2,8 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { MarkPaidRequest } from '../models/MarkPaidRequest';
-import type { MarkPaidResponse } from '../models/MarkPaidResponse';
+import type { MarkAllPaidRequest } from '../models/MarkAllPaidRequest';
+import type { MarkAllPaidResponse } from '../models/MarkAllPaidResponse';
 import type { PagedResponseAuthorPaymentGroupResponse } from '../models/PagedResponseAuthorPaymentGroupResponse';
 import type { PagedResponseSaleResponse } from '../models/PagedResponseSaleResponse';
 import type { SaleRequest } from '../models/SaleRequest';
@@ -70,12 +70,12 @@ export class SalesService {
     /**
      * Marks all unpaid sales for an author as paid
      * @param requestBody
-     * @returns MarkPaidResponse OK
+     * @returns MarkAllPaidResponse OK
      * @throws ApiError
      */
     public static markAuthorPaymentsPaid(
-        requestBody: MarkPaidRequest,
-    ): CancelablePromise<MarkPaidResponse> {
+        requestBody: MarkAllPaidRequest,
+    ): CancelablePromise<MarkAllPaidResponse> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/sales/author-payments/mark-paid',

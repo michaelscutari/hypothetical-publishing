@@ -5,7 +5,7 @@
 /**
  * Request to mark all unpaid sales for an author as paid
  */
-export type MarkPaidRequest = {
+export type MarkAllPaidRequest = {
     /**
      * Author name to mark paid
      */

@@ -5,7 +5,7 @@
 /**
  * Response after marking an author's unpaid sales as paid
  */
-export type MarkPaidResponse = {
+export type MarkAllPaidResponse = {
     /**
      * Author name
      */
