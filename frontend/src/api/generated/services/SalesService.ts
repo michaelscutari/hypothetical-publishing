@@ -92,6 +92,7 @@ export class SalesService {
      * @param sortDirection
      * @param startDate
      * @param endDate
+     * @param query
      * @returns PagedResponseSaleResponse OK
      * @throws ApiError
      */
@@ -103,6 +104,7 @@ export class SalesService {
         sortDirection: string = 'asc',
         startDate?: string,
         endDate?: string,
+        query?: string,
     ): CancelablePromise<PagedResponseSaleResponse> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -115,6 +117,7 @@ export class SalesService {
                 'sortDirection': sortDirection,
                 'startDate': startDate,
                 'endDate': endDate,
+                'query': query,
             },
         });
     }
