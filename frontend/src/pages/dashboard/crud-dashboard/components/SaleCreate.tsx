@@ -109,7 +109,12 @@ export default function SaleCreate() {
   const loadBooks = React.useCallback(async (searchQuery: string) => {
     setIsLoadingBooks(true);
     try {
-      const response = await BooksService.getAllBooks(undefined, 100, false, searchQuery || undefined);
+      const response = await BooksService.getAllBooks(
+        undefined,
+        100,
+        false,
+        searchQuery || undefined,
+      );
       setBooks(response.content ?? []);
     } catch (error) {
       console.error('Failed to load books:', error);
@@ -130,48 +135,45 @@ export default function SaleCreate() {
     loadBooks('');
   }, [loadBooks]);
 
-  const updateRecord = React.useCallback(
-    (index: number, updates: Partial<SaleRecordInput>) => {
-      setRecords((prev) => {
-        const newRecords = [...prev];
-        const next = { ...newRecords[index], ...updates };
+  const updateRecord = React.useCallback((index: number, updates: Partial<SaleRecordInput>) => {
+    setRecords((prev) => {
+      const newRecords = [...prev];
+      const next = { ...newRecords[index], ...updates };
 
-        // ✅ If user updates anything (other than errors), activate placeholder row
-        if (next.isPlaceholder) {
-          const keys = Object.keys(updates).filter((k) => k !== 'errors');
-          if (keys.length > 0) next.isPlaceholder = false;
-        }
+      // ✅ If user updates anything (other than errors), activate placeholder row
+      if (next.isPlaceholder) {
+        const keys = Object.keys(updates).filter((k) => k !== 'errors');
+        if (keys.length > 0) next.isPlaceholder = false;
+      }
 
-        // Auto-calc royalty if NOT overridden and we have book+revenue.
-        const revenueChanged = updates.publisherRevenue !== undefined;
-        const bookChanged = updates.book !== undefined;
+      // Auto-calc royalty if NOT overridden and we have book+revenue.
+      const revenueChanged = updates.publisherRevenue !== undefined;
+      const bookChanged = updates.book !== undefined;
 
-        if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
-          next.authorRoyalty = computeRoyalty(next.book, next.publisherRevenue);
-        }
+      if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
+        next.authorRoyalty = computeRoyalty(next.book, next.publisherRevenue);
+      }
 
-        newRecords[index] = next;
+      newRecords[index] = next;
 
-        // Auto-add new PLACEHOLDER row when current row is being filled
-        const isLastRecord = index === newRecords.length - 1;
-        const hasMinimalData = !!(next.saleDate && next.book);
+      // Auto-add new PLACEHOLDER row when current row is being filled
+      const isLastRecord = index === newRecords.length - 1;
+      const hasMinimalData = !!(next.saleDate && next.book);
 
-        if (isLastRecord && hasMinimalData && !next.isPlaceholder) {
-          newRecords.push(
-            createEmptyRecord(
-              {
-                saleDate: next.saleDate,
-              },
-              true,
-            ),
-          );
-        }
+      if (isLastRecord && hasMinimalData && !next.isPlaceholder) {
+        newRecords.push(
+          createEmptyRecord(
+            {
+              saleDate: next.saleDate,
+            },
+            true,
+          ),
+        );
+      }
 
-        return newRecords;
-      });
-    },
-    [],
-  );
+      return newRecords;
+    });
+  }, []);
 
   const handleDateChange = React.useCallback(
     (index: number) => (value: Dayjs | null) => {
@@ -385,7 +387,8 @@ export default function SaleCreate() {
     >
       <Stack spacing={3} sx={{ width: '100%' }}>
         <Typography variant="body2" color="text.secondary">
-          Enter multiple sale records efficiently. The month/year will carry forward to help you input multiple sales from the same period. Use Tab to navigate between fields.
+          Enter multiple sale records efficiently. The month/year will carry forward to help you
+          input multiple sales from the same period. Use Tab to navigate between fields.
         </Typography>
 
         <TableContainer component={Paper}>
@@ -450,7 +453,9 @@ export default function SaleCreate() {
                         activateRow(index);
                         setBookSearchInput(value);
                       }}
-                      getOptionLabel={(option) => `${option.title} - ${option.author} (${option.isbn13})`}
+                      getOptionLabel={(option) =>
+                        `${option.title} - ${option.author} (${option.isbn13})`
+                      }
                       filterOptions={(x) => x}
                       renderInput={(params: AutocompleteRenderInputParams) => (
                         <TextField
@@ -556,7 +561,11 @@ export default function SaleCreate() {
 
                   <TableCell>
                     {!record.isPlaceholder && records.length > 1 && (
-                      <IconButton size="small" onClick={handleDeleteRecord(index)} aria-label="delete">
+                      <IconButton
+                        size="small"
+                        onClick={handleDeleteRecord(index)}
+                        aria-label="delete"
+                      >
                         <DeleteIcon fontSize="small" />
                       </IconButton>
                     )}
@@ -574,7 +583,9 @@ export default function SaleCreate() {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={isSubmitting || records.filter((r) => !r.isPlaceholder && r.book).length === 0}
+            disabled={
+              isSubmitting || records.filter((r) => !r.isPlaceholder && r.book).length === 0
+            }
             size="large"
           >
             {isSubmitting

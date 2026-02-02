@@ -27,7 +27,20 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import dayjs, { type Dayjs } from 'dayjs';
 
-const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_NAMES = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 const INITIAL_PAGE_SIZE = 25;
 
 export default function SaleList() {
@@ -40,7 +53,9 @@ export default function SaleList() {
   });
 
   // Default sort: descending by date (newest first) - requirement 3.1.1
-  const [sortModel, setSortModel] = React.useState<GridSortModel>([{ field: 'saleYear', sort: 'desc' }]);
+  const [sortModel, setSortModel] = React.useState<GridSortModel>([
+    { field: 'saleYear', sort: 'desc' },
+  ]);
 
   const [sales, setSales] = React.useState<SaleResponse[]>([]);
   const [totalCount, setTotalCount] = React.useState(0);
@@ -65,7 +80,9 @@ export default function SaleList() {
 
       // Date range filter - requirement 3.1.2
       // Convert to first day of month for start, last day of month for end
-      const startDateParam = startDate ? startDate.startOf('month').format('YYYY-MM-DD') : undefined;
+      const startDateParam = startDate
+        ? startDate.startOf('month').format('YYYY-MM-DD')
+        : undefined;
       const endDateParam = endDate ? endDate.endOf('month').format('YYYY-MM-DD') : undefined;
 
       const response = await SalesService.getSales(
@@ -82,10 +99,14 @@ export default function SaleList() {
       setTotalCount(response.totalElements ?? 0);
 
       // Fetch book details for all sales records
-      const uniqueBookIds = Array.from(new Set((response.content ?? []).map((s) => s.bookId).filter(Boolean))) as number[];
+      const uniqueBookIds = Array.from(
+        new Set((response.content ?? []).map((s) => s.bookId).filter(Boolean)),
+      ) as number[];
 
       if (uniqueBookIds.length > 0) {
-        const bookPromises = uniqueBookIds.map((bookId) => BooksService.getBookById(bookId).catch(() => null));
+        const bookPromises = uniqueBookIds.map((bookId) =>
+          BooksService.getBookById(bookId).catch(() => null),
+        );
         const books = await Promise.all(bookPromises);
 
         const newBooksMap = new Map<number, BookResponse>();
@@ -173,7 +194,8 @@ export default function SaleList() {
         headerName: 'Month/Year',
         width: 120,
         valueGetter: (_value, row) => {
-          if (row.saleYear && row.saleMonth) return `${MONTH_NAMES[row.saleMonth - 1]} ${row.saleYear}`;
+          if (row.saleYear && row.saleMonth)
+            return `${MONTH_NAMES[row.saleMonth - 1]} ${row.saleYear}`;
           return '';
         },
       },
@@ -226,7 +248,11 @@ export default function SaleList() {
       breadcrumbs={[{ title: pageTitle }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Tooltip title={showAll ? 'Switch to filtered view' : 'Show all records'} placement="bottom" enterDelay={1000}>
+          <Tooltip
+            title={showAll ? 'Switch to filtered view' : 'Show all records'}
+            placement="bottom"
+            enterDelay={1000}
+          >
             <div>
               <Button
                 size="small"
@@ -311,9 +337,10 @@ export default function SaleList() {
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },
-              [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]: {
-                outline: 'none',
-              },
+              [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]:
+                {
+                  outline: 'none',
+                },
               [`& .${gridClasses.row}:hover`]: {
                 cursor: 'pointer',
               },
