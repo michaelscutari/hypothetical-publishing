@@ -1,14 +1,20 @@
 package edu.duke.bookpublishing.sales;
 
+import edu.duke.bookpublishing.books.BookSpecifications;
 import java.time.LocalDate;
 import org.springframework.data.jpa.domain.Specification;
 
 /**
- * Spec to filter Sale queries by date.
+ * Specifications for filtering Sale queries.
  *
  * @author Daniel Rodriguez-Florido
  */
 public final class SaleSpecifications {
+
+  /** Filters sales where book title, author, or ISBN matches the query terms. */
+  public static Specification<Sale> matchesQuery(String query) {
+    return (root, q, cb) -> BookSpecifications.buildQueryPredicate(root.get("book"), cb, query);
+  }
 
   public static Specification<Sale> withinDateRange(LocalDate startDate, LocalDate endDate) {
     return (root, query, cb) -> {
