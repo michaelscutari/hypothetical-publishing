@@ -13,6 +13,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -39,6 +41,7 @@ public class Sale {
 
   @ManyToOne(optional = false)
   @JoinColumn(name = "book_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Book book;
 
   @Min(1)
