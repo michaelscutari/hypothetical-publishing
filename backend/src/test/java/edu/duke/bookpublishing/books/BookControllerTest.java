@@ -565,6 +565,39 @@ class BookControllerTest {
     mockMvc.perform(get("/api/books/{id}", 9999).cookie(login())).andExpect(status().isNotFound());
   }
 
+  @Test
+  void searchBooksFindsIsbn10WithUppercaseXUsingLowercaseQuery() throws Exception {
+    Cookie token = login();
+    // ISBN-10 080442957X has check digit X (valid ISBN for "The Elements of Style")
+    mockMvc.perform(
+        post("/api/books")
+            .cookie(token)
+            .contentType(MediaType.APPLICATION_JSON)
+            .content(
+                objectMapper.writeValueAsString(
+                    new BookRequest(
+                        "The Elements of Style",
+                        "Strunk, William",
+                        "9780205309023",
+                        "080442957X",
+                        1999,
+                        1,
+                        new BigDecimal("0.10")))));
+
+    // Search with lowercase x - should find the book
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "080442957x"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].isbn10").value("080442957X"));
+
+    // Search with uppercase X - should also find the book
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "080442957X"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)));
+  }
+
   private Long createBook(Cookie token, BookRequest request) throws Exception {
     MvcResult result =
         mockMvc

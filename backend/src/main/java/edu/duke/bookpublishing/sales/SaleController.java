@@ -53,7 +53,8 @@ public class SaleController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate startDate,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate endDate) {
+          LocalDate endDate,
+      @RequestParam(required = false) String query) {
 
     Sort sort =
         sortField != null
@@ -61,12 +62,12 @@ public class SaleController {
             : Sort.unsorted();
 
     if (showAll) {
-      List<Sale> sales = saleService.getAllSales(startDate, endDate, sort);
+      List<Sale> sales = saleService.getAllSales(startDate, endDate, query, sort);
       return PagedResponse.unpaged(sales, SaleResponse::from);
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
-    Page<Sale> sales = saleService.getPagedSales(startDate, endDate, pageable);
+    Page<Sale> sales = saleService.getPagedSales(startDate, endDate, query, pageable);
     return PagedResponse.paged(sales, SaleResponse::from);
   }
 
