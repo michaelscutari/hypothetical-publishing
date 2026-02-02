@@ -84,6 +84,18 @@ class SaleControllerTest {
             .build());
   }
 
+  private Book createBook(String title, String author, String isbn13) {
+    return bookRepository.save(
+        Book.builder()
+            .title(title)
+            .author(author)
+            .isbn13(isbn13)
+            .publicationYear(2020)
+            .publicationMonth(1)
+            .royaltyRate(new BigDecimal("0.20"))
+            .build());
+  }
+
   private SaleResponse createSale(Cookie token, SaleRequest request) throws Exception {
     MvcResult result =
         mockMvc
@@ -303,5 +315,102 @@ class SaleControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
         .andExpect(jsonPath("$.content[0].saleMonth").value(3));
+  }
+
+  @Test
+  void getAuthorPaymentsGroupsByAuthorAndTotalsUnpaid() throws Exception {
+    Cookie token = login();
+    Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000001");
+    Book beta = createBook("Beta Book", "Author Beta", "9780000000002");
+
+    // Author Alpha: one unpaid (month 1), one paid (month 3)
+    createSale(token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), false));
+    createSale(token, new SaleRequest(alpha.getId(), 3, 2024, 5, new BigDecimal("50.00"), true));
+
+    // Author Beta: one unpaid
+    createSale(token, new SaleRequest(beta.getId(), 2, 2024, 5, new BigDecimal("80.00"), false));
+
+    mockMvc
+        .perform(get("/api/sales/author-payments").cookie(token).param("showAll", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(2)))
+        .andExpect(jsonPath("$.content[0].author").value("Author Alpha"))
+        .andExpect(jsonPath("$.content[0].unpaidTotal").value(20.00))
+        .andExpect(jsonPath("$.content[0].sales[0].saleMonth").value(3))
+        .andExpect(jsonPath("$.content[0].sales[0].bookTitle").value("Alpha Book"))
+        .andExpect(jsonPath("$.content[1].author").value("Author Beta"))
+        .andExpect(jsonPath("$.content[1].unpaidTotal").value(16.00));
+  }
+
+  @Test
+  void markAuthorPaymentsPaidMarksOnlyUnpaidForAuthor() throws Exception {
+    Cookie token = login();
+    Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000003");
+    Book beta = createBook("Beta Book", "Author Beta", "9780000000004");
+
+    createSale(token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), false));
+    createSale(token, new SaleRequest(alpha.getId(), 2, 2024, 5, new BigDecimal("100.00"), false));
+    createSale(token, new SaleRequest(alpha.getId(), 3, 2024, 5, new BigDecimal("100.00"), true));
+    createSale(token, new SaleRequest(beta.getId(), 1, 2024, 5, new BigDecimal("100.00"), false));
+
+    mockMvc
+        .perform(
+            put("/api/sales/author-payments/mark-paid")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"author\":\"Author Alpha\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.updatedCount").value(2));
+
+    mockMvc
+        .perform(get("/api/sales/author-payments").cookie(token).param("showAll", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].sales[0].hasAuthorBeenPaid").value(true))
+        .andExpect(jsonPath("$.content[0].sales[1].hasAuthorBeenPaid").value(true))
+        .andExpect(jsonPath("$.content[0].sales[2].hasAuthorBeenPaid").value(true))
+        .andExpect(jsonPath("$.content[1].sales[0].hasAuthorBeenPaid").value(false));
+  }
+
+  @Test
+  void markAuthorPaymentsPaidNormalizesWhitespace() throws Exception {
+    Cookie token = login();
+    Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000005");
+
+    createSale(token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), false));
+
+    mockMvc
+        .perform(
+            put("/api/sales/author-payments/mark-paid")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"author\":\"  Author   Alpha  \"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.updatedCount").value(1));
+
+    mockMvc
+        .perform(get("/api/sales/author-payments").cookie(token).param("showAll", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[0].sales[0].hasAuthorBeenPaid").value(true));
+  }
+
+  @Test
+  void getAuthorPaymentsPaginatesByAuthorGroup() throws Exception {
+    Cookie token = login();
+    Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000006");
+    Book beta = createBook("Beta Book", "Author Beta", "9780000000007");
+
+    createSale(token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), false));
+    createSale(token, new SaleRequest(beta.getId(), 1, 2024, 5, new BigDecimal("100.00"), false));
+
+    mockMvc
+        .perform(
+            get("/api/sales/author-payments").cookie(token).param("size", "1").param("page", "0"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.pageNumber").value(0))
+        .andExpect(jsonPath("$.pageSize").value(1))
+        .andExpect(jsonPath("$.totalElements").value(2))
+        .andExpect(jsonPath("$.totalPages").value(2))
+        .andExpect(jsonPath("$.paged").value(true));
   }
 }

@@ -2,6 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { MarkAllPaidRequest } from '../models/MarkAllPaidRequest';
+import type { MarkAllPaidResponse } from '../models/MarkAllPaidResponse';
+import type { PagedResponseAuthorPaymentGroupResponse } from '../models/PagedResponseAuthorPaymentGroupResponse';
 import type { PagedResponseSaleResponse } from '../models/PagedResponseSaleResponse';
 import type { SaleRequest } from '../models/SaleRequest';
 import type { SaleResponse } from '../models/SaleResponse';
@@ -65,6 +68,22 @@ export class SalesService {
         });
     }
     /**
+     * Marks all unpaid sales for an author as paid
+     * @param requestBody
+     * @returns MarkAllPaidResponse OK
+     * @throws ApiError
+     */
+    public static markAuthorPaymentsPaid(
+        requestBody: MarkAllPaidRequest,
+    ): CancelablePromise<MarkAllPaidResponse> {
+        return __request(OpenAPI, {
+            method: 'PUT',
+            url: '/api/sales/author-payments/mark-paid',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Retrieves all sales, paginated
      * @param page
      * @param size
@@ -113,6 +132,35 @@ export class SalesService {
             url: '/api/sales',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * Gets grouped author payments view
+     * @param page
+     * @param size
+     * @param showAll
+     * @param startDate
+     * @param endDate
+     * @returns PagedResponseAuthorPaymentGroupResponse OK
+     * @throws ApiError
+     */
+    public static getAuthorPayments(
+        page?: number,
+        size: number = 25,
+        showAll: boolean = false,
+        startDate?: string,
+        endDate?: string,
+    ): CancelablePromise<PagedResponseAuthorPaymentGroupResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sales/author-payments',
+            query: {
+                'page': page,
+                'size': size,
+                'showAll': showAll,
+                'startDate': startDate,
+                'endDate': endDate,
+            },
         });
     }
 }

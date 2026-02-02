@@ -33,7 +33,7 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew bootRun &
-          npx wait-on http://localhost:8080/api-docs --timeout 60000
+          npx wait-on http://localhost:8080/api-docs --timeout 120000
 
       - name: Verify schema is up-to-date
         working-directory: ./frontend

@@ -3,12 +3,17 @@ package edu.duke.bookpublishing.sales;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
+import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
+import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -57,6 +62,55 @@ public class SaleService {
 
     Specification<Sale> spec = SaleSpecifications.withinDateRange(specStartDate, specEndDate);
     return saleRepository.findAll(spec, pageable);
+  }
+
+  /**
+   * Builds grouped author payments data in the required sort order.
+   *
+   * <p>Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
+   */
+  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(
+      LocalDate startDate, LocalDate endDate) {
+    Sort sort =
+        Sort.by(
+            Sort.Order.asc("book.author"),
+            Sort.Order.desc("saleYear"),
+            Sort.Order.desc("saleMonth"));
+
+    List<Sale> sales;
+    if (startDate == null && endDate == null) {
+      sales = saleRepository.findAll(sort);
+    } else {
+      LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
+      LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
+      Specification<Sale> spec = SaleSpecifications.withinDateRange(specStartDate, specEndDate);
+      sales = saleRepository.findAll(spec, sort);
+    }
+
+    // Group sales by author while preserving the sort order established above.
+    Map<String, List<Sale>> grouped = new LinkedHashMap<>();
+    for (Sale sale : sales) {
+      String author = sale.getBook().getAuthor();
+      grouped.computeIfAbsent(author, key -> new ArrayList<>()).add(sale);
+    }
+
+    // Build group responses with unpaid totals.
+    List<AuthorPaymentGroupResponse> groups = new ArrayList<>();
+    for (Map.Entry<String, List<Sale>> entry : grouped.entrySet()) {
+      BigDecimal unpaidTotal = BigDecimal.ZERO;
+      List<AuthorPaymentSaleResponse> saleRows = new ArrayList<>();
+
+      for (Sale sale : entry.getValue()) {
+        saleRows.add(AuthorPaymentSaleResponse.from(sale));
+        if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
+          unpaidTotal = unpaidTotal.add(sale.getAuthorRoyalty());
+        }
+      }
+
+      groups.add(new AuthorPaymentGroupResponse(entry.getKey(), unpaidTotal, saleRows));
+    }
+
+    return groups;
   }
 
   public Sale getSaleById(Long id) {
@@ -115,6 +169,17 @@ public class SaleService {
     saleRepository.deleteById(id);
   }
 
+  /**
+   * Marks all unpaid sales for a given author as paid.
+   *
+   * @return number of sales updated
+   */
+  @Transactional
+  public int markAllPaidByAuthor(String author) {
+    String normalizedAuthor = normalizeWhitespace(author);
+    return saleRepository.markAllPaidByAuthor(normalizedAuthor);
+  }
+
   /*
   TODO: Implement markAllPaid(author) API
 
@@ -145,5 +210,13 @@ public class SaleService {
           "publisherRevenue and bookRoyaltyRate must be non-null");
     }
     return publisherRevenue.multiply(bookRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
+  }
+
+  // Mirrors Book.normalizeFields() whitespace normalization (def 17).
+  private String normalizeWhitespace(String value) {
+    if (value == null) {
+      return null;
+    }
+    return String.join(" ", value.trim().split("\\s+"));
   }
 }

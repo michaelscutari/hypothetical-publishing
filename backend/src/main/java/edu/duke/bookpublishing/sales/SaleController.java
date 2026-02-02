@@ -1,6 +1,9 @@
 package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.common.dto.PagedResponse;
+import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
+import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
+import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,6 +68,45 @@ public class SaleController {
     Pageable pageable = PageRequest.of(page, size, sort);
     Page<Sale> sales = saleService.getPagedSales(startDate, endDate, pageable);
     return PagedResponse.paged(sales, SaleResponse::from);
+  }
+
+  @Operation(operationId = "getAuthorPayments", summary = "Gets grouped author payments view")
+  @GetMapping("/author-payments")
+  public PagedResponse<AuthorPaymentGroupResponse> getAuthorPayments(
+      @RequestParam(defaultValue = "0") int page,
+      @RequestParam(defaultValue = "25") int size,
+      @RequestParam(defaultValue = "false") boolean showAll,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate endDate) {
+
+    // Build the full grouped list in required order, then paginate at the author-group level.
+    List<AuthorPaymentGroupResponse> groups =
+        saleService.getAuthorPaymentGroups(startDate, endDate);
+
+    if (showAll) {
+      return PagedResponse.unpaged(groups);
+    }
+
+    int totalElements = groups.size();
+    int totalPages = size > 0 ? (int) Math.ceil((double) totalElements / size) : 0;
+    int fromIndex = Math.min(page * size, totalElements);
+    int toIndex = Math.min(fromIndex + size, totalElements);
+    List<AuthorPaymentGroupResponse> content =
+        fromIndex >= toIndex ? List.of() : groups.subList(fromIndex, toIndex);
+
+    return new PagedResponse<>(content, page, size, totalElements, totalPages, true);
+  }
+
+  @Operation(
+      operationId = "markAuthorPaymentsPaid",
+      summary = "Marks all unpaid sales for an author as paid")
+  @PutMapping("/author-payments/mark-paid")
+  public MarkAllPaidResponse markAuthorPaymentsPaid(
+      @Valid @RequestBody MarkAllPaidRequest request) {
+    int updatedCount = saleService.markAllPaidByAuthor(request.author());
+    return new MarkAllPaidResponse(request.author(), updatedCount);
   }
 
   @Operation(operationId = "getSaleById", summary = "Gets a sale by its ID")
