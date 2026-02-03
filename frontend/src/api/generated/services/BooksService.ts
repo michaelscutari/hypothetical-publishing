@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { BookFinancialSummaryResponse } from '../models/BookFinancialSummaryResponse';
 import type { BookRequest } from '../models/BookRequest';
 import type { BookResponse } from '../models/BookResponse';
 import type { PagedBookResponse } from '../models/PagedBookResponse';
@@ -111,6 +112,23 @@ export class BooksService {
             url: '/api/books',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * Gets the aggregate amounts for book detail financials
+     * @param id
+     * @returns BookFinancialSummaryResponse OK
+     * @throws ApiError
+     */
+    public static getBookDetailFinancials(
+        id: number,
+    ): CancelablePromise<BookFinancialSummaryResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/books/{id}/financials',
+            path: {
+                'id': id,
+            },
         });
     }
     /**

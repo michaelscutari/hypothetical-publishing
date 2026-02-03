@@ -189,21 +189,16 @@ public class SaleService {
     return saleRepository.markAllPaidByAuthor(normalizedAuthor);
   }
 
-  /*
-   * TODO: Implement markAllPaid(author) API
-   *
-   * Implementation of togglePaid. See SaleController.java Line 89.
-   *
-   * @Transactional
-   * public Sale togglePaid(Long id) {
-   * Sale sale = getOrThrowSaleFromRepoById(id);
-   *
-   * boolean currentlyPaid = Boolean.TRUE.equals(sale.getHasAuthorBeenPaid());
-   * sale.setHasAuthorBeenPaid(!currentlyPaid); // "Not" the current standing
-   *
-   * return saleRepository.save(sale);
-   * }
-   */
+  // Req 2.2.2
+  public BookFinancialSummary getBookFinancialSummary(Long bookId) {
+    return BookFinancialSummary.builder()
+        .bookId(bookId)
+        .revenue(saleRepository.totalPublisherRevenueByBook(bookId))
+        .unpaidRoyalty(saleRepository.totalUnpaidAuthorRoyaltyByBook(bookId))
+        .paidRoyalty(saleRepository.totalPaidAuthorRoyaltyByBook(bookId))
+        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId))
+        .build();
+  }
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
     return saleRepository.findById(id).orElseThrow(() -> new NotFoundException("Sale not found"));

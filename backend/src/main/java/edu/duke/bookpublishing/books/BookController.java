@@ -4,6 +4,8 @@ import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
 import edu.duke.bookpublishing.books.dto.PagedBookResponse;
 import edu.duke.bookpublishing.common.dto.PagedResponse;
+import edu.duke.bookpublishing.sales.SaleService;
+import edu.duke.bookpublishing.sales.dto.BookFinancialSummaryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -25,6 +27,9 @@ import org.springframework.web.server.ResponseStatusException;
 public class BookController {
 
   private final BookService bookService;
+  private final SaleService saleService;
+
+  // ------- GET MAPPINGS -------
 
   @Operation(
       operationId = "getAllBooks",
@@ -80,6 +85,17 @@ public class BookController {
     return BookResponse.from(book);
   }
 
+  // BOOK DETAIL FINANCIAL AGGREGATOR
+  @Operation(
+      operationId = "getBookDetailFinancials",
+      summary = "Gets the aggregate amounts for book detail financials")
+  @GetMapping("/{id}/financials")
+  public BookFinancialSummaryResponse getBookDetailFinancials(@PathVariable Long id) {
+    return BookFinancialSummaryResponse.from(saleService.getBookFinancialSummary(id));
+  }
+
+  // ------- POST MAPPINGS -------
+
   @Operation(operationId = "createBook", summary = "Create a new book")
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
@@ -97,6 +113,8 @@ public class BookController {
             .build();
     return BookResponse.from(bookService.save(book));
   }
+
+  // ------- PUT MAPPINGS -------
 
   @Operation(operationId = "updateBook", summary = "Update an existing book")
   @PutMapping("/{id}")
@@ -117,6 +135,8 @@ public class BookController {
 
     return BookResponse.from(bookService.save(book));
   }
+
+  // ------- DELETE MAPPINGS -------
 
   @Operation(operationId = "deleteBook", summary = "Delete a book")
   @DeleteMapping("/{id}")

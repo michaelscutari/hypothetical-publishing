@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { AuthorPaymentGroupResponse } from './models/AuthorPaymentGroupResponse';
 export type { AuthorPaymentSaleResponse } from './models/AuthorPaymentSaleResponse';
+export type { BookFinancialSummaryResponse } from './models/BookFinancialSummaryResponse';
 export type { BookRequest } from './models/BookRequest';
 export type { BookResponse } from './models/BookResponse';
 export type { ChangePasswordRequest } from './models/ChangePasswordRequest';

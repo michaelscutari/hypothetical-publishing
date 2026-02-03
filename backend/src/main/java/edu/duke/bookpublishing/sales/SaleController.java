@@ -42,6 +42,8 @@ public class SaleController {
 
   private final SaleService saleService;
 
+  // ------- GET MAPPINGS -------
+
   @Operation(operationId = "getSales", summary = "Retrieves all sales, paginated")
   @GetMapping
   public PagedResponse<SaleResponse> getSales(
@@ -100,6 +102,28 @@ public class SaleController {
     return new PagedResponse<>(content, page, size, totalElements, totalPages, true);
   }
 
+  @Operation(operationId = "getSaleById", summary = "Gets a sale by its ID")
+  @GetMapping("/{id}")
+  public SaleResponse getSale(@PathVariable Long id) {
+    return SaleResponse.from(saleService.getSaleById(id));
+  }
+
+  // ------- POST MAPPINGS -------
+
+  @Operation(operationId = "createSale", summary = "Creates a new sale")
+  @PostMapping
+  public SaleResponse createSale(@Valid @RequestBody SaleRequest sale) {
+    return SaleResponse.from(saleService.createSale(sale));
+  }
+
+  // ------- PUT MAPPINGS -------
+
+  @Operation(operationId = "updateSale", summary = "Updates an existing sale")
+  @PutMapping("/{id}")
+  public SaleResponse updateSale(@PathVariable Long id, @Valid @RequestBody SaleRequest sale) {
+    return SaleResponse.from(saleService.updateSale(id, sale));
+  }
+
   @Operation(
       operationId = "markAuthorPaymentsPaid",
       summary = "Marks all unpaid sales for an author as paid")
@@ -110,23 +134,7 @@ public class SaleController {
     return new MarkAllPaidResponse(request.author(), updatedCount);
   }
 
-  @Operation(operationId = "getSaleById", summary = "Gets a sale by its ID")
-  @GetMapping("/{id}")
-  public SaleResponse getSale(@PathVariable Long id) {
-    return SaleResponse.from(saleService.getSaleById(id));
-  }
-
-  @Operation(operationId = "createSale", summary = "Creates a new sale")
-  @PostMapping
-  public SaleResponse createSale(@Valid @RequestBody SaleRequest sale) {
-    return SaleResponse.from(saleService.createSale(sale));
-  }
-
-  @Operation(operationId = "updateSale", summary = "Updates an existing sale")
-  @PutMapping("/{id}")
-  public SaleResponse updateSale(@PathVariable Long id, @Valid @RequestBody SaleRequest sale) {
-    return SaleResponse.from(saleService.updateSale(id, sale));
-  }
+  // ------- DELETE MAPPINGS -------
 
   @Operation(operationId = "deleteSale", summary = "Deletes an existing sale")
   @DeleteMapping("/{id}")
@@ -134,18 +142,4 @@ public class SaleController {
   public void deleteSale(@PathVariable Long id) {
     saleService.deleteById(id);
   }
-
-  /*
-  TODO: Implement markAllPaid(author) API
-
-  Possible API. I don't think it is necessary, however, due to the update API accepting a DTO with hasAuthorBeenPaid.
-  Leaving since already implemented in case we want to stick to original design doc.
-
-  @Operation(operationId = "togglePaid", summary = "Toggles if an author has been paid for a sale")
-  @PutMapping("/togglePaid/{id}")
-  public SaleResponse togglePaid(@PathVariable Long id) {
-      return SaleResponse.from(saleService.togglePaid(id));
-  }
-  */
-
 }

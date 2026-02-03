@@ -9,6 +9,8 @@ import edu.duke.bookpublishing.auth.User;
 import edu.duke.bookpublishing.auth.UserRepository;
 import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
+import edu.duke.bookpublishing.sales.SaleRepository;
+import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,12 +35,15 @@ class BookControllerTest {
 
   @Autowired private BookRepository bookRepository;
 
+  @Autowired private SaleRepository saleRepository;
+
   @Autowired private UserRepository userRepository;
 
   @Autowired private PasswordEncoder passwordEncoder;
 
   @BeforeEach
   void setUp() {
+    saleRepository.deleteAll();
     bookRepository.deleteAll();
     userRepository.deleteAll();
     userRepository.save(
@@ -511,6 +516,72 @@ class BookControllerTest {
   }
 
   @Test
+  void getBookDetailFinancialsReturnsZeroesWhenNoSales() throws Exception {
+    Cookie token = login();
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
+
+    mockMvc
+        .perform(get("/api/books/{id}/financials", bookId).cookie(token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.bookId").value(bookId))
+        .andExpect(jsonPath("$.revenue").value(0))
+        .andExpect(jsonPath("$.unpaidRoyalty").value(0))
+        .andExpect(jsonPath("$.paidRoyalty").value(0))
+        .andExpect(jsonPath("$.totalRoyalty").value(0));
+  }
+
+  @Test
+  void getBookDetailFinancialsAggregatesPaidAndUnpaidSales() throws Exception {
+    Cookie token = login();
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
+    Long otherBookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Other Book",
+                "Other Author",
+                "9780743273566",
+                null,
+                2021,
+                2,
+                new BigDecimal("0.5")));
+
+    createSale(
+        token,
+        new SaleRequest(
+            bookId, 1, 2024, 10, new BigDecimal("100.00"), new BigDecimal("10.00"), false));
+    createSale(
+        token,
+        new SaleRequest(
+            bookId, 2, 2024, 15, new BigDecimal("200.00"), new BigDecimal("20.00"), true));
+    createSale(
+        token,
+        new SaleRequest(
+            bookId, 3, 2024, 12, new BigDecimal("150.00"), new BigDecimal("15.00"), false));
+    createSale(
+        token,
+        new SaleRequest(
+            otherBookId, 4, 2024, 5, new BigDecimal("999.00"), new BigDecimal("99.00"), true));
+
+    mockMvc
+        .perform(get("/api/books/{id}/financials", bookId).cookie(token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.bookId").value(bookId))
+        .andExpect(jsonPath("$.revenue").value(450.00))
+        .andExpect(jsonPath("$.unpaidRoyalty").value(25.00))
+        .andExpect(jsonPath("$.paidRoyalty").value(20.00))
+        .andExpect(jsonPath("$.totalRoyalty").value(45.00));
+  }
+
+  @Test
   void updateBookUpdatesFields() throws Exception {
     Cookie token = login();
     Long bookId =
@@ -612,5 +683,15 @@ class BookControllerTest {
     BookResponse response =
         objectMapper.readValue(result.getResponse().getContentAsString(), BookResponse.class);
     return response.id();
+  }
+
+  private void createSale(Cookie token, SaleRequest request) throws Exception {
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk());
   }
 }
