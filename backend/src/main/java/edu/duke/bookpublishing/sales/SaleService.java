@@ -193,6 +193,7 @@ public class SaleService {
   public BookFinancialSummary getBookFinancialSummary(Long bookId) {
     return BookFinancialSummary.builder()
         .bookId(bookId)
+        .totalUnitsSold(saleRepository.totalUnitsSoldByBook(bookId))
         .revenue(saleRepository.totalPublisherRevenueByBook(bookId))
         .unpaidRoyalty(saleRepository.totalUnpaidAuthorRoyaltyByBook(bookId))
         .paidRoyalty(saleRepository.totalPaidAuthorRoyaltyByBook(bookId))

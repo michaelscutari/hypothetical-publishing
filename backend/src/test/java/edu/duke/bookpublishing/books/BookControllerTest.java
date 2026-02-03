@@ -528,6 +528,7 @@ class BookControllerTest {
         .perform(get("/api/books/{id}/financials", bookId).cookie(token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.bookId").value(bookId))
+        .andExpect(jsonPath("$.totalUnitsSold").value(0))
         .andExpect(jsonPath("$.revenue").value(0))
         .andExpect(jsonPath("$.unpaidRoyalty").value(0))
         .andExpect(jsonPath("$.paidRoyalty").value(0))
@@ -565,7 +566,7 @@ class BookControllerTest {
     createSale(
         token,
         new SaleRequest(
-            bookId, 3, 2024, 12, new BigDecimal("150.00"), new BigDecimal("15.00"), false));
+            bookId, 3, 2024, 10, new BigDecimal("150.00"), new BigDecimal("15.00"), false));
     createSale(
         token,
         new SaleRequest(
@@ -575,6 +576,7 @@ class BookControllerTest {
         .perform(get("/api/books/{id}/financials", bookId).cookie(token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.bookId").value(bookId))
+        .andExpect(jsonPath("$.totalUnitsSold").value(35))
         .andExpect(jsonPath("$.revenue").value(450.00))
         .andExpect(jsonPath("$.unpaidRoyalty").value(25.00))
         .andExpect(jsonPath("$.paidRoyalty").value(20.00))

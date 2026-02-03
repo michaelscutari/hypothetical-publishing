@@ -6,6 +6,7 @@ import lombok.Builder;
 @Builder
 public record BookFinancialSummary(
     Long bookId,
+    Long totalUnitsSold,
     BigDecimal revenue,
     BigDecimal unpaidRoyalty,
     BigDecimal paidRoyalty,
