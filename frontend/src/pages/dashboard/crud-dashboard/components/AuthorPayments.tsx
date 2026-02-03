@@ -7,6 +7,7 @@ import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import SearchIcon from '@mui/icons-material/Search';
+import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
 import {
   Accordion,
   AccordionDetails,
@@ -481,41 +482,38 @@ export default function AuthorPaymentsView() {
 
                   <AccordionDetails>
                     <Box sx={{ width: '100%' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr>
-                            <th style={{ textAlign: 'left', padding: '8px' }}>Book Title</th>
-                            <th style={{ textAlign: 'left', padding: '8px' }}>Month/Year</th>
-                            <th style={{ textAlign: 'right', padding: '8px' }}>Qty</th>
-                            <th style={{ textAlign: 'right', padding: '8px' }}>Author Royalty</th>
-                            <th style={{ textAlign: 'left', padding: '8px' }}>Status</th>
-                            <th style={{ textAlign: 'left', padding: '8px' }}>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <Table size="small">
+                        <TableHead>
+                          <TableRow>
+                            <TableCell>Book Title</TableCell>
+                            <TableCell>Month/Year</TableCell>
+                            <TableCell align="right">Qty</TableCell>
+                            <TableCell align="right">Author Royalty</TableCell>
+                            <TableCell>Status</TableCell>
+                            <TableCell>Actions</TableCell>
+                          </TableRow>
+                        </TableHead>
+
+                        <TableBody>
                           {(group.sales ?? []).map((s) => (
-                            <tr key={s.id} style={{ borderTop: '1px solid rgba(0,0,0,0.06)' }}>
-                              <td style={{ padding: '8px' }}>
+                            <TableRow key={s.id} hover>
+                              <TableCell>
                                 <Typography
-                                  variant="body2"
-                                  sx={{
-                                    cursor: 'pointer',
-                                    textDecoration: 'underline',
-                                    display: 'inline-block',
-                                  }}
+                                  variant="body1" // use body1 for standard size (was body2)
+                                  sx={{ cursor: 'pointer', textDecoration: 'underline' }}
                                   onClick={() => navigate(`/dashboard/books/${s.bookId}`)}
                                 >
                                   {s.bookTitle ?? `Book ${s.bookId}`}
                                 </Typography>
-                              </td>
-                              <td style={{ padding: '8px' }}>{formatMonthYear(s)}</td>
-                              <td style={{ textAlign: 'right', padding: '8px' }}>
-                                {s.quantitySold ?? '-'}
-                              </td>
-                              <td style={{ textAlign: 'right', padding: '8px' }}>
-                                {formatCurrency(s.authorRoyalty)}
-                              </td>
-                              <td style={{ padding: '8px' }}>
+                              </TableCell>
+
+                              <TableCell>{formatMonthYear(s)}</TableCell>
+
+                              <TableCell align="right">{s.quantitySold ?? '-'}</TableCell>
+
+                              <TableCell align="right">{formatCurrency(s.authorRoyalty)}</TableCell>
+
+                              <TableCell>
                                 <Chip
                                   icon={s.hasAuthorBeenPaid ? <CheckCircleIcon /> : <PendingIcon />}
                                   label={s.hasAuthorBeenPaid ? 'Paid' : 'Unpaid'}
@@ -523,19 +521,20 @@ export default function AuthorPaymentsView() {
                                   size="small"
                                   variant={s.hasAuthorBeenPaid ? 'filled' : 'outlined'}
                                 />
-                              </td>
-                              <td style={{ padding: '8px' }}>
+                              </TableCell>
+
+                              <TableCell>
                                 <Button
                                   size="small"
                                   onClick={() => navigate(`/dashboard/sales/${s.id}`)}
                                 >
                                   Details
                                 </Button>
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ))}
-                        </tbody>
-                      </table>
+                        </TableBody>
+                      </Table>
                     </Box>
                   </AccordionDetails>
                 </Accordion>
