@@ -38,6 +38,12 @@ public record SaleRequest(
         @NotNull(message = "Publisher revenue is required")
         @DecimalMin(value = "0.00")
         BigDecimal publisherRevenue,
+    @Schema(
+            description =
+                "Optional overridden author royalty in USD. If omitted, royalty is computed automatically.",
+            example = "500.00")
+        @DecimalMin(value = "0.00")
+        BigDecimal authorRoyalty,
     @Schema(description = "Indicates whether the author has been paid", example = "true")
         Boolean hasAuthorBeenPaid) {
 

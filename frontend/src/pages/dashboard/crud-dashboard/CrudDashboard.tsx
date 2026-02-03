@@ -7,6 +7,10 @@ import ChangePassword from './components/ChangePassword';
 import DashboardLayout from './components/DashboardLayout';
 import DialogsProvider from './hooks/useDialogs/DialogsProvider';
 import NotificationsProvider from './hooks/useNotifications/NotificationsProvider';
+import SaleList from './components/SaleList';
+import SaleCreate from './components/SaleCreate';
+import SaleShow from './components/SaleShow';
+import SaleEdit from './components/SaleEdit';
 
 export default function CrudDashboard() {
   return (
@@ -22,6 +26,10 @@ export default function CrudDashboard() {
             <Route path="change-password" element={<ChangePassword />} />
 
             <Route path="*" element={<Navigate to="/dashboard/books" replace />} />
+            <Route path="sales" element={<SaleList />} />
+            <Route path="sales/new" element={<SaleCreate />} />
+            <Route path="sales/:saleId" element={<SaleShow />} />
+            <Route path="sales/:saleId/edit" element={<SaleEdit />} />
           </Route>
         </Routes>
       </DialogsProvider>
