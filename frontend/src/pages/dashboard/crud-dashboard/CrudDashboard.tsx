@@ -11,6 +11,7 @@ import SaleList from './components/SaleList';
 import SaleCreate from './components/SaleCreate';
 import SaleShow from './components/SaleShow';
 import SaleEdit from './components/SaleEdit';
+import AuthorPaymentsView from './components/AuthorPayments';
 
 export default function CrudDashboard() {
   return (
@@ -30,6 +31,7 @@ export default function CrudDashboard() {
             <Route path="sales/new" element={<SaleCreate />} />
             <Route path="sales/:saleId" element={<SaleShow />} />
             <Route path="sales/:saleId/edit" element={<SaleEdit />} />
+            <Route path="author-payments" element={<AuthorPaymentsView />} />
           </Route>
         </Routes>
       </DialogsProvider>
