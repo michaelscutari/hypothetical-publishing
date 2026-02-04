@@ -1,31 +1,31 @@
-import * as React from 'react';
+import AddIcon from '@mui/icons-material/Add';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PendingIcon from '@mui/icons-material/Pending';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
-import Chip from '@mui/material/Chip';
 import {
   DataGrid,
   type GridColDef,
+  type GridEventListener,
   type GridPaginationModel,
   type GridSortModel,
-  type GridEventListener,
   gridClasses,
 } from '@mui/x-data-grid';
-import AddIcon from '@mui/icons-material/Add';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import ViewListIcon from '@mui/icons-material/ViewList';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
-import { useNavigate } from 'react-router-dom';
-import PageContainer from './PageContainer';
-import { SalesService, BooksService, type SaleResponse, type BookResponse } from '../../../../api';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
+import * as React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { type BookResponse, BooksService, type SaleResponse, SalesService } from '../../../../api';
+import PageContainer from './PageContainer';
 
 const MONTH_NAMES = [
   'Jan',
@@ -178,6 +178,34 @@ export default function SaleList() {
         valueGetter: (_value, row) => {
           const book = booksMap.get(row.bookId ?? 0);
           return book?.title ?? `Book ${row.bookId}`;
+        },
+        renderCell: (params) => {
+          const bookId = params.row.bookId;
+          const book = booksMap.get(bookId ?? 0);
+          const title = book?.title ?? `Book ${bookId}`;
+
+          return (
+            <Link
+              to={`/dashboard/books/${bookId}`}
+              style={{
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+                e.currentTarget.style.color = '#1976d2';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+                e.currentTarget.style.color = 'inherit';
+              }}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent row click event
+              }}
+            >
+              {title}
+            </Link>
+          );
         },
       },
       {

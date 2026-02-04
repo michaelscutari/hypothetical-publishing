@@ -13,13 +13,13 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FullPageLoader from '../../../../components/FullPageLoader';
+import BookSalesList from '../components/BookSalesList';
+import FinancialSummary from '../components/FinancialSummary';
 import { deleteOne as deleteBook, getOne as getBook, type Book } from '../data/books';
+import * as salesData from '../data/sales';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-import * as salesData from '../data/sales';
-import FinancialSummary from '../components/FinancialSummary';
-import BookSalesList from '../components/BookSalesList';
 
 const MONTH_NAMES = [
   'January',
@@ -102,12 +102,15 @@ export default function BookShow() {
       return;
     }
 
-    const confirmed = await dialogs.confirm(`Do you wish to delete ${book.title}?`, {
-      title: `Delete book?`,
-      severity: 'error',
-      okText: 'Delete',
-      cancelText: 'Cancel',
-    });
+    const confirmed = await dialogs.confirm(
+      `Do you wish to delete ${book.title} by ${book.author}? By doing so, you will also be deleting ${book.totalSalesToDate} sales.`,
+      {
+        title: `Delete book?`,
+        severity: 'error',
+        okText: 'Delete',
+        cancelText: 'Cancel',
+      },
+    );
 
     if (confirmed) {
       setIsLoading(true);

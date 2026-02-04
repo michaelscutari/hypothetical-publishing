@@ -1,3 +1,13 @@
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import MoneyOffIcon from '@mui/icons-material/MoneyOff';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -5,24 +15,14 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import Paper from '@mui/material/Paper';
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
-import Tooltip from '@mui/material/Tooltip';
-import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import MoneyOffIcon from '@mui/icons-material/MoneyOff';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as salesData from '../data/sales';
-import useNotifications from '../hooks/useNotifications/useNotifications';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
+import useNotifications from '../hooks/useNotifications/useNotifications';
 
 const MONTH_NAMES = [
   'January',
@@ -295,7 +295,11 @@ export default function BookSalesList({
           <Button
             variant="outlined"
             size="small"
-            onClick={() => navigate(`/dashboard/sales/new?bookId=${bookId ?? ''}`)}
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (bookId) params.set('bookId', String(bookId));
+              navigate(`/dashboard/sales/new?${params.toString()}`);
+            }}
           >
             Add sale
           </Button>
