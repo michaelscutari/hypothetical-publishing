@@ -1,13 +1,11 @@
-import * as React from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PaymentIcon from '@mui/icons-material/Payments';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import SearchIcon from '@mui/icons-material/Search';
-import { Table, TableBody, TableCell, TableHead, TableRow } from '@mui/material';
+import ViewListIcon from '@mui/icons-material/ViewList';
 import {
   Accordion,
   AccordionDetails,
@@ -22,32 +20,38 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControl,
   IconButton,
   InputAdornment,
+  InputLabel,
   MenuItem,
   Pagination,
   Select,
-  Snackbar,
   Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableRow,
   TextField,
   Tooltip,
   Typography,
-  FormControl,
-  InputLabel,
 } from '@mui/material';
+import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from './PageContainer';
 
 import {
-  SalesService,
   BooksService,
-  type PagedResponseAuthorPaymentGroupResponse,
+  SalesService,
   type AuthorPaymentGroupResponse,
   type AuthorPaymentSaleResponse,
   type MarkAllPaidRequest,
   type MarkAllPaidResponse,
+  type PagedResponseAuthorPaymentGroupResponse,
   type PagedResponseString,
 } from '../../../../api';
+import useNotifications from '../hooks/useNotifications/useNotifications';
 
 const MONTH_NAMES = [
   'Jan',
@@ -94,8 +98,9 @@ function isPagedResponseString(x: unknown): x is PagedResponseString {
 
 export default function AuthorPaymentsView() {
   const navigate = useNavigate();
+  const notifications = useNotifications();
 
-  const [showAll, setShowAll] = React.useState(false);
+  const [showAll, setShowAll] = React.useState<boolean>(false);
   const [page, setPage] = React.useState<number>(0);
   const [pageSize, setPageSize] = React.useState<number>(INITIAL_PAGE_SIZE);
 
@@ -110,7 +115,6 @@ export default function AuthorPaymentsView() {
   const [debouncedQuery, setDebouncedQuery] = React.useState<string>('');
   const debounceRef = React.useRef<number | null>(null);
 
-  const [authorInputValue, setAuthorInputValue] = React.useState<string>('');
   const [authorOptions, setAuthorOptions] = React.useState<string[]>([]);
   const authorDebounceRef = React.useRef<number | null>(null);
 
@@ -118,20 +122,6 @@ export default function AuthorPaymentsView() {
   const [confirmingUnpaidCount, setConfirmingUnpaidCount] = React.useState<number>(0);
   const [confirmingUnpaidTotal, setConfirmingUnpaidTotal] = React.useState<number>(0);
   const [processing, setProcessing] = React.useState<boolean>(false);
-
-  const [snackbar, setSnackbar] = React.useState<{
-    open: boolean;
-    message: string;
-    severity?: 'success' | 'error';
-  }>({
-    open: false,
-    message: '',
-    severity: 'success',
-  });
-
-  const [clientFilteredGroups, setClientFilteredGroups] = React.useState<
-    AuthorPaymentGroupResponse[]
-  >([]);
 
   React.useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
@@ -149,19 +139,17 @@ export default function AuthorPaymentsView() {
 
   React.useEffect(() => {
     if (authorDebounceRef.current) window.clearTimeout(authorDebounceRef.current);
-    if (!authorInputValue || authorInputValue.trim().length < 2) {
-      setAuthorOptions([]);
-      return;
-    }
+
+    const q = (searchQuery ?? '').trim();
 
     authorDebounceRef.current = window.setTimeout(async () => {
       try {
-        const maybe = await BooksService.searchAuthors(authorInputValue, 0, 25, true);
+        const maybe = await BooksService.searchAuthors(q, 0, 25, true);
         const payload = unwrap<unknown>(maybe);
 
         if (isPagedResponseString(payload)) {
           const suggestions = payload.content ?? [];
-          setAuthorOptions(Array.isArray(suggestions) ? suggestions : []);
+          setAuthorOptions(Array.isArray(suggestions) ? (suggestions as string[]) : []);
         } else if (Array.isArray(payload)) {
           setAuthorOptions(payload as string[]);
         } else {
@@ -175,18 +163,23 @@ export default function AuthorPaymentsView() {
     return () => {
       if (authorDebounceRef.current) window.clearTimeout(authorDebounceRef.current);
     };
-  }, [authorInputValue]);
+  }, [searchQuery]);
 
+  // fetch grouped author payments from backend
   const loadGroups = React.useCallback(async () => {
     setError(null);
     setIsLoading(true);
 
     try {
       const sizeToUse = showAll ? 1000 : pageSize;
+      // getAuthorPayments(page, size, showAll, startDate?, endDate?, query?)
       const maybeResponse = await SalesService.getAuthorPayments(
         showAll ? 0 : page,
         sizeToUse,
         showAll,
+        undefined,
+        undefined,
+        debouncedQuery || undefined,
       );
       const response = unwrap<PagedResponseAuthorPaymentGroupResponse>(maybeResponse);
 
@@ -203,14 +196,6 @@ export default function AuthorPaymentsView() {
         return { ...g, sales, unpaidTotal };
       });
 
-      normalized.sort((a, b) => {
-        const A = (a.author ?? '').toLowerCase();
-        const B = (b.author ?? '').toLowerCase();
-        if (A < B) return -1;
-        if (A > B) return 1;
-        return 0;
-      });
-
       setGroups(normalized);
       setTotalPages(response.totalPages ?? 0);
       setTotalElements(response.totalElements ?? 0);
@@ -219,41 +204,7 @@ export default function AuthorPaymentsView() {
     } finally {
       setIsLoading(false);
     }
-  }, [page, pageSize, showAll]);
-
-  React.useEffect(() => {
-    function applyClientFilter(src: AuthorPaymentGroupResponse[], q: string) {
-      if (!q) return src;
-      const lower = q.toLowerCase();
-      return src
-        .map((g) => {
-          const matchingSales = (g.sales ?? []).filter((s) => {
-            if (g.author && g.author.toLowerCase().includes(lower)) return true;
-            if (s.bookTitle && s.bookTitle.toLowerCase().includes(lower)) return true;
-            if (s.bookAuthor && s.bookAuthor.toLowerCase().includes(lower)) return true;
-            if ((s.saleYear ?? '').toString().includes(lower)) return true;
-            if ((s.saleMonth ?? '').toString().includes(lower)) return true;
-            if ((s.quantitySold ?? '').toString().includes(lower)) return true;
-            if ((s.authorRoyalty ?? '').toString().includes(lower)) return true;
-            return false;
-          });
-
-          if (matchingSales.length === 0) return null;
-          return {
-            ...g,
-            sales: matchingSales,
-            unpaidTotal: matchingSales.reduce(
-              (sum, s) => sum + (s.hasAuthorBeenPaid ? 0 : (s.authorRoyalty ?? 0)),
-              0,
-            ),
-          } as AuthorPaymentGroupResponse;
-        })
-        .filter(Boolean) as AuthorPaymentGroupResponse[];
-    }
-
-    const filtered = applyClientFilter(groups, debouncedQuery);
-    setClientFilteredGroups(filtered);
-  }, [groups, debouncedQuery]);
+  }, [page, pageSize, showAll, debouncedQuery]);
 
   React.useEffect(() => {
     void loadGroups();
@@ -285,7 +236,10 @@ export default function AuthorPaymentsView() {
   function beginPayAuthor(group: AuthorPaymentGroupResponse) {
     const unpaidCount = (group.sales ?? []).filter((s) => !s.hasAuthorBeenPaid).length;
     if (unpaidCount === 0) {
-      setSnackbar({ open: true, message: 'No unpaid records for this author', severity: 'error' });
+      notifications.show('No unpaid records for this author', {
+        severity: 'error',
+        autoHideDuration: 3000,
+      });
       return;
     }
     setConfirmingAuthor(group.author ?? null);
@@ -302,18 +256,16 @@ export default function AuthorPaymentsView() {
       const maybeResp = await SalesService.markAuthorPaymentsPaid(req);
       const resp = unwrap<MarkAllPaidResponse>(maybeResp);
       const updatedCount = resp?.updatedCount ?? 0;
-      setSnackbar({
-        open: true,
-        message: `Marked ${updatedCount} record(s) for ${confirmingAuthor} as paid.`,
+      notifications.show(`Marked ${updatedCount} record(s) for ${confirmingAuthor} as paid.`, {
         severity: 'success',
+        autoHideDuration: 3000,
       });
 
       await loadGroups();
     } catch (e) {
-      setSnackbar({
-        open: true,
-        message: `Failed to mark paid: ${(e as Error).message}`,
+      notifications.show(`Failed to mark paid: ${(e as Error).message}`, {
         severity: 'error',
+        autoHideDuration: 3000,
       });
     } finally {
       setProcessing(false);
@@ -323,7 +275,17 @@ export default function AuthorPaymentsView() {
     }
   }
 
-  const effectiveGroups = debouncedQuery ? clientFilteredGroups : groups;
+  const handleSearchEnter = React.useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter') {
+        if (debounceRef.current) window.clearTimeout(debounceRef.current);
+        setDebouncedQuery(searchQuery.trim());
+      }
+    },
+    [searchQuery],
+  );
+
+  const effectiveGroups = groups;
 
   const computedTotalPages = React.useMemo(() => {
     if ((totalPages ?? 0) > 0) return Math.max(1, totalPages);
@@ -364,42 +326,25 @@ export default function AuthorPaymentsView() {
             </div>
           </Tooltip>
 
-          <FormControl size="small" sx={{ minWidth: 110 }}>
-            <InputLabel id="ap-page-size-label">Page size</InputLabel>
-            <Select
-              labelId="ap-page-size-label"
-              label="Page size"
-              value={showAll ? ALL_SENTINEL : pageSize}
-              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-              disabled={isLoading}
-            >
-              {PAGE_SIZE_OPTIONS.map((s) => (
-                <MenuItem key={s} value={s}>
-                  {s}
-                </MenuItem>
-              ))}
-              <MenuItem value={ALL_SENTINEL}>All</MenuItem>
-            </Select>
-          </FormControl>
-
           <Autocomplete
             freeSolo
             options={authorOptions}
-            inputValue={authorInputValue}
-            onInputChange={(_, v) => setAuthorInputValue(v)}
-            onChange={(_, value) => {
-              const q = typeof value === 'string' ? value : (value ?? '');
+            inputValue={searchQuery}
+            onInputChange={(_e, v) => setSearchQuery(typeof v === 'string' ? v : '')}
+            onChange={(_e, v) => {
+              const q = typeof v === 'string' ? v : (v ?? '');
               setSearchQuery(q);
-              setAuthorInputValue(q);
+
+              if (debounceRef.current) window.clearTimeout(debounceRef.current);
+              setDebouncedQuery((q ?? '').trim());
             }}
             sx={{ minWidth: 280 }}
             renderInput={(params) => (
               <TextField
                 {...params}
                 size="small"
-                placeholder="Search author, book, month."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search author or book title..."
+                onKeyDown={handleSearchEnter}
                 InputProps={{
                   ...params.InputProps,
                   startAdornment: (
@@ -499,7 +444,7 @@ export default function AuthorPaymentsView() {
                             <TableRow key={s.id} hover>
                               <TableCell>
                                 <Typography
-                                  variant="body1" // use body1 for standard size (was body2)
+                                  variant="body1"
                                   sx={{ cursor: 'pointer', textDecoration: 'underline' }}
                                   onClick={() => navigate(`/dashboard/books/${s.bookId}`)}
                                 >
@@ -548,6 +493,22 @@ export default function AuthorPaymentsView() {
                 onChange={(_, value) => setPage(value - 1)}
                 color="primary"
               />
+              <FormControl size="small" sx={{ minWidth: 110 }}>
+                <InputLabel id="ap-page-size-label">Page size</InputLabel>
+                <Select
+                  labelId="ap-page-size-label"
+                  label="Page size"
+                  value={showAll ? ALL_SENTINEL : pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  disabled={isLoading}
+                >
+                  {PAGE_SIZE_OPTIONS.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Box>
           </Box>
         )}
@@ -580,14 +541,6 @@ export default function AuthorPaymentsView() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={5000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        message={snackbar.message}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      />
     </PageContainer>
   );
 }

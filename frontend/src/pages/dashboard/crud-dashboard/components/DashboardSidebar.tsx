@@ -200,11 +200,11 @@ export default function DashboardSidebar({
                 selected={!!matchPath('/dashboard/sales/*', pathname)}
               />
               <DashboardSidebarPageItem
-                id="author-payments"
+                id="authorpayments"
                 title="Author Payments"
                 icon={<AccountBalanceWalletIcon />}
-                href="/dashboard/author-payments"
-                selected={!!matchPath('/dashboard/author-payments', pathname)}
+                href="/dashboard/authorpayments"
+                selected={!!matchPath('/dashboard/authorpayments', pathname)}
               />
               <DashboardSidebarDividerItem />
             </List>

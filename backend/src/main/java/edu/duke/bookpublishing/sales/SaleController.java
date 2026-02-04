@@ -80,11 +80,12 @@ public class SaleController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate startDate,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate endDate) {
+          LocalDate endDate,
+      @RequestParam(required = false) String query) {
 
     // Build the full grouped list in required order, then paginate at the author-group level.
     List<AuthorPaymentGroupResponse> groups =
-        saleService.getAuthorPaymentGroups(startDate, endDate);
+        saleService.getAuthorPaymentGroups(startDate, endDate, query);
 
     if (showAll) {
       return PagedResponse.unpaged(groups);

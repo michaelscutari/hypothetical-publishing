@@ -31,7 +31,7 @@ export default function CrudDashboard() {
             <Route path="sales/new" element={<SaleCreate />} />
             <Route path="sales/:saleId" element={<SaleShow />} />
             <Route path="sales/:saleId/edit" element={<SaleEdit />} />
-            <Route path="author-payments" element={<AuthorPaymentsView />} />
+            <Route path="authorpayments" element={<AuthorPaymentsView />} />
           </Route>
         </Routes>
       </DialogsProvider>

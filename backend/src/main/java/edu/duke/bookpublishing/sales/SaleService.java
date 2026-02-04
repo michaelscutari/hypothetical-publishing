@@ -72,22 +72,27 @@ public class SaleService {
    * <p>Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
    */
   public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(
-      LocalDate startDate, LocalDate endDate) {
+      LocalDate startDate, LocalDate endDate, String query) {
+
     Sort sort =
         Sort.by(
             Sort.Order.asc("book.author"),
             Sort.Order.desc("saleYear"),
             Sort.Order.desc("saleMonth"));
 
-    List<Sale> sales;
-    if (startDate == null && endDate == null) {
-      sales = saleRepository.findAll(sort);
-    } else {
+    Specification<Sale> spec = Specification.where(null);
+
+    if (startDate != null || endDate != null) {
       LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
       LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
-      Specification<Sale> spec = SaleSpecifications.withinDateRange(specStartDate, specEndDate);
-      sales = saleRepository.findAll(spec, sort);
+      spec = spec.and(SaleSpecifications.withinDateRange(specStartDate, specEndDate));
     }
+
+    if (query != null && !query.isBlank()) {
+      spec = spec.and(SaleSpecifications.matchesQuery(query));
+    }
+
+    List<Sale> sales = saleRepository.findAll(spec, sort);
 
     // Group sales by author while preserving the sort order established above.
     Map<String, List<Sale>> grouped = new LinkedHashMap<>();
