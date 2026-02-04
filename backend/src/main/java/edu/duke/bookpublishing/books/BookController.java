@@ -1,11 +1,11 @@
 package edu.duke.bookpublishing.books;
 
+import edu.duke.bookpublishing.books.dto.BookDetailResponse;
 import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
-import edu.duke.bookpublishing.books.dto.PagedBookResponse;
 import edu.duke.bookpublishing.common.dto.PagedResponse;
+import edu.duke.bookpublishing.sales.BookFinancialSummary;
 import edu.duke.bookpublishing.sales.SaleService;
-import edu.duke.bookpublishing.sales.dto.BookFinancialSummaryResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,7 +17,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -35,7 +44,7 @@ public class BookController {
       operationId = "getAllBooks",
       summary = "Get paginated books with optional search, sort, and filter")
   @GetMapping
-  public PagedBookResponse getBooks(
+  public PagedResponse<BookResponse> getBooks(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll,
@@ -50,12 +59,14 @@ public class BookController {
 
     if (showAll) {
       List<Book> all = bookService.findAll(query, sort);
-      return PagedBookResponse.unpaged(all);
+      return PagedResponse.unpaged(
+          all, book -> BookResponse.from(book, saleService.getBookTotalSales(book.getId())));
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
     Page<Book> books = bookService.findAll(pageable, query);
-    return PagedBookResponse.from(books);
+    return PagedResponse.paged(
+        books, book -> BookResponse.from(book, saleService.getBookTotalSales(book.getId())));
   }
 
   @Operation(operationId = "searchAuthors", summary = "Search distinct author names")
@@ -82,16 +93,23 @@ public class BookController {
         bookService
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
-    return BookResponse.from(book);
+
+    return BookResponse.from(book, saleService.getBookTotalSales(id));
   }
 
-  // BOOK DETAIL FINANCIAL AGGREGATOR
   @Operation(
-      operationId = "getBookDetailFinancials",
-      summary = "Gets the aggregate amounts for book detail financials")
-  @GetMapping("/{id}/financials")
-  public BookFinancialSummaryResponse getBookDetailFinancials(@PathVariable Long id) {
-    return BookFinancialSummaryResponse.from(saleService.getBookFinancialSummary(id));
+      operationId = "getBookDetailById",
+      summary = "Gets book detail information (book information + financials)")
+  @GetMapping("/bookdetail/{id}")
+  public BookDetailResponse getBookDetailById(@PathVariable Long id) {
+    Book book =
+        bookService
+            .findById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+
+    BookFinancialSummary bookFinancialSummary = saleService.getBookFinancialSummary(id);
+
+    return BookDetailResponse.from(book, bookFinancialSummary);
   }
 
   // ------- POST MAPPINGS -------

@@ -190,6 +190,10 @@ public class SaleService {
   }
 
   // Req 2.2.2
+  public Long getBookTotalSales(Long bookId) {
+    return saleRepository.totalUnitsSoldByBook(bookId);
+  }
+
   public BookFinancialSummary getBookFinancialSummary(Long bookId) {
     return BookFinancialSummary.builder()
         .bookId(bookId)

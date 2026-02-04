@@ -1,12 +1,14 @@
 import {
   BooksService,
   type BookRequest,
+  type BookDetailResponse,
   type BookResponse,
-  type PagedBookResponse,
+  type PagedResponseBookResponse,
 } from '../../../../api';
 import type { GridFilterModel, GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
 
 export type Book = BookResponse;
+export type BookDetail = BookDetailResponse;
 
 export async function getMany({
   paginationModel,
@@ -25,7 +27,7 @@ export async function getMany({
   // Extract search query from quick filter
   const query = filterModel?.quickFilterValues?.join(' ');
 
-  const response: PagedBookResponse = await BooksService.getAllBooks(
+  const response: PagedResponseBookResponse = await BooksService.getAllBooks(
     paginationModel.page,
     paginationModel.pageSize,
     showAll,
@@ -42,6 +44,10 @@ export async function getMany({
 
 export async function getOne(bookId: number): Promise<Book> {
   return BooksService.getBookById(bookId);
+}
+
+export async function getDetail(bookId: number): Promise<BookDetail> {
+  return BooksService.getBookDetailById(bookId);
 }
 
 export async function createOne(data: Omit<Book, 'id' | 'totalSalesToDate'>): Promise<Book> {
