@@ -135,18 +135,4 @@ public class SaleController {
   public void deleteSale(@PathVariable Long id) {
     saleService.deleteById(id);
   }
-
-  /*
-  TODO: Implement markAllPaid(author) API
-
-  Possible API. I don't think it is necessary, however, due to the update API accepting a DTO with hasAuthorBeenPaid.
-  Leaving since already implemented in case we want to stick to original design doc.
-
-  @Operation(operationId = "togglePaid", summary = "Toggles if an author has been paid for a sale")
-  @PutMapping("/togglePaid/{id}")
-  public SaleResponse togglePaid(@PathVariable Long id) {
-      return SaleResponse.from(saleService.togglePaid(id));
-  }
-  */
-
 }
