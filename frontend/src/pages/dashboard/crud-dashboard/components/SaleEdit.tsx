@@ -1,5 +1,7 @@
-import * as React from 'react';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import WarningIcon from '@mui/icons-material/Warning';
 import Alert from '@mui/material/Alert';
+import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -13,12 +15,10 @@ import Select from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
-import Autocomplete from '@mui/material/Autocomplete';
 import Typography from '@mui/material/Typography';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import WarningIcon from '@mui/icons-material/Warning';
+import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { SalesService, BooksService, type SaleResponse, type BookResponse } from '../../../../api';
+import { BooksService, SalesService, type BookResponse, type SaleResponse } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 
@@ -57,6 +57,7 @@ export default function SaleEdit() {
   const [authorRoyalty, setAuthorRoyalty] = React.useState<string>('0.00');
   const [hasAuthorBeenPaid, setHasAuthorBeenPaid] = React.useState<boolean>(false);
   const [isRoyaltyOverridden, setIsRoyaltyOverridden] = React.useState<boolean>(false);
+  const [hasRoyaltyBeenEdited, setHasRoyaltyBeenEdited] = React.useState<boolean>(false);
 
   // Track original computed royalty
   const computedRoyalty = React.useMemo(() => {
@@ -101,13 +102,9 @@ export default function SaleEdit() {
       const book = (booksResponse.content ?? []).find((b) => b.id === saleData.bookId);
       setSelectedBook(book ?? null);
 
-      // Check if royalty was overridden (doesn't match computed value)
-      if (book) {
-        const expectedRoyalty = (
-          (saleData.publisherRevenue ?? 0) * (book.royaltyRate ?? 0)
-        ).toFixed(2);
-        setIsRoyaltyOverridden(String(saleData.authorRoyalty ?? 0) !== expectedRoyalty);
-      }
+      // On load, do not mark as overridden or edited
+      setIsRoyaltyOverridden(false);
+      setHasRoyaltyBeenEdited(false);
     } catch (loadError) {
       setError(loadError as Error);
     }
@@ -129,10 +126,22 @@ export default function SaleEdit() {
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
       setAuthorRoyalty(value);
-      // Mark as overridden if user manually changes it
-      setIsRoyaltyOverridden(value !== computedRoyalty);
+      setHasRoyaltyBeenEdited(true);
+      // Only mark as overridden if user has edited and value is a valid number and differs from computedRoyalty
+      const valueNum = parseFloat(value);
+      const computedNum = parseFloat(computedRoyalty);
+      if (
+        hasRoyaltyBeenEdited &&
+        !isNaN(valueNum) &&
+        value.trim() !== '' &&
+        valueNum !== computedNum
+      ) {
+        setIsRoyaltyOverridden(true);
+      } else {
+        setIsRoyaltyOverridden(false);
+      }
     },
-    [computedRoyalty],
+    [computedRoyalty, hasRoyaltyBeenEdited],
   );
 
   const handleSubmit = React.useCallback(
@@ -163,6 +172,7 @@ export default function SaleEdit() {
           saleYear,
           quantitySold,
           publisherRevenue: parseFloat(publisherRevenue),
+          authorRoyalty: parseFloat(authorRoyalty),
           hasAuthorBeenPaid,
         });
 
