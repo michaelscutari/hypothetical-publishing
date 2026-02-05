@@ -205,6 +205,7 @@ export default function SaleEdit() {
       royaltyError,
       notifications,
       navigate,
+      authorRoyalty,
     ],
   );
 
