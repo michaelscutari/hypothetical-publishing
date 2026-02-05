@@ -144,7 +144,7 @@ export default function SaleList() {
         setStartDate(null);
         setEndDate(null);
       } else {
-        // going BACK to filtered view: restore what user had before
+        // going BACK to Paginated view: restore what user had before
         setStartDate(prevStartDate);
         setEndDate(prevEndDate);
       }
@@ -249,7 +249,7 @@ export default function SaleList() {
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
           <Tooltip
-            title={showAll ? 'Switch to filtered view' : 'Show all records'}
+            title={showAll ? 'Switch to paginated view' : 'Show all records'}
             placement="bottom"
             enterDelay={1000}
           >
@@ -260,7 +260,7 @@ export default function SaleList() {
                 onClick={handleShowAllToggle}
                 startIcon={<ViewListIcon />}
               >
-                {showAll ? 'Filtered' : 'Show All'}
+                {showAll ? 'Paginated' : 'Show All'}
               </Button>
             </span>
           </Tooltip>

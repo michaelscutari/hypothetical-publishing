@@ -302,7 +302,7 @@ export default function AuthorPaymentsView() {
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
           <Tooltip
-            title={showAll ? 'Switch to filtered view' : 'Show all records'}
+            title={showAll ? 'Switch to paginated view' : 'Show all records'}
             placement="bottom"
             enterDelay={1000}
           >
@@ -313,7 +313,7 @@ export default function AuthorPaymentsView() {
                 onClick={handleShowAllToggle}
                 startIcon={<ViewListIcon />}
               >
-                {showAll ? 'Filtered' : 'Show All'}
+                {showAll ? 'Paginated' : 'Show All'}
               </Button>
             </div>
           </Tooltip>
