@@ -64,8 +64,7 @@ export default function BookList() {
   const [sortModel, setSortModel] = React.useState<GridSortModel>(
     searchParams.get('sort') ? JSON.parse(searchParams.get('sort') ?? '') : [],
   );
-  const getBackendSortModel = React.useCallback(
-  (model: GridSortModel): GridSortModel => {
+  const getBackendSortModel = React.useCallback((model: GridSortModel): GridSortModel => {
     if (!model.length) return [];
 
     const sort = model[0];
@@ -82,10 +81,7 @@ export default function BookList() {
     }
 
     return [{ field: sort.field, sort: sort.sort }];
-  },
-  [],
-);
-
+  }, []);
 
   const [rowsState, setRowsState] = React.useState<{
     rows: Book[];
