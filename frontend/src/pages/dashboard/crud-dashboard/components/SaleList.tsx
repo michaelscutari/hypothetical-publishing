@@ -253,7 +253,7 @@ export default function SaleList() {
             placement="bottom"
             enterDelay={1000}
           >
-            <div>
+            <span>
               <Button
                 size="small"
                 variant={showAll ? 'contained' : 'outlined'}
@@ -262,15 +262,15 @@ export default function SaleList() {
               >
                 {showAll ? 'Filtered' : 'Show All'}
               </Button>
-            </div>
+            </span>
           </Tooltip>
 
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
-            <div>
+            <span>
               <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
                 <RefreshIcon />
               </IconButton>
-            </div>
+            </span>
           </Tooltip>
 
           <LocalizationProvider dateAdapter={AdapterDayjs}>
