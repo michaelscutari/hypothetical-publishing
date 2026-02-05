@@ -25,6 +25,8 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
+import DeleteIcon from '@mui/icons-material/Delete';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BooksService, SalesService, type BookResponse } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
@@ -66,6 +68,13 @@ export default function SaleCreate() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const notifications = useNotifications();
+  const [searchParams] = useSearchParams();
+  const bookIdParam = React.useMemo(() => {
+    const v = searchParams.get('bookId');
+    if (!v) return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+  }, [searchParams]);
 
   const [records, setRecords] = React.useState<SaleRecordInput[]>([createEmptyRecord({}, false)]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
@@ -97,6 +106,35 @@ export default function SaleCreate() {
       errors: {},
     };
   }
+  // Prefill first row with book when opened from Book Detail (?bookId=...)
+  React.useEffect(() => {
+    if (!bookIdParam) return;
+    let mounted = true;
+    void (async () => {
+      try {
+        const book = await BooksService.getBookById(bookIdParam);
+        if (!mounted) return;
+
+        setBooks((prev) => (prev.some((b) => b.id === book.id) ? prev : [book, ...prev]));
+        setRecords((prev) => {
+          const next = [...prev];
+          next[0] = { ...next[0], book, isPlaceholder: false };
+          return next;
+        });
+      } catch {
+        if (!mounted) return;
+        setRecords((prev) => {
+          const next = [...prev];
+          next[0] = { ...next[0], isPlaceholder: false };
+          return next;
+        });
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [bookIdParam]);
 
   // ✅ Load the preselected book from URL parameter
   React.useEffect(() => {
@@ -376,7 +414,7 @@ export default function SaleCreate() {
 
     try {
       const promises = filledRecords.map((record) => {
-        const req: SalesService.createSale = {
+        const req = {
           bookId: record.book!.id!,
           saleMonth: record.saleDate!.month() + 1,
           saleYear: record.saleDate!.year(),
@@ -395,7 +433,11 @@ export default function SaleCreate() {
         autoHideDuration: 3000,
       });
 
-      navigate('/dashboard/sales');
+      if (bookIdParam) {
+        navigate(`/dashboard/books/${bookIdParam}`);
+      } else {
+        navigate('/dashboard/sales');
+      }
     } catch (error) {
       notifications.show(`Failed to create sales records: ${(error as Error).message}`, {
         severity: 'error',
@@ -404,17 +446,29 @@ export default function SaleCreate() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [records, notifications, navigate]);
+  }, [records, notifications, navigate, bookIdParam]);
 
   const handleBack = React.useCallback(() => {
-    navigate('/dashboard/sales');
-  }, [navigate]);
+    if (bookIdParam) {
+      navigate(`/dashboard/books/${bookIdParam}`);
+    } else {
+      navigate('/dashboard/sales');
+    }
+  }, [navigate, bookIdParam]);
+
+  const breadcrumbs = React.useMemo(() => {
+    if (bookIdParam) {
+      return [
+        { title: 'Books', path: '/dashboard/books' },
+        { title: 'Book Detail', path: `/dashboard/books/${bookIdParam}` },
+        { title: 'New' },
+      ];
+    }
+    return [{ title: 'Sales Records', path: '/dashboard/sales' }, { title: 'New' }];
+  }, [bookIdParam]);
 
   return (
-    <PageContainer
-      title="New Sales Records"
-      breadcrumbs={[{ title: 'Sales Records', path: '/dashboard/sales' }, { title: 'New' }]}
-    >
+    <PageContainer title="New Sales Records" breadcrumbs={breadcrumbs}>
       <Stack spacing={3} sx={{ width: '100%' }}>
         <Typography variant="body2" color="text.secondary">
           Enter multiple sale records efficiently. The month/year will carry forward to help you
