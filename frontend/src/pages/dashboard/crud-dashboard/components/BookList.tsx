@@ -185,7 +185,7 @@ export default function BookList() {
   const handleRowDelete = React.useCallback(
     (book: Book) => async () => {
       const confirmed = await dialogs.confirm(
-        `Do you wish to delete ${book.title} by ${book.author}?`,
+        `Do you wish to delete ${book.title} by ${book.author}? By doing so, you will also be deleting ${book.totalSalesToDate} sales.`,
         {
           title: `Delete book?`,
           severity: 'error',
