@@ -76,7 +76,7 @@ public class SaleService {
 
     Sort sort =
         Sort.by(
-            Sort.Order.asc("book.author"),
+            Sort.Order.asc("book.author").ignoreCase(),
             Sort.Order.desc("saleYear"),
             Sort.Order.desc("saleMonth"));
 
