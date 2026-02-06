@@ -144,7 +144,6 @@ export class SalesService {
      * @param showAll
      * @param startDate
      * @param endDate
-     * @param query
      * @returns PagedResponseAuthorPaymentGroupResponse OK
      * @throws ApiError
      */
@@ -154,7 +153,6 @@ export class SalesService {
         showAll: boolean = false,
         startDate?: string,
         endDate?: string,
-        query?: string,
     ): CancelablePromise<PagedResponseAuthorPaymentGroupResponse> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -165,7 +163,6 @@ export class SalesService {
                 'showAll': showAll,
                 'startDate': startDate,
                 'endDate': endDate,
-                'query': query,
             },
         });
     }

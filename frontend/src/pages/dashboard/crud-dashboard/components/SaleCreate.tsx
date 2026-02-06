@@ -1,5 +1,3 @@
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Autocomplete,
   Box,
@@ -68,7 +66,6 @@ export default function SaleCreate() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const notifications = useNotifications();
-  const [searchParams] = useSearchParams();
   const bookIdParam = React.useMemo(() => {
     const v = searchParams.get('bookId');
     if (!v) return undefined;
