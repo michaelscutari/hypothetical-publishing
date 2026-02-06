@@ -80,11 +80,12 @@ public class SaleController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate startDate,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate endDate) {
+          LocalDate endDate,
+      @RequestParam(required = false) String query) {
 
     // Build the full grouped list in required order, then paginate at the author-group level.
     List<AuthorPaymentGroupResponse> groups =
-        saleService.getAuthorPaymentGroups(startDate, endDate);
+        saleService.getAuthorPaymentGroups(startDate, endDate, query);
 
     if (showAll) {
       return PagedResponse.unpaged(groups);
@@ -134,18 +135,4 @@ public class SaleController {
   public void deleteSale(@PathVariable Long id) {
     saleService.deleteById(id);
   }
-
-  /*
-  TODO: Implement markAllPaid(author) API
-
-  Possible API. I don't think it is necessary, however, due to the update API accepting a DTO with hasAuthorBeenPaid.
-  Leaving since already implemented in case we want to stick to original design doc.
-
-  @Operation(operationId = "togglePaid", summary = "Toggles if an author has been paid for a sale")
-  @PutMapping("/togglePaid/{id}")
-  public SaleResponse togglePaid(@PathVariable Long id) {
-      return SaleResponse.from(saleService.togglePaid(id));
-  }
-  */
-
 }

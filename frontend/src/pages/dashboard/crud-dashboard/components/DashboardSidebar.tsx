@@ -15,6 +15,8 @@ import * as React from 'react';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import ReceiptIcon from '@mui/icons-material/Receipt';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 import { matchPath, useLocation, useNavigate } from 'react-router-dom';
 
@@ -23,7 +25,6 @@ import { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from '../constants';
 import DashboardSidebarContext from '../context/DashboardSidebarContext';
 import { getDrawerSxTransitionMixin, getDrawerWidthTransitionMixin } from '../mixins';
 import DashboardSidebarDividerItem from './DashboardSidebarDividerItem';
-import DashboardSidebarHeaderItem from './DashboardSidebarHeaderItem';
 import DashboardSidebarPageItem from './DashboardSidebarPageItem';
 
 export interface DashboardSidebarProps {
@@ -180,7 +181,6 @@ export default function DashboardSidebar({
                 width: mini ? MINI_DRAWER_WIDTH : 'auto',
               }}
             >
-              <DashboardSidebarHeaderItem>Main items</DashboardSidebarHeaderItem>
               <DashboardSidebarPageItem
                 id="books"
                 title="Books"
@@ -192,6 +192,21 @@ export default function DashboardSidebar({
                   pathname === '/dashboard/'
                 }
               />
+              <DashboardSidebarPageItem
+                id="sales"
+                title="Sales Records"
+                icon={<ReceiptIcon />}
+                href="/dashboard/sales"
+                selected={!!matchPath('/dashboard/sales/*', pathname)}
+              />
+              <DashboardSidebarPageItem
+                id="authorpayments"
+                title="Author Payments"
+                icon={<AccountBalanceWalletIcon />}
+                href="/dashboard/authorpayments"
+                selected={!!matchPath('/dashboard/authorpayments', pathname)}
+              />
+              <DashboardSidebarDividerItem />
             </List>
           </Box>
 

@@ -72,22 +72,27 @@ public class SaleService {
    * <p>Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
    */
   public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(
-      LocalDate startDate, LocalDate endDate) {
+      LocalDate startDate, LocalDate endDate, String query) {
+
     Sort sort =
         Sort.by(
             Sort.Order.asc("book.author"),
             Sort.Order.desc("saleYear"),
             Sort.Order.desc("saleMonth"));
 
-    List<Sale> sales;
-    if (startDate == null && endDate == null) {
-      sales = saleRepository.findAll(sort);
-    } else {
+    Specification<Sale> spec = Specification.where(null);
+
+    if (startDate != null || endDate != null) {
       LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
       LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
-      Specification<Sale> spec = SaleSpecifications.withinDateRange(specStartDate, specEndDate);
-      sales = saleRepository.findAll(spec, sort);
+      spec = spec.and(SaleSpecifications.withinDateRange(specStartDate, specEndDate));
     }
+
+    if (query != null && !query.isBlank()) {
+      spec = spec.and(SaleSpecifications.matchesQuery(query));
+    }
+
+    List<Sale> sales = saleRepository.findAll(spec, sort);
 
     // Group sales by author while preserving the sort order established above.
     Map<String, List<Sale>> grouped = new LinkedHashMap<>();
@@ -123,9 +128,12 @@ public class SaleService {
   public Sale createSale(SaleRequest request) {
     Book book = getOrThrowBookFromRepoById(request.bookId());
 
-    // Compute Royalty (Per definition 16)
+    // want to use override if provided, otherwise compute --> so depends on if
+    // request got
     BigDecimal authorRoyalty =
-        computeAuthorRoyalty(request.publisherRevenue(), book.getRoyaltyRate());
+        request.authorRoyalty() != null
+            ? request.authorRoyalty().setScale(2, RoundingMode.HALF_UP)
+            : computeAuthorRoyalty(request.publisherRevenue(), book.getRoyaltyRate());
 
     boolean hasAuthorBeenPaid = Boolean.TRUE.equals(request.hasAuthorBeenPaid());
 
@@ -148,8 +156,12 @@ public class SaleService {
     Sale sale = getOrThrowSaleFromRepoById(id);
     Book newBook = getOrThrowBookFromRepoById(request.bookId());
 
+    // if the client doesnt get an input then default, if client does use the
+    // clients
     BigDecimal authorRoyalty =
-        computeAuthorRoyalty(request.publisherRevenue(), newBook.getRoyaltyRate());
+        request.authorRoyalty() != null
+            ? request.authorRoyalty().setScale(2, RoundingMode.HALF_UP)
+            : computeAuthorRoyalty(request.publisherRevenue(), newBook.getRoyaltyRate());
 
     sale.setBook(newBook);
     sale.setSaleMonth(request.saleMonth());
@@ -181,22 +193,6 @@ public class SaleService {
     String normalizedAuthor = normalizeWhitespace(author);
     return saleRepository.markAllPaidByAuthor(normalizedAuthor);
   }
-
-  /*
-  TODO: Implement markAllPaid(author) API
-
-  Implementation of togglePaid. See SaleController.java Line 89.
-
-  @Transactional
-  public Sale togglePaid(Long id) {
-      Sale sale = getOrThrowSaleFromRepoById(id);
-
-      boolean currentlyPaid = Boolean.TRUE.equals(sale.getHasAuthorBeenPaid());
-      sale.setHasAuthorBeenPaid(!currentlyPaid); // "Not" the current standing
-
-      return saleRepository.save(sale);
-  }
-  */
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
     return saleRepository.findById(id).orElseThrow(() -> new NotFoundException("Sale not found"));

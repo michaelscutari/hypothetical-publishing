@@ -12,11 +12,14 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import FullPageLoader from '../../../../components/FullPageLoader';
+import BookSalesList from '../components/BookSalesList';
+import FinancialSummary from '../components/FinancialSummary';
 import { deleteOne as deleteBook, getOne as getBook, type Book } from '../data/books';
+import * as salesData from '../data/sales';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-import FullPageLoader from '../../../../components/FullPageLoader';
 
 const MONTH_NAMES = [
   'January',
@@ -34,7 +37,7 @@ const MONTH_NAMES = [
 ];
 
 export default function BookShow() {
-  const { bookId } = useParams();
+  const { bookId } = useParams<{ bookId?: string }>();
   const navigate = useNavigate();
 
   const dialogs = useDialogs();
@@ -44,13 +47,15 @@ export default function BookShow() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
+  const [sales, setSales] = React.useState<salesData.Sale[]>([]);
+  const [isSalesLoading, setIsSalesLoading] = React.useState<boolean>(false);
+
   const loadData = React.useCallback(async () => {
     setError(null);
     setIsLoading(true);
 
     try {
       const showData = await getBook(Number(bookId));
-
       setBook(showData);
     } catch (showDataError) {
       setError(showDataError as Error);
@@ -59,8 +64,34 @@ export default function BookShow() {
   }, [bookId]);
 
   React.useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
+
+  const reloadSales = React.useCallback(async () => {
+    if (!bookId) {
+      setSales([]);
+      setIsSalesLoading(false);
+      return;
+    }
+    setIsSalesLoading(true);
+    try {
+      const s = await salesData.getForBook(Number(bookId));
+      const sorted = (s ?? []).sort((a, b) => {
+        const aKey = (a.saleYear ?? 0) * 100 + (a.saleMonth ?? 0);
+        const bKey = (b.saleYear ?? 0) * 100 + (b.saleMonth ?? 0);
+        return bKey - aKey;
+      });
+      setSales(sorted);
+    } catch {
+      setSales([]);
+    } finally {
+      setIsSalesLoading(false);
+    }
+  }, [bookId]);
+
+  React.useEffect(() => {
+    void reloadSales();
+  }, [reloadSales]);
 
   const handleBookEdit = React.useCallback(() => {
     navigate(`/dashboard/books/${bookId}/edit`);
@@ -71,20 +102,21 @@ export default function BookShow() {
       return;
     }
 
-    const confirmed = await dialogs.confirm(`Do you wish to delete ${book.title}?`, {
-      title: `Delete book?`,
-      severity: 'error',
-      okText: 'Delete',
-      cancelText: 'Cancel',
-    });
+    const confirmed = await dialogs.confirm(
+      `Do you wish to delete ${book.title} by ${book.author}? By doing so, you will also be deleting ${book.totalSalesToDate} sales.`,
+      {
+        title: `Delete book?`,
+        severity: 'error',
+        okText: 'Delete',
+        cancelText: 'Cancel',
+      },
+    );
 
     if (confirmed) {
       setIsLoading(true);
       try {
         await deleteBook(Number(bookId));
-
         navigate('/dashboard/books');
-
         notifications.show('Book deleted successfully.', {
           severity: 'success',
           autoHideDuration: 3000,
@@ -141,65 +173,6 @@ export default function BookShow() {
 
     return book ? (
       <Box sx={{ flexGrow: 1, width: '100%' }}>
-        <Grid container spacing={2} sx={{ width: '100%' }}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Title</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.title}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Author</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.author}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">ISBN-13</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.isbn13}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">ISBN-10</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.isbn10 ?? '—'}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Publication Date</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {formatPublicationDate(book.publicationYear, book.publicationMonth)}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Royalty Rate</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {formatRoyaltyRate(book.royaltyRate)}
-              </Typography>
-            </Paper>
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Total Sales to Date</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.totalSalesToDate ?? 0}
-              </Typography>
-            </Paper>
-          </Grid>
-        </Grid>
-        <Divider sx={{ my: 3 }} />
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
             Back
@@ -218,9 +191,93 @@ export default function BookShow() {
             </Button>
           </Stack>
         </Stack>
+        <Divider sx={{ my: 3 }} />
+        <Grid container spacing={2} sx={{ width: '100%' }}>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Title</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {book.title}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Author</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {book.author}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">ISBN-13</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {book.isbn13}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">ISBN-10</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {book.isbn10 ?? '—'}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Publication Date</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {formatPublicationDate(book.publicationYear, book.publicationMonth)}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Royalty Rate</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {formatRoyaltyRate(book.royaltyRate)}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <FinancialSummary
+              bookId={book.id}
+              royaltyRate={book.royaltyRate}
+              sales={sales}
+              isLoading={isSalesLoading}
+            />
+          </Grid>
+        </Grid>
+
+        <Box sx={{ mt: 3 }}>
+          <BookSalesList
+            bookId={book.id}
+            sales={sales}
+            reloadSales={reloadSales}
+            onChange={() => void reloadSales()}
+          />
+        </Box>
       </Box>
     ) : null;
-  }, [isLoading, error, book, handleBack, handleBookEdit, handleBookDelete]);
+  }, [
+    isLoading,
+    error,
+    book,
+    handleBack,
+    handleBookEdit,
+    handleBookDelete,
+    sales,
+    isSalesLoading,
+    reloadSales,
+  ]);
 
   const truncate = React.useCallback((value: string | undefined, maxLength = 30) => {
     if (!value) return value;
