@@ -155,7 +155,25 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Book</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book?.title || `Book ID: ${sale.bookId}`}
+                <Box
+                  component="a"
+                  href={`/dashboard/books/${sale.bookId}`}
+                  onClick={(e: React.MouseEvent) => {
+                    e.preventDefault();
+                    navigate(`/dashboard/books/${sale.bookId}`);
+                  }}
+                  sx={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                      color: 'primary.main',
+                    },
+                  }}
+                >
+                  {book?.title || `Book ID: ${sale.bookId}`}
+                </Box>
               </Typography>
               {book?.author && (
                 <Typography variant="caption" color="text.secondary">
@@ -232,7 +250,7 @@ export default function SaleShow() {
         </Stack>
       </Box>
     ) : null;
-  }, [isLoading, error, sale, book, handleBack, handleSaleEdit, handleSaleDelete]);
+  }, [isLoading, error, sale, book, handleBack, handleSaleEdit, handleSaleDelete, navigate]);
 
   const pageTitle = `Sale Record ${saleId}`;
 

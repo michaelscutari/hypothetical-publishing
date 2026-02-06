@@ -1,12 +1,13 @@
-import * as React from 'react';
 import {
   Autocomplete,
   Box,
   Button,
   Chip,
+  FormControlLabel,
   IconButton,
   Paper,
   Stack,
+  Switch,
   Table,
   TableBody,
   TableCell,
@@ -17,17 +18,17 @@ import {
   Typography,
   type AutocompleteRenderInputParams,
 } from '@mui/material';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs, { type Dayjs } from 'dayjs';
+import * as React from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BooksService, SalesService, type BookResponse } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-import { FormControlLabel, Switch } from '@mui/material';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs, { type Dayjs } from 'dayjs';
 
 // Custom adapter to force MMM YYYY format
 class CustomAdapterDayjs extends AdapterDayjs {
@@ -63,8 +64,8 @@ interface SaleRecordInput {
 
 export default function SaleCreate() {
   const navigate = useNavigate();
-  const notifications = useNotifications();
   const [searchParams] = useSearchParams();
+  const notifications = useNotifications();
   const bookIdParam = React.useMemo(() => {
     const v = searchParams.get('bookId');
     if (!v) return undefined;
@@ -77,6 +78,7 @@ export default function SaleCreate() {
   const [books, setBooks] = React.useState<BookResponse[]>([]);
   const [bookSearchInput, setBookSearchInput] = React.useState('');
   const [isLoadingBooks, setIsLoadingBooks] = React.useState(false);
+  const [preselectedBook, setPreselectedBook] = React.useState<BookResponse | null>(null);
 
   function computeRoyalty(book: BookResponse | null, revenue: number | null): number | null {
     if (!book || revenue == null) return null;
@@ -131,6 +133,29 @@ export default function SaleCreate() {
     };
   }, [bookIdParam]);
 
+  // ✅ Load the preselected book from URL parameter
+  React.useEffect(() => {
+    const bookIdParam = searchParams.get('bookId');
+    if (bookIdParam) {
+      const bookId = parseInt(bookIdParam, 10);
+      if (!isNaN(bookId)) {
+        BooksService.getBookById(bookId)
+          .then((book) => {
+            setPreselectedBook(book);
+            // Pre-populate the first record with the book
+            setRecords([createEmptyRecord({ book }, false)]);
+          })
+          .catch((error) => {
+            console.error('Failed to load preselected book:', error);
+            notifications.show('Failed to load book details', {
+              severity: 'warning',
+              autoHideDuration: 3000,
+            });
+          });
+      }
+    }
+  }, [searchParams, notifications]);
+
   // ✅ NEW: activate (un-grey) a placeholder row as soon as the user focuses any field
   const activateRow = React.useCallback((index: number) => {
     setRecords((prev) => {
@@ -171,45 +196,49 @@ export default function SaleCreate() {
     loadBooks('');
   }, [loadBooks]);
 
-  const updateRecord = React.useCallback((index: number, updates: Partial<SaleRecordInput>) => {
-    setRecords((prev) => {
-      const newRecords = [...prev];
-      const next = { ...newRecords[index], ...updates };
+  const updateRecord = React.useCallback(
+    (index: number, updates: Partial<SaleRecordInput>) => {
+      setRecords((prev) => {
+        const newRecords = [...prev];
+        const next = { ...newRecords[index], ...updates };
 
-      // ✅ If user updates anything (other than errors), activate placeholder row
-      if (next.isPlaceholder) {
-        const keys = Object.keys(updates).filter((k) => k !== 'errors');
-        if (keys.length > 0) next.isPlaceholder = false;
-      }
+        // ✅ If user updates anything (other than errors), activate placeholder row
+        if (next.isPlaceholder) {
+          const keys = Object.keys(updates).filter((k) => k !== 'errors');
+          if (keys.length > 0) next.isPlaceholder = false;
+        }
 
-      // Auto-calc royalty if NOT overridden and we have book+revenue.
-      const revenueChanged = updates.publisherRevenue !== undefined;
-      const bookChanged = updates.book !== undefined;
+        // Auto-calc royalty if NOT overridden and we have book+revenue.
+        const revenueChanged = updates.publisherRevenue !== undefined;
+        const bookChanged = updates.book !== undefined;
 
-      if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
-        next.authorRoyalty = computeRoyalty(next.book, next.publisherRevenue);
-      }
+        if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
+          next.authorRoyalty = computeRoyalty(next.book, next.publisherRevenue);
+        }
 
-      newRecords[index] = next;
+        newRecords[index] = next;
 
-      // Auto-add new PLACEHOLDER row when current row is being filled
-      const isLastRecord = index === newRecords.length - 1;
-      const hasMinimalData = !!(next.saleDate && next.book);
+        // Auto-add new PLACEHOLDER row when current row is being filled
+        const isLastRecord = index === newRecords.length - 1;
+        const hasMinimalData = !!(next.saleDate && next.book);
 
-      if (isLastRecord && hasMinimalData && !next.isPlaceholder) {
-        newRecords.push(
-          createEmptyRecord(
-            {
-              saleDate: next.saleDate,
-            },
-            true,
-          ),
-        );
-      }
+        if (isLastRecord && hasMinimalData && !next.isPlaceholder) {
+          newRecords.push(
+            createEmptyRecord(
+              {
+                saleDate: next.saleDate,
+                book: preselectedBook, // ✅ Carry forward the preselected book to new rows
+              },
+              true,
+            ),
+          );
+        }
 
-      return newRecords;
-    });
-  }, []);
+        return newRecords;
+      });
+    },
+    [preselectedBook],
+  );
 
   const handleDateChange = React.useCallback(
     (index: number) => (value: Dayjs | null) => {
@@ -447,11 +476,11 @@ export default function SaleCreate() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell width="180">Sale Date (Month/Year)</TableCell>
+                <TableCell width="20">Sale Date (Month/Year)</TableCell>
                 <TableCell width="250">Book</TableCell>
-                <TableCell width="100">Quantity</TableCell>
-                <TableCell width="140">Publisher Revenue</TableCell>
-                <TableCell width="160">Author Royalty</TableCell>
+                <TableCell width="130">Quantity</TableCell>
+                <TableCell width="160">Publisher Revenue</TableCell>
+                <TableCell width="350">Author Royalty</TableCell>
                 <TableCell width="170">Payment Status</TableCell>
                 <TableCell width="60"></TableCell>
               </TableRow>
