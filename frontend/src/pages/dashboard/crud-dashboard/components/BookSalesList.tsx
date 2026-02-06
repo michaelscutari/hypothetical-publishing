@@ -294,7 +294,11 @@ export default function BookSalesList({
           <Button
             variant="outlined"
             size="small"
-            onClick={() => navigate(`/dashboard/sales/new?bookId=${bookId ?? ''}`)}
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (bookId) params.set('bookId', String(bookId));
+              navigate(`/dashboard/sales/new?${params.toString()}`);
+            }}
           >
             Add sale
           </Button>
