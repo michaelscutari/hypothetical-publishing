@@ -12,14 +12,14 @@ import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class BooksService {
     /**
-     * Get a book by ID
+     * Get a book by ID (includes financials)
      * @param id
-     * @returns BookResponse OK
+     * @returns BookDetailResponse OK
      * @throws ApiError
      */
     public static getBookById(
         id: number,
-    ): CancelablePromise<BookResponse> {
+    ): CancelablePromise<BookDetailResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/books/{id}',
@@ -112,23 +112,6 @@ export class BooksService {
             url: '/api/books',
             body: requestBody,
             mediaType: 'application/json',
-        });
-    }
-    /**
-     * Gets book detail information (book information + financials)
-     * @param id
-     * @returns BookDetailResponse OK
-     * @throws ApiError
-     */
-    public static getBookDetailById(
-        id: number,
-    ): CancelablePromise<BookDetailResponse> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/books/bookdetail/{id}',
-            path: {
-                'id': id,
-            },
         });
     }
     /**

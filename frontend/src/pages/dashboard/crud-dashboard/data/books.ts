@@ -42,12 +42,8 @@ export async function getMany({
   };
 }
 
-export async function getOne(bookId: number): Promise<Book> {
+export async function getOne(bookId: number): Promise<BookDetail> {
   return BooksService.getBookById(bookId);
-}
-
-export async function getDetail(bookId: number): Promise<BookDetail> {
-  return BooksService.getBookDetailById(bookId);
 }
 
 export async function createOne(data: Omit<Book, 'id' | 'totalSalesToDate'>): Promise<Book> {

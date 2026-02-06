@@ -55,7 +55,7 @@ export type BookDetailResponse = {
      */
     paidRoyalty?: number;
     /**
-     * Total royalty earned by the author (both paid and unpaid
+     * Total royalty earned by the author (both paid and unpaid)
      */
     totalRoyalty?: number;
 };

@@ -501,7 +501,7 @@ class BookControllerTest {
   }
 
   @Test
-  void getBookByIdReturnsTotalSalesToDate() throws Exception {
+  void getBookByIdWithZeroSalesReturnsZeroFinancials() throws Exception {
     Cookie token = login();
     Long bookId =
         createBook(
@@ -512,7 +512,11 @@ class BookControllerTest {
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalSalesToDate").value(0));
+        .andExpect(jsonPath("$.totalSalesToDate").value(0))
+        .andExpect(jsonPath("$.revenue").value(0))
+        .andExpect(jsonPath("$.paidRoyalty").value(0))
+        .andExpect(jsonPath("$.unpaidRoyalty").value(0))
+        .andExpect(jsonPath("$.totalRoyalty").value(0));
   }
 
   @Test
@@ -596,7 +600,7 @@ class BookControllerTest {
             bookId, 2, 2025, 5, new BigDecimal("250.00"), new BigDecimal("50.00"), false));
 
     mockMvc
-        .perform(get("/api/books/bookdetail/{id}", bookId).cookie(token))
+        .perform(get("/api/books/{id}", bookId).cookie(token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(bookId))
         .andExpect(jsonPath("$.title").value("Detail Book"))
@@ -606,13 +610,6 @@ class BookControllerTest {
         .andExpect(jsonPath("$.paidRoyalty").value(100.00))
         .andExpect(jsonPath("$.unpaidRoyalty").value(50.00))
         .andExpect(jsonPath("$.totalRoyalty").value(150.00));
-  }
-
-  @Test
-  void getBookDetailByIdMissingReturns404() throws Exception {
-    mockMvc
-        .perform(get("/api/books/bookdetail/{id}", 9999).cookie(login()))
-        .andExpect(status().isNotFound());
   }
 
   @Test

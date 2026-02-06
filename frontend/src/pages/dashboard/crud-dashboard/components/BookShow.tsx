@@ -17,7 +17,7 @@ import BookSalesList from '../components/BookSalesList';
 import FinancialSummary from '../components/FinancialSummary';
 import {
   deleteOne as deleteBook,
-  getDetail as getBookByDetail,
+  getOne as getBook,
   type BookDetail,
 } from '../data/books';
 import * as salesData from '../data/sales';
@@ -58,7 +58,7 @@ export default function BookShow() {
     setIsLoading(true);
 
     try {
-      const showData = await getBookByDetail(Number(bookId));
+      const showData = await getBook(Number(bookId));
       setBook(showData);
     } catch (showDataError) {
       setError(showDataError as Error);

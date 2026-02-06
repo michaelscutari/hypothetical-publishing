@@ -86,30 +86,17 @@ public class BookController {
     return PagedResponse.paged(bookService.findDistinctAuthors(query, pageable));
   }
 
-  @Operation(operationId = "getBookById", summary = "Get a book by ID")
+  @Operation(operationId = "getBookById", summary = "Get a book by ID (includes financials)")
   @GetMapping("/{id}")
-  public BookResponse getBook(@PathVariable Long id) {
+  public BookDetailResponse getBook(@PathVariable Long id) {
     Book book =
         bookService
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
 
-    return BookResponse.from(book, saleService.getBookTotalSales(id));
-  }
+    BookFinancialSummary summary = saleService.getBookFinancialSummary(id);
 
-  @Operation(
-      operationId = "getBookDetailById",
-      summary = "Gets book detail information (book information + financials)")
-  @GetMapping("/bookdetail/{id}")
-  public BookDetailResponse getBookDetailById(@PathVariable Long id) {
-    Book book =
-        bookService
-            .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
-
-    BookFinancialSummary bookFinancialSummary = saleService.getBookFinancialSummary(id);
-
-    return BookDetailResponse.from(book, bookFinancialSummary);
+    return BookDetailResponse.from(book, summary);
   }
 
   // ------- POST MAPPINGS -------

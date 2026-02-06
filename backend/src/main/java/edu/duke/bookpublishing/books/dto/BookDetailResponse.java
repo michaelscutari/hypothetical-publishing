@@ -19,7 +19,7 @@ public record BookDetailResponse(
     @Schema(description = "Total publisher revenue earned from this book") BigDecimal revenue,
     @Schema(description = "Total author unpaid royalty from the book") BigDecimal unpaidRoyalty,
     @Schema(description = "Total author paid royalty from the book") BigDecimal paidRoyalty,
-    @Schema(description = "Total royalty earned by the author (both paid and unpaid")
+    @Schema(description = "Total royalty earned by the author (both paid and unpaid)")
         BigDecimal totalRoyalty) {
 
   public static BookDetailResponse from(Book book, BookFinancialSummary financialSummary) {
