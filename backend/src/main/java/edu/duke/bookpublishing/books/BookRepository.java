@@ -19,6 +19,8 @@ public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificat
 
   Optional<Book> findByIsbn13(String isbn13);
 
+  Optional<Book> findByIsbn10(String isbn10);
+
   @Query(
       """
           select distinct b.author
