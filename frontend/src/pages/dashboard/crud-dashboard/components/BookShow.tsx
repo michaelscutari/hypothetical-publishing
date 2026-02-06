@@ -101,12 +101,15 @@ export default function BookShow() {
       return;
     }
 
-    const confirmed = await dialogs.confirm(`Do you wish to delete ${book.title}?`, {
-      title: `Delete book?`,
-      severity: 'error',
-      okText: 'Delete',
-      cancelText: 'Cancel',
-    });
+    const confirmed = await dialogs.confirm(
+      `Do you wish to delete ${book.title} by ${book.author}? By doing so, you will also be deleting ${book.totalSalesToDate} sales.`,
+      {
+        title: `Delete book?`,
+        severity: 'error',
+        okText: 'Delete',
+        cancelText: 'Cancel',
+      },
+    );
 
     if (confirmed) {
       setIsLoading(true);

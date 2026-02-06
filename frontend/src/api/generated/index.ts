@@ -10,6 +10,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 export type { AuthorPaymentGroupResponse } from './models/AuthorPaymentGroupResponse';
 export type { AuthorPaymentSaleResponse } from './models/AuthorPaymentSaleResponse';
 export type { BookDetailResponse } from './models/BookDetailResponse';
+export type { BookLookupResponse } from './models/BookLookupResponse';
 export type { BookRequest } from './models/BookRequest';
 export type { BookResponse } from './models/BookResponse';
 export type { ChangePasswordRequest } from './models/ChangePasswordRequest';

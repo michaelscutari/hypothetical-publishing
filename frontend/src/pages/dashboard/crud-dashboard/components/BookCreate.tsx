@@ -1,8 +1,10 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { BookLookupResponse } from '../../../../api/generated';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import { createOne as createBook, validate as validateBook, type Book } from '../data/books';
 import BookForm, { type FormFieldValue, type BookFormState } from './BookForm';
+import IsbnLookup from './IsbnLookup';
 import PageContainer from './PageContainer';
 
 const INITIAL_FORM_VALUES: Partial<BookFormState['values']> = {
@@ -55,6 +57,28 @@ export default function BookCreate() {
     [formValues, formErrors, setFormErrors, setFormValues],
   );
 
+  const handleLookupSuccess = React.useCallback(
+    (data: BookLookupResponse) => {
+      const newValues: Partial<BookFormState['values']> = {
+        ...formValues,
+        title: data.title ?? formValues.title,
+        author: data.author ?? formValues.author,
+        isbn13: data.isbn13 ?? formValues.isbn13,
+        isbn10: data.isbn10 ?? formValues.isbn10,
+        publicationYear: data.publicationYear ?? formValues.publicationYear,
+        publicationMonth: data.publicationMonth ?? formValues.publicationMonth,
+      };
+      setFormValues(newValues);
+      const { issues } = validateBook(newValues);
+      if (issues && issues.length > 0) {
+        setFormErrors(Object.fromEntries(issues.map((issue) => [issue.path?.[0], issue.message])));
+      } else {
+        setFormErrors({});
+      }
+    },
+    [formValues, setFormValues, setFormErrors],
+  );
+
   const handleFormReset = React.useCallback(() => {
     setFormValues(INITIAL_FORM_VALUES);
   }, [setFormValues]);
@@ -89,6 +113,7 @@ export default function BookCreate() {
       title="New Book"
       breadcrumbs={[{ title: 'Books', path: '/dashboard/books' }, { title: 'New' }]}
     >
+      <IsbnLookup onLookupSuccess={handleLookupSuccess} />
       <BookForm
         formState={formState}
         onFieldChange={handleFormFieldChange}

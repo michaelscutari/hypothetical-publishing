@@ -1,12 +1,19 @@
 package edu.duke.bookpublishing.books;
 
 import edu.duke.bookpublishing.books.dto.BookDetailResponse;
+import edu.duke.bookpublishing.books.dto.BookLookupResponse;
 import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
+import edu.duke.bookpublishing.books.lookup.BookLookupResult;
+import edu.duke.bookpublishing.books.lookup.BookLookupService;
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import edu.duke.bookpublishing.sales.BookFinancialSummary;
 import edu.duke.bookpublishing.sales.SaleService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
@@ -17,6 +24,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -37,6 +45,7 @@ public class BookController {
 
   private final BookService bookService;
   private final SaleService saleService;
+  private final BookLookupService bookLookupService;
 
   // ------- GET MAPPINGS -------
 
@@ -97,6 +106,37 @@ public class BookController {
     BookFinancialSummary summary = saleService.getBookFinancialSummary(id);
 
     return BookDetailResponse.from(book, summary);
+  }
+
+  @Operation(operationId = "lookupBookByIsbn", summary = "Lookup a book by ISBN")
+  @ApiResponses(
+      value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Book metadata for prefill",
+            content = @Content(schema = @Schema(implementation = BookLookupResponse.class))),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Book already exists",
+            content = @Content(schema = @Schema(implementation = BookResponse.class))),
+        @ApiResponse(responseCode = "400", description = "Invalid ISBN"),
+        @ApiResponse(responseCode = "404", description = "Book not found"),
+        @ApiResponse(responseCode = "502", description = "Upstream lookup failed")
+      })
+  @GetMapping("/lookup")
+  public ResponseEntity<?> lookupBookByIsbn(@RequestParam String isbn) {
+    try {
+      BookLookupResult result = bookLookupService.lookupByIsbn(isbn);
+      if (result.existing() != null) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+            .body(BookResponse.from(result.existing()));
+      }
+      return ResponseEntity.ok(result.lookup());
+    } catch (IllegalArgumentException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage(), ex);
+    } catch (IllegalStateException ex) {
+      throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, ex.getMessage(), ex);
+    }
   }
 
   // ------- POST MAPPINGS -------

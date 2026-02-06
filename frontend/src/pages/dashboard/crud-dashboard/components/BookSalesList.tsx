@@ -1,3 +1,13 @@
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import MoneyOffIcon from '@mui/icons-material/MoneyOff';
+import Box from '@mui/material/Box';
+import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
+import IconButton from '@mui/material/IconButton';
+import Paper from '@mui/material/Paper';
+import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
@@ -5,24 +15,17 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TableSortLabel from '@mui/material/TableSortLabel';
-import Paper from '@mui/material/Paper';
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from '@mui/material/Box';
-import Typography from '@mui/material/Typography';
-import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import Stack from '@mui/material/Stack';
-import Button from '@mui/material/Button';
-import DeleteIcon from '@mui/icons-material/Delete';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import MoneyOffIcon from '@mui/icons-material/MoneyOff';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import * as salesData from '../data/sales';
-import useNotifications from '../hooks/useNotifications/useNotifications';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
+import useNotifications from '../hooks/useNotifications/useNotifications';
 
 const MONTH_NAMES = [
   'January',
@@ -65,8 +68,8 @@ export default function BookSalesList({
   const dialogs = useDialogs();
   const [sales, setSales] = React.useState<salesData.Sale[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
-  const [startMonth, setStartMonth] = React.useState<string | null>(null);
-  const [endMonth, setEndMonth] = React.useState<string | null>(null);
+  const [startMonth, setStartMonth] = React.useState<Dayjs | null>(null);
+  const [endMonth, setEndMonth] = React.useState<Dayjs | null>(null);
   const [order, setOrder] = React.useState<Order>('desc');
   const [orderBy, setOrderBy] = React.useState<OrderBy>('saleDate');
 
@@ -145,13 +148,6 @@ export default function BookSalesList({
     [],
   );
 
-  const parseMonth = React.useCallback((v: string | null) => {
-    if (!v) return null;
-    const [y, m] = v.split('-').map(Number);
-    if (!y || !m) return null;
-    return { year: y, month: m };
-  }, []);
-
   const saleToKey = React.useCallback((s: salesData.Sale) => {
     const y = Number(s.saleYear ?? 0);
     const m = Number(s.saleMonth ?? 0);
@@ -172,23 +168,14 @@ export default function BookSalesList({
   };
 
   const filteredSales = React.useMemo(() => {
-    const start = parseMonth(startMonth);
-    const end = parseMonth(endMonth);
-
     return (sales ?? []).filter((s) => {
-      const key = saleToKey(s);
       if (!s.saleYear || !s.saleMonth) return true;
-      if (start) {
-        const startKey = start.year * 100 + start.month;
-        if (key < startKey) return false;
-      }
-      if (end) {
-        const endKey = end.year * 100 + end.month;
-        if (key > endKey) return false;
-      }
+      const saleDate = dayjs(`${s.saleYear}-${String(s.saleMonth).padStart(2, '0')}-01`);
+      if (startMonth && saleDate.isBefore(startMonth.startOf('month'))) return false;
+      if (endMonth && saleDate.isAfter(endMonth.endOf('month'))) return false;
       return true;
     });
-  }, [sales, startMonth, endMonth, parseMonth, saleToKey]);
+  }, [sales, startMonth, endMonth]);
 
   const filteredSortedSales = React.useMemo(() => {
     // helpers moved inside the memo so they don't appear in the hook deps
@@ -262,24 +249,36 @@ export default function BookSalesList({
         <Typography variant="h6">Sales Records</Typography>
 
         <Stack direction="row" spacing={1} alignItems="center">
-          <TextField
-            label="Start month"
-            type="month"
-            size="small"
-            value={startMonth ?? ''}
-            onChange={(e) => setStartMonth(e.target.value || null)}
-            InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 160 }}
-          />
-          <TextField
-            label="End month"
-            type="month"
-            size="small"
-            value={endMonth ?? ''}
-            onChange={(e) => setEndMonth(e.target.value || null)}
-            InputLabelProps={{ shrink: true }}
-            sx={{ minWidth: 160 }}
-          />
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DatePicker
+              label="Start"
+              value={startMonth}
+              onChange={setStartMonth}
+              views={['year', 'month']}
+              format="MMM YYYY"
+              openTo="year"
+              minDate={dayjs('1900-01-01')}
+              maxDate={dayjs('2026-02-28')}
+              slotProps={{
+                textField: { size: 'small' },
+                toolbar: { hidden: true },
+              }}
+            />
+            <DatePicker
+              label="End"
+              value={endMonth}
+              onChange={setEndMonth}
+              views={['year', 'month']}
+              format="MMM YYYY"
+              openTo="year"
+              minDate={dayjs('1900-01-01')}
+              maxDate={dayjs('2026-02-28')}
+              slotProps={{
+                textField: { size: 'small' },
+                toolbar: { hidden: true },
+              }}
+            />
+          </LocalizationProvider>
 
           <Button
             variant="outlined"
@@ -295,12 +294,13 @@ export default function BookSalesList({
           <Button
             variant="outlined"
             size="small"
-            onClick={() => navigate(`/dashboard/sales/new?bookId=${bookId ?? ''}`)}
+            onClick={() => {
+              const params = new URLSearchParams();
+              if (bookId) params.set('bookId', String(bookId));
+              navigate(`/dashboard/sales/new?${params.toString()}`);
+            }}
           >
             Add sale
-          </Button>
-          <Button variant="outlined" size="small" onClick={() => navigate('/dashboard/sales/bulk')}>
-            Bulk input
           </Button>
         </Stack>
       </Stack>

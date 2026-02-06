@@ -184,12 +184,15 @@ export default function BookList() {
 
   const handleRowDelete = React.useCallback(
     (book: Book) => async () => {
-      const confirmed = await dialogs.confirm(`Do you wish to delete ${book.title}?`, {
-        title: `Delete book?`,
-        severity: 'error',
-        okText: 'Delete',
-        cancelText: 'Cancel',
-      });
+      const confirmed = await dialogs.confirm(
+        `Do you wish to delete ${book.title} by ${book.author}? By doing so, you will also be deleting ${book.totalSalesToDate} sales.`,
+        {
+          title: `Delete book?`,
+          severity: 'error',
+          okText: 'Delete',
+          cancelText: 'Cancel',
+        },
+      );
 
       if (confirmed) {
         setIsLoading(true);
@@ -346,7 +349,20 @@ export default function BookList() {
             initialState={initialState}
             showToolbar
             pageSizeOptions={[10, INITIAL_PAGE_SIZE, 50, 100]}
+            slots={{}}
+            slotProps={{
+              loadingOverlay: {
+                variant: 'circular-progress',
+                noRowsVariant: 'circular-progress',
+              },
+              baseIconButton: {
+                size: 'small',
+              },
+            }}
             sx={{
+              '& button:has([data-testid="FilterListIcon"])': {
+                display: 'none',
+              },
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },
@@ -356,15 +372,6 @@ export default function BookList() {
                 },
               [`& .${gridClasses.row}:hover`]: {
                 cursor: 'pointer',
-              },
-            }}
-            slotProps={{
-              loadingOverlay: {
-                variant: 'circular-progress',
-                noRowsVariant: 'circular-progress',
-              },
-              baseIconButton: {
-                size: 'small',
               },
             }}
           />
