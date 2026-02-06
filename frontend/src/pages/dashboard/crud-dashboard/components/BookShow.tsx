@@ -15,7 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import FullPageLoader from '../../../../components/FullPageLoader';
 import BookSalesList from '../components/BookSalesList';
 import FinancialSummary from '../components/FinancialSummary';
-import { deleteOne as deleteBook, getOne as getBook, type Book } from '../data/books';
+import { deleteOne as deleteBook, getOne as getBook, type BookDetail } from '../data/books';
 import * as salesData from '../data/sales';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
@@ -43,12 +43,11 @@ export default function BookShow() {
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
-  const [book, setBook] = React.useState<Book | null>(null);
+  const [book, setBook] = React.useState<BookDetail | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
   const [sales, setSales] = React.useState<salesData.Sale[]>([]);
-  const [isSalesLoading, setIsSalesLoading] = React.useState<boolean>(false);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -70,10 +69,8 @@ export default function BookShow() {
   const reloadSales = React.useCallback(async () => {
     if (!bookId) {
       setSales([]);
-      setIsSalesLoading(false);
       return;
     }
-    setIsSalesLoading(true);
     try {
       const s = await salesData.getForBook(Number(bookId));
       const sorted = (s ?? []).sort((a, b) => {
@@ -84,8 +81,6 @@ export default function BookShow() {
       setSales(sorted);
     } catch {
       setSales([]);
-    } finally {
-      setIsSalesLoading(false);
     }
   }, [bookId]);
 
@@ -249,10 +244,13 @@ export default function BookShow() {
 
           <Grid size={{ xs: 12 }}>
             <FinancialSummary
-              bookId={book.id}
-              royaltyRate={book.royaltyRate}
-              sales={sales}
-              isLoading={isSalesLoading}
+              summary={{
+                revenue: book.revenue,
+                unpaidRoyalty: book.unpaidRoyalty,
+                paidRoyalty: book.paidRoyalty,
+                totalRoyalty: book.totalRoyalty,
+                totalSalesToDate: book.totalSalesToDate,
+              }}
             />
           </Grid>
         </Grid>
@@ -267,17 +265,7 @@ export default function BookShow() {
         </Box>
       </Box>
     ) : null;
-  }, [
-    isLoading,
-    error,
-    book,
-    handleBack,
-    handleBookEdit,
-    handleBookDelete,
-    sales,
-    isSalesLoading,
-    reloadSales,
-  ]);
+  }, [isLoading, error, book, handleBack, handleBookEdit, handleBookDelete, sales, reloadSales]);
 
   const truncate = React.useCallback((value: string | undefined, maxLength = 30) => {
     if (!value) return value;

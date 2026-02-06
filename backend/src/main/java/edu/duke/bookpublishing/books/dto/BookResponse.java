@@ -17,6 +17,10 @@ public record BookResponse(
     @Schema(description = "Total sales quantity to date") Long totalSalesToDate) {
 
   public static BookResponse from(Book book) {
+    return from(book, 0L);
+  }
+
+  public static BookResponse from(Book book, Long totalSaleToDate) {
     return new BookResponse(
         book.getId(),
         book.getTitle(),
@@ -26,7 +30,6 @@ public record BookResponse(
         book.getPublicationYear(),
         book.getPublicationMonth(),
         book.getRoyaltyRate(),
-        0L // Placeholder until Sales Records feature is implemented
-        );
+        totalSaleToDate);
   }
 }

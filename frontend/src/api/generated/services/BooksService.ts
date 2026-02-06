@@ -2,24 +2,25 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { BookDetailResponse } from '../models/BookDetailResponse';
 import type { BookLookupResponse } from '../models/BookLookupResponse';
 import type { BookRequest } from '../models/BookRequest';
 import type { BookResponse } from '../models/BookResponse';
-import type { PagedBookResponse } from '../models/PagedBookResponse';
+import type { PagedResponseBookResponse } from '../models/PagedResponseBookResponse';
 import type { PagedResponseString } from '../models/PagedResponseString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
 export class BooksService {
     /**
-     * Get a book by ID
+     * Get a book by ID (includes financials)
      * @param id
-     * @returns BookResponse OK
+     * @returns BookDetailResponse OK
      * @throws ApiError
      */
     public static getBookById(
         id: number,
-    ): CancelablePromise<BookResponse> {
+    ): CancelablePromise<BookDetailResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/books/{id}',
@@ -74,7 +75,7 @@ export class BooksService {
      * @param query
      * @param sortField
      * @param sortDirection
-     * @returns PagedBookResponse OK
+     * @returns PagedResponseBookResponse OK
      * @throws ApiError
      */
     public static getAllBooks(
@@ -84,7 +85,7 @@ export class BooksService {
         query?: string,
         sortField?: string,
         sortDirection: string = 'asc',
-    ): CancelablePromise<PagedBookResponse> {
+    ): CancelablePromise<PagedResponseBookResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/books',

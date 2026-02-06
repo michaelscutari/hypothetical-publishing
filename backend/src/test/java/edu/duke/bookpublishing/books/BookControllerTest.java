@@ -9,6 +9,8 @@ import edu.duke.bookpublishing.auth.User;
 import edu.duke.bookpublishing.auth.UserRepository;
 import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
+import edu.duke.bookpublishing.sales.SaleRepository;
+import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,12 +35,15 @@ class BookControllerTest {
 
   @Autowired private BookRepository bookRepository;
 
+  @Autowired private SaleRepository saleRepository;
+
   @Autowired private UserRepository userRepository;
 
   @Autowired private PasswordEncoder passwordEncoder;
 
   @BeforeEach
   void setUp() {
+    saleRepository.deleteAll();
     bookRepository.deleteAll();
     userRepository.deleteAll();
     userRepository.save(
@@ -113,8 +118,8 @@ class BookControllerTest {
         .perform(get("/api/books").cookie(token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(25)))
-        .andExpect(jsonPath("$.page").value(0))
-        .andExpect(jsonPath("$.size").value(25))
+        .andExpect(jsonPath("$.pageNumber").value(0))
+        .andExpect(jsonPath("$.pageSize").value(25))
         .andExpect(jsonPath("$.totalElements").value(30))
         .andExpect(jsonPath("$.totalPages").value(2));
 
@@ -123,7 +128,7 @@ class BookControllerTest {
         .perform(get("/api/books").cookie(token).param("page", "1"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(5)))
-        .andExpect(jsonPath("$.page").value(1));
+        .andExpect(jsonPath("$.pageNumber").value(1));
   }
 
   @Test
@@ -153,7 +158,7 @@ class BookControllerTest {
         .perform(get("/api/books").cookie(token).param("showAll", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(30)))
-        .andExpect(jsonPath("$.unpaged").value(true));
+        .andExpect(jsonPath("$.paged").value(false));
   }
 
   @Test
@@ -496,7 +501,7 @@ class BookControllerTest {
   }
 
   @Test
-  void getBookByIdReturnsTotalSalesToDate() throws Exception {
+  void getBookByIdWithZeroSalesReturnsZeroFinancials() throws Exception {
     Cookie token = login();
     Long bookId =
         createBook(
@@ -507,7 +512,11 @@ class BookControllerTest {
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.totalSalesToDate").value(0));
+        .andExpect(jsonPath("$.totalSalesToDate").value(0))
+        .andExpect(jsonPath("$.revenue").value(0))
+        .andExpect(jsonPath("$.paidRoyalty").value(0))
+        .andExpect(jsonPath("$.unpaidRoyalty").value(0))
+        .andExpect(jsonPath("$.totalRoyalty").value(0));
   }
 
   @Test
@@ -566,6 +575,44 @@ class BookControllerTest {
   }
 
   @Test
+  void getBookDetailByIdReturnsBookAndFinancials() throws Exception {
+    Cookie token = login();
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Detail Book",
+                "Detail Author",
+                "9780743279999",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5")));
+
+    createSale(
+        token,
+        new SaleRequest(
+            bookId, 1, 2025, 10, new BigDecimal("1000.00"), new BigDecimal("100.00"), true));
+
+    createSale(
+        token,
+        new SaleRequest(
+            bookId, 2, 2025, 5, new BigDecimal("250.00"), new BigDecimal("50.00"), false));
+
+    mockMvc
+        .perform(get("/api/books/{id}", bookId).cookie(token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(bookId))
+        .andExpect(jsonPath("$.title").value("Detail Book"))
+        .andExpect(jsonPath("$.author").value("Detail Author"))
+        .andExpect(jsonPath("$.totalSalesToDate").value(15))
+        .andExpect(jsonPath("$.revenue").value(1250.00))
+        .andExpect(jsonPath("$.paidRoyalty").value(100.00))
+        .andExpect(jsonPath("$.unpaidRoyalty").value(50.00))
+        .andExpect(jsonPath("$.totalRoyalty").value(150.00));
+  }
+
+  @Test
   void searchBooksFindsIsbn10WithUppercaseXUsingLowercaseQuery() throws Exception {
     Cookie token = login();
     // ISBN-10 080442957X has check digit X (valid ISBN for "The Elements of Style")
@@ -612,5 +659,15 @@ class BookControllerTest {
     BookResponse response =
         objectMapper.readValue(result.getResponse().getContentAsString(), BookResponse.class);
     return response.id();
+  }
+
+  private void createSale(Cookie token, SaleRequest request) throws Exception {
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk());
   }
 }

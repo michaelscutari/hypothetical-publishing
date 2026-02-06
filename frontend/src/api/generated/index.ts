@@ -9,6 +9,7 @@ export type { OpenAPIConfig } from './core/OpenAPI';
 
 export type { AuthorPaymentGroupResponse } from './models/AuthorPaymentGroupResponse';
 export type { AuthorPaymentSaleResponse } from './models/AuthorPaymentSaleResponse';
+export type { BookDetailResponse } from './models/BookDetailResponse';
 export type { BookLookupResponse } from './models/BookLookupResponse';
 export type { BookRequest } from './models/BookRequest';
 export type { BookResponse } from './models/BookResponse';
@@ -16,8 +17,8 @@ export type { ChangePasswordRequest } from './models/ChangePasswordRequest';
 export type { LoginRequest } from './models/LoginRequest';
 export type { MarkAllPaidRequest } from './models/MarkAllPaidRequest';
 export type { MarkAllPaidResponse } from './models/MarkAllPaidResponse';
-export type { PagedBookResponse } from './models/PagedBookResponse';
 export type { PagedResponseAuthorPaymentGroupResponse } from './models/PagedResponseAuthorPaymentGroupResponse';
+export type { PagedResponseBookResponse } from './models/PagedResponseBookResponse';
 export type { PagedResponseSaleResponse } from './models/PagedResponseSaleResponse';
 export type { PagedResponseString } from './models/PagedResponseString';
 export type { SaleRequest } from './models/SaleRequest';

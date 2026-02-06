@@ -194,6 +194,22 @@ public class SaleService {
     return saleRepository.markAllPaidByAuthor(normalizedAuthor);
   }
 
+  // Req 2.2.2
+  public Long getBookTotalSales(Long bookId) {
+    return saleRepository.totalUnitsSoldByBook(bookId);
+  }
+
+  public BookFinancialSummary getBookFinancialSummary(Long bookId) {
+    return BookFinancialSummary.builder()
+        .bookId(bookId)
+        .totalUnitsSold(saleRepository.totalUnitsSoldByBook(bookId))
+        .revenue(saleRepository.totalPublisherRevenueByBook(bookId))
+        .unpaidRoyalty(saleRepository.totalUnpaidAuthorRoyaltyByBook(bookId))
+        .paidRoyalty(saleRepository.totalPaidAuthorRoyaltyByBook(bookId))
+        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId))
+        .build();
+  }
+
   private Sale getOrThrowSaleFromRepoById(Long id) {
     return saleRepository.findById(id).orElseThrow(() -> new NotFoundException("Sale not found"));
   }

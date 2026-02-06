@@ -25,7 +25,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
             from Sale s
             where s.book.id = :bookId
             """)
-  Integer totalUnitsSoldByBook(Long bookId);
+  Long totalUnitsSoldByBook(Long bookId);
 
   // ---- Requirement 2.2 Book Detail ----
   // 1) Total Publisher revenue for a book
