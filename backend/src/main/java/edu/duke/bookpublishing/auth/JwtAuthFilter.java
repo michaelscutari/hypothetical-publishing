@@ -18,7 +18,6 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
-
   private final JwtUtil jwtUtil;
 
   @Override
@@ -39,6 +38,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     }
 
     chain.doFilter(request, response);
+  }
+
+  @Override
+  protected boolean shouldNotFilterErrorDispatch() {
+    return false;
   }
 
   private String extractTokenFromCookie(HttpServletRequest request) {

@@ -2,6 +2,7 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { BookLookupResponse } from '../models/BookLookupResponse';
 import type { BookRequest } from '../models/BookRequest';
 import type { BookResponse } from '../models/BookResponse';
 import type { PagedBookResponse } from '../models/PagedBookResponse';
@@ -111,6 +112,29 @@ export class BooksService {
             url: '/api/books',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * Lookup a book by ISBN
+     * @param isbn
+     * @returns BookLookupResponse Book metadata for prefill
+     * @throws ApiError
+     */
+    public static lookupBookByIsbn(
+        isbn: string,
+    ): CancelablePromise<BookLookupResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/books/lookup',
+            query: {
+                'isbn': isbn,
+            },
+            errors: {
+                400: `Invalid ISBN`,
+                404: `Book not found`,
+                409: `Book already exists`,
+                502: `Upstream lookup failed`,
+            },
         });
     }
     /**
