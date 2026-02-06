@@ -63,7 +63,8 @@ public class BookController {
 
     Sort sort =
         sortField != null
-            ? Sort.by(Sort.Direction.fromString(sortDirection), sortField)
+            ? Sort.by(
+                new Sort.Order(Sort.Direction.fromString(sortDirection), sortField).ignoreCase())
             : Sort.unsorted();
 
     if (showAll) {
