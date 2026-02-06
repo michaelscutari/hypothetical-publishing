@@ -15,11 +15,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import FullPageLoader from '../../../../components/FullPageLoader';
 import BookSalesList from '../components/BookSalesList';
 import FinancialSummary from '../components/FinancialSummary';
-import {
-  deleteOne as deleteBook,
-  getOne as getBook,
-  type BookDetail,
-} from '../data/books';
+import { deleteOne as deleteBook, getOne as getBook, type BookDetail } from '../data/books';
 import * as salesData from '../data/sales';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';

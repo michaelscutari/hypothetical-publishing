@@ -210,7 +210,6 @@ public class SaleService {
         .build();
   }
 
-
   private Sale getOrThrowSaleFromRepoById(Long id) {
     return saleRepository.findById(id).orElseThrow(() -> new NotFoundException("Sale not found"));
   }
