@@ -166,6 +166,38 @@ class AuthControllerTest {
         .andExpect(status().isOk());
   }
 
+  @Test
+  void changePasswordInvalidatesOldToken() throws Exception {
+    Cookie oldToken = login();
+
+    // Change password
+    mockMvc
+        .perform(
+            put("/api/auth/password")
+                .cookie(oldToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    "{\"currentPassword\":\"admin\",\"newPassword\":\"newpass\",\"confirmPassword\":\"newpass\"}"))
+        .andExpect(status().isOk());
+
+    // Old token should no longer work for protected endpoints
+    mockMvc.perform(get("/api/auth/me").cookie(oldToken)).andExpect(status().isUnauthorized());
+
+    // Login with new password should give a working token
+    MvcResult result =
+        mockMvc
+            .perform(
+                post("/api/auth/login")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("{\"username\":\"admin\",\"password\":\"newpass\"}"))
+            .andReturn();
+    Cookie newToken = result.getResponse().getCookie("token");
+    mockMvc
+        .perform(get("/api/auth/me").cookie(newToken))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.username").value("admin"));
+  }
+
   private Cookie login() throws Exception {
     MvcResult result =
         mockMvc

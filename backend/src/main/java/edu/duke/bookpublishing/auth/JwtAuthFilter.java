@@ -19,6 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 @RequiredArgsConstructor
 public class JwtAuthFilter extends OncePerRequestFilter {
   private final JwtUtil jwtUtil;
+  private final UserRepository userRepository;
 
   @Override
   protected void doFilterInternal(
@@ -29,9 +30,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     if (token != null) {
       try {
-        String username = jwtUtil.validateTokenAndGetUsername(token);
-        var auth = new UsernamePasswordAuthenticationToken(username, null, List.of());
-        SecurityContextHolder.getContext().setAuthentication(auth);
+        JwtUtil.DecodedToken decoded = jwtUtil.validateToken(token);
+        var user = userRepository.findByUsername(decoded.username());
+        if (user.isPresent() && user.get().getPasswordVersion() == decoded.passwordVersion()) {
+          var auth =
+              new UsernamePasswordAuthenticationToken(decoded.username(), null, List.of());
+          SecurityContextHolder.getContext().setAuthentication(auth);
+        }
       } catch (JWTVerificationException e) {
         // Invalid token, continue without auth
       }

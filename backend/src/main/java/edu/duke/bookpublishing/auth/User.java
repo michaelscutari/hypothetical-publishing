@@ -20,4 +20,8 @@ public class User {
 
   @Column(nullable = false)
   private String password;
+
+  @Column(nullable = false)
+  @Builder.Default
+  private int passwordVersion = 0;
 }

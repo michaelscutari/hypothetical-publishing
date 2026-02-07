@@ -131,11 +131,11 @@ export default function DashboardSidebar({ container }: DashboardSidebarProps) {
                 selected={!!matchPath('/sales/*', pathname)}
               />
               <DashboardSidebarPageItem
-                id="authorpayments"
+                id="author-payments"
                 title="Author Payments"
                 icon={<AccountBalanceWalletIcon />}
-                href="/authorpayments"
-                selected={!!matchPath('/authorpayments', pathname)}
+                href="/author-payments"
+                selected={!!matchPath('/author-payments', pathname)}
               />
               <DashboardSidebarDividerItem />
             </List>

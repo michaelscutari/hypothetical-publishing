@@ -5,7 +5,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
-import Grid from '@mui/material/Grid';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -24,15 +23,12 @@ export default function ChangePassword() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  // Client-side validation
-  const passwordIsTooShort = newPassword.length > 0 && newPassword.length < 8;
   const passwordsDoNotMatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
 
   const formIsValid =
     currentPassword.length > 0 &&
     newPassword.length > 0 &&
     confirmPassword.length > 0 &&
-    !passwordIsTooShort &&
     !passwordsDoNotMatch;
 
   const handleSubmit = React.useCallback(
@@ -92,56 +88,48 @@ export default function ChangePassword() {
           </Alert>
         )}
 
-        <Grid container spacing={2} sx={{ mb: 2 }}>
-          <Grid size={{ xs: 12 }}>
-            <FormControl fullWidth>
-              <FormLabel htmlFor="current-password">Current Password</FormLabel>
-              <TextField
-                id="current-password"
-                type="password"
-                autoComplete="current-password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                fullWidth
-                required
-              />
-            </FormControl>
-          </Grid>
+        <Stack spacing={2} sx={{ mb: 2 }}>
+          <FormControl fullWidth>
+            <FormLabel htmlFor="current-password">Current Password</FormLabel>
+            <TextField
+              id="current-password"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              fullWidth
+              required
+            />
+          </FormControl>
 
-          <Grid size={{ xs: 12 }}>
-            <FormControl fullWidth>
-              <FormLabel htmlFor="new-password">New Password</FormLabel>
-              <TextField
-                id="new-password"
-                type="password"
-                autoComplete="new-password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                error={passwordIsTooShort}
-                helperText={passwordIsTooShort ? 'Password must be at least 8 characters.' : ' '}
-                fullWidth
-                required
-              />
-            </FormControl>
-          </Grid>
+          <FormControl fullWidth>
+            <FormLabel htmlFor="new-password">New Password</FormLabel>
+            <TextField
+              id="new-password"
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+              fullWidth
+              required
+            />
+          </FormControl>
 
-          <Grid size={{ xs: 12 }}>
-            <FormControl fullWidth>
-              <FormLabel htmlFor="confirm-password">Confirm New Password</FormLabel>
-              <TextField
-                id="confirm-password"
-                type="password"
-                autoComplete="new-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                error={passwordsDoNotMatch}
-                helperText={passwordsDoNotMatch ? 'Passwords do not match.' : ' '}
-                fullWidth
-                required
-              />
-            </FormControl>
-          </Grid>
-        </Grid>
+          <FormControl fullWidth>
+            <FormLabel htmlFor="confirm-password">Confirm New Password</FormLabel>
+            <TextField
+              id="confirm-password"
+              type="password"
+              autoComplete="new-password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              error={passwordsDoNotMatch}
+              helperText={passwordsDoNotMatch ? 'Passwords do not match.' : undefined}
+              fullWidth
+              required
+            />
+          </FormControl>
+        </Stack>
 
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
