@@ -44,8 +44,9 @@ export default function BookShow() {
       setBook(showData);
     } catch (showDataError) {
       setError(showDataError as Error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [bookId]);
 
   React.useEffect(() => {

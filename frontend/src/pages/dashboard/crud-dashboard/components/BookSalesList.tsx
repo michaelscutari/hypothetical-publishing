@@ -1,9 +1,11 @@
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import MoneyOffIcon from '@mui/icons-material/MoneyOff';
+import PendingIcon from '@mui/icons-material/Pending';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
@@ -296,9 +298,7 @@ export default function BookSalesList({
           <CircularProgress size={24} />
         </Box>
       ) : filteredSortedSales.length === 0 ? (
-        <Typography variant="body2">
-          No sales recorded for this book (in the selected range).
-        </Typography>
+        <Alert severity="info">No sales recorded for this book (in the selected range).</Alert>
       ) : (
         <TableContainer>
           <Table size="small">
@@ -395,15 +395,13 @@ export default function BookSalesList({
                     </TableCell>
 
                     <TableCell align="center">
-                      {s.hasAuthorBeenPaid ? (
-                        <Tooltip title="Paid">
-                          <CheckCircleOutlineIcon color="success" />
-                        </Tooltip>
-                      ) : (
-                        <Tooltip title="Unpaid">
-                          <MoneyOffIcon color="warning" />
-                        </Tooltip>
-                      )}
+                      <Chip
+                        icon={s.hasAuthorBeenPaid ? <CheckCircleIcon /> : <PendingIcon />}
+                        label={s.hasAuthorBeenPaid ? 'Paid' : 'Unpaid'}
+                        color={s.hasAuthorBeenPaid ? 'success' : 'warning'}
+                        size="small"
+                        variant={s.hasAuthorBeenPaid ? 'filled' : 'outlined'}
+                      />
                     </TableCell>
 
                     <TableCell align="center" onClick={(e) => e.stopPropagation()}>

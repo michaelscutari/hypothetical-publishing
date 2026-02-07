@@ -20,7 +20,7 @@ import {
   type GridSortModel,
 } from '@mui/x-data-grid';
 import * as React from 'react';
-import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { deleteOne as deleteBook, getMany as getBooks, type Book } from '../data/books';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
@@ -30,8 +30,6 @@ import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 const INITIAL_PAGE_SIZE = 25;
 
 export default function BookList() {
-  const { pathname } = useLocation();
-  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   const dialogs = useDialogs();
@@ -39,17 +37,11 @@ export default function BookList() {
 
   const [showAll, setShowAll] = React.useState(false);
   const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
-    page: searchParams.get('page') ? Number(searchParams.get('page')) : 0,
-    pageSize: searchParams.get('pageSize')
-      ? Number(searchParams.get('pageSize'))
-      : INITIAL_PAGE_SIZE,
+    page: 0,
+    pageSize: INITIAL_PAGE_SIZE,
   });
-  const [filterModel, setFilterModel] = React.useState<GridFilterModel>(
-    searchParams.get('filter') ? JSON.parse(searchParams.get('filter') ?? '') : { items: [] },
-  );
-  const [sortModel, setSortModel] = React.useState<GridSortModel>(
-    searchParams.get('sort') ? JSON.parse(searchParams.get('sort') ?? '') : [],
-  );
+  const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
+  const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
 
   const [rowsState, setRowsState] = React.useState<{
     rows: Book[];
@@ -61,57 +53,6 @@ export default function BookList() {
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
-
-  const handlePaginationModelChange = React.useCallback(
-    (model: GridPaginationModel) => {
-      setPaginationModel(model);
-
-      searchParams.set('page', String(model.page));
-      searchParams.set('pageSize', String(model.pageSize));
-
-      const newSearchParamsString = searchParams.toString();
-
-      navigate(`${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`);
-    },
-    [navigate, pathname, searchParams],
-  );
-
-  const handleFilterModelChange = React.useCallback(
-    (model: GridFilterModel) => {
-      setFilterModel(model);
-
-      if (
-        model.items.length > 0 ||
-        (model.quickFilterValues && model.quickFilterValues.length > 0)
-      ) {
-        searchParams.set('filter', JSON.stringify(model));
-      } else {
-        searchParams.delete('filter');
-      }
-
-      const newSearchParamsString = searchParams.toString();
-
-      navigate(`${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`);
-    },
-    [navigate, pathname, searchParams],
-  );
-
-  const handleSortModelChange = React.useCallback(
-    (model: GridSortModel) => {
-      setSortModel(model);
-
-      if (model.length > 0) {
-        searchParams.set('sort', JSON.stringify(model));
-      } else {
-        searchParams.delete('sort');
-      }
-
-      const newSearchParamsString = searchParams.toString();
-
-      navigate(`${pathname}${newSearchParamsString ? '?' : ''}${newSearchParamsString}`);
-    },
-    [navigate, pathname, searchParams],
-  );
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -131,9 +72,9 @@ export default function BookList() {
       });
     } catch (listDataError) {
       setError(listDataError as Error);
+    } finally {
+      setIsLoading(false);
     }
-
-    setIsLoading(false);
   }, [paginationModel, sortModel, filterModel, showAll]);
 
   React.useEffect(() => {
@@ -324,11 +265,11 @@ export default function BookList() {
             filterMode="server"
             paginationMode="server"
             paginationModel={paginationModel}
-            onPaginationModelChange={handlePaginationModelChange}
+            onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
-            onSortModelChange={handleSortModelChange}
+            onSortModelChange={setSortModel}
             filterModel={filterModel}
-            onFilterModelChange={handleFilterModelChange}
+            onFilterModelChange={setFilterModel}
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
             loading={isLoading}

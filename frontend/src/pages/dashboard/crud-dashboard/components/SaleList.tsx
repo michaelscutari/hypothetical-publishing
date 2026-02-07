@@ -152,14 +152,12 @@ export default function SaleList() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.textDecoration = 'underline';
-                e.currentTarget.style.color = '#1976d2';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.textDecoration = 'none';
-                e.currentTarget.style.color = 'inherit';
               }}
               onClick={(e) => {
-                e.stopPropagation(); // Prevent row click event
+                e.stopPropagation();
               }}
             >
               {title}

@@ -48,8 +48,9 @@ export default function SaleShow() {
       }
     } catch (loadError) {
       setError(loadError as Error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [saleId]);
 
   React.useEffect(() => {
