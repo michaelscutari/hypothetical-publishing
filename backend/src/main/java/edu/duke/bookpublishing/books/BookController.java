@@ -78,13 +78,12 @@ public class BookController {
     if (showAll) {
       List<Book> all = bookService.findAll(query, sort);
       return PagedResponse.unpaged(
-          all, book -> BookResponse.from(book, saleService.getBookTotalSales(book.getId())));
+          all, book -> BookResponse.from(book, book.getTotalSalesToDate()));
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
     Page<Book> books = bookService.findAll(pageable, query);
-    return PagedResponse.paged(
-        books, book -> BookResponse.from(book, saleService.getBookTotalSales(book.getId())));
+    return PagedResponse.paged(books, book -> BookResponse.from(book, book.getTotalSalesToDate()));
   }
 
   @Operation(operationId = "searchAuthors", summary = "Search distinct author names")

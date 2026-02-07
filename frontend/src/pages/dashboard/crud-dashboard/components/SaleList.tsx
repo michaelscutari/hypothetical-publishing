@@ -24,7 +24,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { type BookResponse, BooksService, type SaleResponse, SalesService } from '../../../../api';
+import { type SaleResponse, SalesService } from '../../../../api';
 import PageContainer from './PageContainer';
 
 const MONTH_NAMES = [
@@ -61,8 +61,6 @@ export default function SaleList() {
   const [totalCount, setTotalCount] = React.useState(0);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
-  const [booksMap, setBooksMap] = React.useState<Map<number, BookResponse>>(new Map());
-
   const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
   const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
 
@@ -97,26 +95,6 @@ export default function SaleList() {
 
       setSales(response.content ?? []);
       setTotalCount(response.totalElements ?? 0);
-
-      // Fetch book details for all sales records
-      const uniqueBookIds = Array.from(
-        new Set((response.content ?? []).map((s) => s.bookId).filter(Boolean)),
-      ) as number[];
-
-      if (uniqueBookIds.length > 0) {
-        const bookPromises = uniqueBookIds.map((bookId) =>
-          BooksService.getBookById(bookId).catch(() => null),
-        );
-        const books = await Promise.all(bookPromises);
-
-        const newBooksMap = new Map<number, BookResponse>();
-        books.forEach((book) => {
-          if (book && book.id) newBooksMap.set(book.id, book);
-        });
-        setBooksMap(newBooksMap);
-      } else {
-        setBooksMap(new Map());
-      }
     } catch (loadError) {
       setError(loadError as Error);
     } finally {
@@ -175,14 +153,9 @@ export default function SaleList() {
         field: 'bookTitle',
         headerName: 'Book Title',
         width: 200,
-        valueGetter: (_value, row) => {
-          const book = booksMap.get(row.bookId ?? 0);
-          return book?.title ?? `Book ${row.bookId}`;
-        },
         renderCell: (params) => {
           const bookId = params.row.bookId;
-          const book = booksMap.get(bookId ?? 0);
-          const title = book?.title ?? `Book ${bookId}`;
+          const title = params.row.bookTitle ?? `Book ${bookId}`;
 
           return (
             <Link
@@ -212,10 +185,6 @@ export default function SaleList() {
         field: 'bookAuthor',
         headerName: 'Author',
         width: 180,
-        valueGetter: (_value, row) => {
-          const book = booksMap.get(row.bookId ?? 0);
-          return book?.author ?? `Author ${row.bookId}`;
-        },
       },
       {
         field: 'saleYear',
@@ -265,7 +234,7 @@ export default function SaleList() {
         },
       },
     ],
-    [booksMap],
+    [],
   );
 
   const pageTitle = 'Sales Records';

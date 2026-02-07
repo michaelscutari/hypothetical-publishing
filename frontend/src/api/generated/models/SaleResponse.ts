@@ -15,6 +15,14 @@ export type SaleResponse = {
      */
     bookId?: number;
     /**
+     * Title of the sold book
+     */
+    bookTitle?: string;
+    /**
+     * Author of the sold book
+     */
+    bookAuthor?: string;
+    /**
      * Month of the sale
      */
     saleMonth?: number;
