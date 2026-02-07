@@ -21,21 +21,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { BooksService, SalesService, type BookResponse, type SaleResponse } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+import { MONTH_NAMES } from '../../../../constants/months';
 
 export default function SaleEdit() {
   const { saleId } = useParams();
@@ -102,8 +88,11 @@ export default function SaleEdit() {
       const book = (booksResponse.content ?? []).find((b) => b.id === saleData.bookId);
       setSelectedBook(book ?? null);
 
-      // On load, do not mark as overridden or edited
-      setIsRoyaltyOverridden(false);
+      // Detect if the saved royalty was overridden from the computed default
+      const savedRoyalty = saleData.authorRoyalty ?? 0;
+      const expectedRoyalty = (saleData.publisherRevenue ?? 0) * (book?.royaltyRate ?? 0);
+      const wasOverridden = Math.abs(savedRoyalty - parseFloat(expectedRoyalty.toFixed(2))) > 0.001;
+      setIsRoyaltyOverridden(wasOverridden);
       setHasRoyaltyBeenEdited(false);
     } catch (loadError) {
       setError(loadError as Error);

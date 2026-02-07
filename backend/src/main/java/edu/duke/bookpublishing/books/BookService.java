@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.books;
 
+import edu.duke.bookpublishing.common.StringUtils;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -34,7 +35,7 @@ public class BookService {
 
   // Distinct author search for autocomplete.
   public List<String> findDistinctAuthors(String query) {
-    String normalizedQuery = normalizeWhitespace(query);
+    String normalizedQuery = StringUtils.normalizeWhitespace(query);
     if (normalizedQuery == null || normalizedQuery.isBlank()) {
       return List.of();
     }
@@ -42,7 +43,7 @@ public class BookService {
   }
 
   public Page<String> findDistinctAuthors(String query, Pageable pageable) {
-    String normalizedQuery = normalizeWhitespace(query);
+    String normalizedQuery = StringUtils.normalizeWhitespace(query);
     if (normalizedQuery == null || normalizedQuery.isBlank()) {
       return Page.empty(pageable);
     }
@@ -59,13 +60,5 @@ public class BookService {
 
   public void deleteById(Long id) {
     bookRepository.deleteById(id);
-  }
-
-  // Mirrors Book.normalizeFields() whitespace normalization (def 17).
-  private String normalizeWhitespace(String value) {
-    if (value == null) {
-      return null;
-    }
-    return String.join(" ", value.trim().split("\\s+"));
   }
 }

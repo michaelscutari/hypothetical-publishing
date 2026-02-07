@@ -9,21 +9,7 @@ import MenuItem from '@mui/material/MenuItem';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate } from 'react-router-dom';
 import type { Book } from '../data/books';
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+import { MONTH_NAMES } from '../../../../constants/months';
 
 export interface BookFormState {
   values: Partial<Omit<Book, 'id' | 'totalSalesToDate'>>;

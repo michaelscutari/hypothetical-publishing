@@ -52,21 +52,7 @@ import {
   type PagedResponseString,
 } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-
-const MONTH_NAMES = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 const INITIAL_PAGE_SIZE = 25;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const ALL_SENTINEL = -1;

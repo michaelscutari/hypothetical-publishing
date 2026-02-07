@@ -20,21 +20,7 @@ import * as salesData from '../data/sales';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+import { MONTH_NAMES } from '../../../../constants/months';
 
 export default function BookShow() {
   const { bookId } = useParams<{ bookId?: string }>();

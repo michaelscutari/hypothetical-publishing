@@ -19,21 +19,7 @@ import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import { SalesService, BooksService, type SaleResponse, type BookResponse } from '../../../../api';
 import PageContainer from './PageContainer';
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+import { MONTH_NAMES } from '../../../../constants/months';
 
 export default function SaleShow() {
   const { saleId } = useParams();

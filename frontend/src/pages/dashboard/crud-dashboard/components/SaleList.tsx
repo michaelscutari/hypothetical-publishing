@@ -26,21 +26,7 @@ import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type SaleResponse, SalesService } from '../../../../api';
 import PageContainer from './PageContainer';
-
-const MONTH_NAMES = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 const INITIAL_PAGE_SIZE = 25;
 
 export default function SaleList() {
