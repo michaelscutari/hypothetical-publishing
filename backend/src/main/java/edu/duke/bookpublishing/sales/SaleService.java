@@ -226,5 +226,4 @@ public class SaleService {
     }
     return publisherRevenue.multiply(bookRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
   }
-
 }

@@ -61,5 +61,4 @@ public class BookService {
   public void deleteById(Long id) {
     bookRepository.deleteById(id);
   }
-
 }
