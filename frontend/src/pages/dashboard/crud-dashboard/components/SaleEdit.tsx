@@ -96,8 +96,9 @@ export default function SaleEdit() {
       setHasRoyaltyBeenEdited(false);
     } catch (loadError) {
       setError(loadError as Error);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, [saleId]);
 
   React.useEffect(() => {

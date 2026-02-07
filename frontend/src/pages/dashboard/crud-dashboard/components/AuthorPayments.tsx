@@ -57,9 +57,10 @@ const INITIAL_PAGE_SIZE = 25;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const ALL_SENTINEL = -1;
 
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 function formatCurrency(n?: number) {
   if (n == null) return '';
-  return `$${Number(n).toFixed(2)}`;
+  return currencyFormatter.format(n);
 }
 function formatMonthYear(s: AuthorPaymentSaleResponse) {
   if (s.saleYear && s.saleMonth) return `${MONTH_NAMES[(s.saleMonth ?? 1) - 1]} ${s.saleYear}`;
@@ -349,7 +350,7 @@ export default function AuthorPaymentsView() {
         </Stack>
       }
     >
-      <Box sx={{ mt: 2 }}>
+      <Box sx={{ flex: 1, width: '100%' }}>
         {error ? (
           <Box sx={{ flexGrow: 1 }}>
             <Alert severity="error">{error.message}</Alert>

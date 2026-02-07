@@ -51,36 +51,38 @@ export interface PageContainerProps extends ContainerProps {
 export default function PageContainer(props: PageContainerProps) {
   const { children, breadcrumbs, title, actions = null } = props;
 
+  const isSubPage = breadcrumbs && breadcrumbs.length > 1;
+
   return (
     <Container sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
       <Stack sx={{ flex: 1, my: 2 }} spacing={2}>
         <Stack>
-          <PageHeaderBreadcrumbs
-            aria-label="breadcrumb"
-            separator={<NavigateNextRoundedIcon fontSize="small" />}
-          >
-            {breadcrumbs
-              ? breadcrumbs.map((breadcrumb, index) => {
-                  return breadcrumb.path ? (
-                    <MuiLink
-                      key={index}
-                      component={Link}
-                      underline="hover"
-                      color="inherit"
-                      to={breadcrumb.path}
-                    >
-                      {breadcrumb.title}
-                    </MuiLink>
-                  ) : (
-                    <Typography key={index} sx={{ color: 'text.primary', fontWeight: 600 }}>
-                      {breadcrumb.title}
-                    </Typography>
-                  );
-                })
-              : null}
-          </PageHeaderBreadcrumbs>
+          {isSubPage ? (
+            <PageHeaderBreadcrumbs
+              aria-label="breadcrumb"
+              separator={<NavigateNextRoundedIcon fontSize="small" />}
+            >
+              {breadcrumbs.map((breadcrumb, index) => {
+                return breadcrumb.path ? (
+                  <MuiLink
+                    key={index}
+                    component={Link}
+                    underline="hover"
+                    color="inherit"
+                    to={breadcrumb.path}
+                  >
+                    {breadcrumb.title}
+                  </MuiLink>
+                ) : (
+                  <Typography key={index} sx={{ color: 'text.primary', fontWeight: 600 }}>
+                    {breadcrumb.title}
+                  </Typography>
+                );
+              })}
+            </PageHeaderBreadcrumbs>
+          ) : null}
           <PageContentHeader>
-            {title ? <Typography variant="h4">{title}</Typography> : null}
+            {!isSubPage && title ? <Typography variant="h4">{title}</Typography> : null}
             <PageHeaderToolbar>{actions}</PageHeaderToolbar>
           </PageContentHeader>
         </Stack>

@@ -562,14 +562,14 @@ export default function SaleCreate() {
                   <TableCell>
                     <TextField
                       size="small"
-                      type="number"
+                      type="text"
                       placeholder="0"
                       value={record.quantitySold ?? ''}
                       onFocus={() => activateRow(index)}
                       onChange={handleQuantityChange(index)}
                       error={!!record.errors.quantitySold}
                       helperText={record.errors.quantitySold}
-                      inputProps={{ min: 0 }}
+                      inputProps={{ inputMode: 'numeric' }}
                       fullWidth
                     />
                   </TableCell>
@@ -577,14 +577,14 @@ export default function SaleCreate() {
                   <TableCell>
                     <TextField
                       size="small"
-                      type="number"
+                      type="text"
                       placeholder="0.00"
                       value={record.publisherRevenue ?? ''}
                       onFocus={() => activateRow(index)}
                       onChange={handleRevenueChange(index)}
                       error={!!record.errors.publisherRevenue}
                       helperText={record.errors.publisherRevenue}
-                      inputProps={{ min: 0, step: 0.01 }}
+                      inputProps={{ inputMode: 'decimal' }}
                       fullWidth
                       InputProps={{
                         startAdornment: <Typography>$</Typography>,
@@ -596,14 +596,14 @@ export default function SaleCreate() {
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <TextField
                         size="small"
-                        type="number"
+                        type="text"
                         placeholder="0.00"
                         value={record.authorRoyalty ?? ''}
                         onFocus={() => activateRow(index)}
                         onChange={handleRoyaltyChange(index)}
                         error={!!record.errors.authorRoyalty}
                         helperText={record.errors.authorRoyalty}
-                        inputProps={{ min: 0, step: 0.01 }}
+                        inputProps={{ inputMode: 'decimal' }}
                         fullWidth
                         InputProps={{
                           startAdornment: <Typography>$</Typography>,
@@ -628,7 +628,7 @@ export default function SaleCreate() {
 
                   <TableCell>
                     <FormControlLabel
-                      sx={{ m: 0 }}
+                      sx={{ m: 0, minWidth: 120 }}
                       control={
                         <Switch
                           checked={record.hasAuthorBeenPaid}
@@ -636,7 +636,7 @@ export default function SaleCreate() {
                           onChange={handlePaidChange(index)}
                         />
                       }
-                      label={undefined}
+                      label={record.hasAuthorBeenPaid ? 'Paid' : 'Unpaid'}
                     />
                   </TableCell>
 
