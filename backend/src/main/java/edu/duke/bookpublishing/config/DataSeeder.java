@@ -43,7 +43,7 @@ public class DataSeeder implements CommandLineRunner {
     ClassPathResource resource = new ClassPathResource("seed/books.csv");
 
     try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
-      String[] header = reader.readNext();
+      reader.readNext();
       String[] line;
       while ((line = reader.readNext()) != null) {
         String title = line[0];
@@ -80,7 +80,7 @@ public class DataSeeder implements CommandLineRunner {
     ClassPathResource resource = new ClassPathResource("seed/records.csv");
 
     try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
-      String[] header = reader.readNext();
+      reader.readNext();
       String[] line;
       while ((line = reader.readNext()) != null) {
         String isbn13 = line[0];

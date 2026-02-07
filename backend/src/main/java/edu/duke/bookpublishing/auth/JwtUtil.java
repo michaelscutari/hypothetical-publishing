@@ -17,15 +17,21 @@ public class JwtUtil {
   @Value("${app.jwt-expiration-hours:24}")
   private long expirationHours;
 
-  public String generateToken(String username) {
+  public String generateToken(String username, int passwordVersion) {
     return JWT.create()
         .withSubject(username)
+        .withClaim("pwv", passwordVersion)
         .withIssuedAt(Instant.now())
         .withExpiresAt(Instant.now().plus(expirationHours, ChronoUnit.HOURS))
         .sign(Algorithm.HMAC256(secret));
   }
 
-  public String validateTokenAndGetUsername(String token) throws JWTVerificationException {
-    return JWT.require(Algorithm.HMAC256(secret)).build().verify(token).getSubject();
+  public DecodedToken validateToken(String token) throws JWTVerificationException {
+    var decoded = JWT.require(Algorithm.HMAC256(secret)).build().verify(token);
+    String username = decoded.getSubject();
+    Integer pwv = decoded.getClaim("pwv").asInt();
+    return new DecodedToken(username, pwv != null ? pwv : 0);
   }
+
+  public record DecodedToken(String username, int passwordVersion) {}
 }

@@ -55,7 +55,7 @@ public class AuthController {
       throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
     }
 
-    String token = jwtUtil.generateToken(user.getUsername());
+    String token = jwtUtil.generateToken(user.getUsername(), user.getPasswordVersion());
 
     response.addHeader(
         HttpHeaders.SET_COOKIE,
@@ -102,6 +102,7 @@ public class AuthController {
     }
 
     user.setPassword(passwordEncoder.encode(request.newPassword()));
+    user.setPasswordVersion(user.getPasswordVersion() + 1);
     userRepository.save(user);
     return ResponseEntity.ok().build();
   }
