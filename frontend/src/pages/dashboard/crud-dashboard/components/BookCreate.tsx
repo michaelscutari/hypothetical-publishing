@@ -98,7 +98,7 @@ export default function BookCreate() {
         autoHideDuration: 3000,
       });
 
-      navigate('/dashboard/books');
+      navigate('/books');
     } catch (createError) {
       notifications.show(`Failed to create book. Reason: ${(createError as Error).message}`, {
         severity: 'error',
@@ -111,7 +111,7 @@ export default function BookCreate() {
   return (
     <PageContainer
       title="New Book"
-      breadcrumbs={[{ title: 'Books', path: '/dashboard/books' }, { title: 'New' }]}
+      breadcrumbs={[{ title: 'Books', path: '/books' }, { title: 'New' }]}
     >
       <IsbnLookup onLookupSuccess={handleLookupSuccess} />
       <BookForm

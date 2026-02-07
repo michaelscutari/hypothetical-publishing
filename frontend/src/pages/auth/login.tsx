@@ -54,7 +54,7 @@ export default function Login() {
   // Redirect if already authenticated
   React.useEffect(() => {
     if (isAuthenticated && !isLoading) {
-      const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard';
+      const from = (location.state as { from?: Location })?.from?.pathname || '/';
       navigate(from, { replace: true });
     }
   }, [isAuthenticated, isLoading, navigate, location]);

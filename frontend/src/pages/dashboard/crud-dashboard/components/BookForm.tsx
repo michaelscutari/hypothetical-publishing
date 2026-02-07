@@ -87,7 +87,7 @@ export default function BookForm(props: BookFormProps) {
   }, [formValues, onReset]);
 
   const handleBack = React.useCallback(() => {
-    navigate(backButtonPath ?? '/dashboard/books');
+    navigate(backButtonPath ?? '/books');
   }, [navigate, backButtonPath]);
 
   return (

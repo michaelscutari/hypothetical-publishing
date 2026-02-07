@@ -76,7 +76,7 @@ export default function BookShow() {
   }, [reloadSales]);
 
   const handleBookEdit = React.useCallback(() => {
-    navigate(`/dashboard/books/${bookId}/edit`);
+    navigate(`/books/${bookId}/edit`);
   }, [navigate, bookId]);
 
   const handleBookDelete = React.useCallback(async () => {
@@ -98,7 +98,7 @@ export default function BookShow() {
       setIsLoading(true);
       try {
         await deleteBook(Number(bookId));
-        navigate('/dashboard/books');
+        navigate('/books');
         notifications.show('Book deleted successfully.', {
           severity: 'success',
           autoHideDuration: 3000,
@@ -114,7 +114,7 @@ export default function BookShow() {
   }, [book, dialogs, bookId, navigate, notifications]);
 
   const handleBack = React.useCallback(() => {
-    navigate('/dashboard/books');
+    navigate('/books');
   }, [navigate]);
 
   const formatPublicationDate = (year?: number, month?: number) => {
@@ -267,7 +267,7 @@ export default function BookShow() {
   return (
     <PageContainer
       title={book?.title}
-      breadcrumbs={[{ title: 'Books', path: '/dashboard/books' }, { title: breadcrumbTitle }]}
+      breadcrumbs={[{ title: 'Books', path: '/books' }, { title: breadcrumbTitle }]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>

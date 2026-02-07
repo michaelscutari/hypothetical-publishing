@@ -67,7 +67,7 @@ export default function IsbnLookup({ onLookupSuccess }: IsbnLookupProps) {
               actionText: 'View Book',
               onAction: () => {
                 if (existingId) {
-                  navigate(`/dashboard/books/${existingId}`);
+                  navigate(`/books/${existingId}`);
                 }
               },
             });

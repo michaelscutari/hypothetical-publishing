@@ -26,7 +26,7 @@ export default function CrudDashboard() {
             <Route path="books/:bookId/edit" element={<BookEdit />} />
             <Route path="change-password" element={<ChangePassword />} />
 
-            <Route path="*" element={<Navigate to="/dashboard/books" replace />} />
+            <Route path="*" element={<Navigate to="/books" replace />} />
             <Route path="sales" element={<SaleList />} />
             <Route path="sales/new" element={<SaleCreate />} />
             <Route path="sales/:saleId" element={<SaleShow />} />

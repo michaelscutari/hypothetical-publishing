@@ -69,7 +69,7 @@ export default function DashboardSidebar({ container }: DashboardSidebarProps) {
 
   const handleChangePassword = React.useCallback(() => {
     setProfileAnchorEl(null);
-    navigate('/dashboard/change-password');
+    navigate('/change-password');
     if (!isOverSmViewport) {
       setMobileOpen(false);
     }
@@ -120,26 +120,22 @@ export default function DashboardSidebar({ container }: DashboardSidebarProps) {
                 id="books"
                 title="Books"
                 icon={<MenuBookIcon />}
-                href="/dashboard/books"
-                selected={
-                  !!matchPath('/dashboard/books/*', pathname) ||
-                  pathname === '/dashboard' ||
-                  pathname === '/dashboard/'
-                }
+                href="/books"
+                selected={!!matchPath('/books/*', pathname) || pathname === '/' || pathname === ''}
               />
               <DashboardSidebarPageItem
                 id="sales"
                 title="Sales Records"
                 icon={<ReceiptIcon />}
-                href="/dashboard/sales"
-                selected={!!matchPath('/dashboard/sales/*', pathname)}
+                href="/sales"
+                selected={!!matchPath('/sales/*', pathname)}
               />
               <DashboardSidebarPageItem
                 id="authorpayments"
                 title="Author Payments"
                 icon={<AccountBalanceWalletIcon />}
-                href="/dashboard/authorpayments"
-                selected={!!matchPath('/dashboard/authorpayments', pathname)}
+                href="/authorpayments"
+                selected={!!matchPath('/authorpayments', pathname)}
               />
               <DashboardSidebarDividerItem />
             </List>

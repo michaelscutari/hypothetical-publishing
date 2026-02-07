@@ -431,9 +431,9 @@ export default function SaleCreate() {
       });
 
       if (bookIdParam) {
-        navigate(`/dashboard/books/${bookIdParam}`);
+        navigate(`/books/${bookIdParam}`);
       } else {
-        navigate('/dashboard/sales');
+        navigate('/sales');
       }
     } catch (error) {
       notifications.show(`Failed to create sales records: ${(error as Error).message}`, {
@@ -447,21 +447,21 @@ export default function SaleCreate() {
 
   const handleBack = React.useCallback(() => {
     if (bookIdParam) {
-      navigate(`/dashboard/books/${bookIdParam}`);
+      navigate(`/books/${bookIdParam}`);
     } else {
-      navigate('/dashboard/sales');
+      navigate('/sales');
     }
   }, [navigate, bookIdParam]);
 
   const breadcrumbs = React.useMemo(() => {
     if (bookIdParam) {
       return [
-        { title: 'Books', path: '/dashboard/books' },
-        { title: 'Book Detail', path: `/dashboard/books/${bookIdParam}` },
+        { title: 'Books', path: '/books' },
+        { title: 'Book Detail', path: `/books/${bookIdParam}` },
         { title: 'New' },
       ];
     }
-    return [{ title: 'Sales Records', path: '/dashboard/sales' }, { title: 'New' }];
+    return [{ title: 'Sales Records', path: '/sales' }, { title: 'New' }];
   }, [bookIdParam]);
 
   return (
