@@ -13,6 +13,8 @@ import java.math.BigDecimal;
 public record SaleResponse(
     @Schema(description = "Unique sale identifier id") Long id,
     @Schema(description = "Unique identifier for the sold book") Long bookId,
+    @Schema(description = "Title of the sold book") String bookTitle,
+    @Schema(description = "Author of the sold book") String bookAuthor,
     @Schema(description = "Month of the sale") Integer saleMonth,
     @Schema(description = "Year of the sale") Integer saleYear,
     @Schema(description = "Quantity of books sold") Integer quantitySold,
@@ -25,6 +27,8 @@ public record SaleResponse(
     return new SaleResponse(
         sale.getId(),
         sale.getBook().getId(),
+        sale.getBook().getTitle(),
+        sale.getBook().getAuthor(),
         sale.getSaleMonth(),
         sale.getSaleYear(),
         sale.getQuantitySold(),

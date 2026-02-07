@@ -56,7 +56,6 @@ public class DataSeeder implements CommandLineRunner {
         String[] dateParts = publicationDate.split("/");
         int month = Integer.parseInt(dateParts[0]);
         int year = Integer.parseInt(dateParts[1]);
-
         Book book =
             Book.builder()
                 .title(title)
@@ -100,7 +99,6 @@ public class DataSeeder implements CommandLineRunner {
         String[] dateParts = recordDate.split("/");
         int month = Integer.parseInt(dateParts[0]);
         int year = Integer.parseInt(dateParts[1]);
-
         Sale sale =
             Sale.builder()
                 .book(book)
