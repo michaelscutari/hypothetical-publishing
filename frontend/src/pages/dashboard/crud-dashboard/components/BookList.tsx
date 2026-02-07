@@ -93,18 +93,18 @@ export default function BookList() {
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }) => {
-      navigate(`/dashboard/books/${row.id}`);
+      navigate(`/books/${row.id}`);
     },
     [navigate],
   );
 
   const handleCreateClick = React.useCallback(() => {
-    navigate('/dashboard/books/new');
+    navigate('/books/new');
   }, [navigate]);
 
   const handleRowEdit = React.useCallback(
     (book: Book) => () => {
-      navigate(`/dashboard/books/${book.id}/edit`);
+      navigate(`/books/${book.id}/edit`);
     },
     [navigate],
   );

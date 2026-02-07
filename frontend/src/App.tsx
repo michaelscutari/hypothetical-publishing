@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Auth from './pages/auth';
 import Dashboard from './pages/dashboard';
@@ -22,11 +22,11 @@ function App() {
       </Box>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<Auth />} />
+        <Route path="/login" element={<Auth />} />
 
         {/* Protected routes */}
         <Route
-          path="/dashboard/*"
+          path="/*"
           element={
             <ProtectedRoute>
               <Dashboard />
@@ -41,9 +41,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
-        {/* Catch-all redirect to login */}
-        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <BackendStatus />
     </BrowserRouter>

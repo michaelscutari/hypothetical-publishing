@@ -171,7 +171,7 @@ export default function SaleEdit() {
           autoHideDuration: 3000,
         });
 
-        navigate(`/dashboard/sales/${saleId}`);
+        navigate(`/sales/${saleId}`);
       } catch (updateError) {
         notifications.show(
           `Failed to update sale record. Reason: ${(updateError as Error).message}`,
@@ -200,7 +200,7 @@ export default function SaleEdit() {
   );
 
   const handleBack = React.useCallback(() => {
-    navigate(`/dashboard/sales/${saleId}`);
+    navigate(`/sales/${saleId}`);
   }, [navigate, saleId]);
 
   const renderEdit = React.useMemo(() => {
@@ -399,8 +399,8 @@ export default function SaleEdit() {
     <PageContainer
       title={`Edit Sale Record ${saleId}`}
       breadcrumbs={[
-        { title: 'Sales Records', path: '/dashboard/sales' },
-        { title: `Sale ${saleId}`, path: `/dashboard/sales/${saleId}` },
+        { title: 'Sales Records', path: '/sales' },
+        { title: `Sale ${saleId}`, path: `/sales/${saleId}` },
         { title: 'Edit' },
       ]}
     >

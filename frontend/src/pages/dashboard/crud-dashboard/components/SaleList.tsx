@@ -123,14 +123,14 @@ export default function SaleList() {
   // Requirement 3.1.3 - Navigate to detail/modify view
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }) => {
-      navigate(`/dashboard/sales/${row.id}`);
+      navigate(`/sales/${row.id}`);
     },
     [navigate],
   );
 
   // Requirement 3.1.4 - Navigate to sales input tool
   const handleCreateClick = React.useCallback(() => {
-    navigate('/dashboard/sales/new');
+    navigate('/sales/new');
   }, [navigate]);
 
   const columns = React.useMemo<GridColDef<SaleResponse>[]>(
@@ -145,7 +145,7 @@ export default function SaleList() {
 
           return (
             <Link
-              to={`/dashboard/books/${bookId}`}
+              to={`/books/${bookId}`}
               style={{
                 color: 'inherit',
                 textDecoration: 'none',

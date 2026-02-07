@@ -82,7 +82,7 @@ function BookEditForm({
         autoHideDuration: 3000,
       });
 
-      navigate('/dashboard/books');
+      navigate('/books');
     } catch (editError) {
       notifications.show(`Failed to edit book. Reason: ${(editError as Error).message}`, {
         severity: 'error',
@@ -99,7 +99,7 @@ function BookEditForm({
       onSubmit={handleFormSubmit}
       onReset={handleFormReset}
       submitButtonLabel="Save"
-      backButtonPath={`/dashboard/books/${bookId}`}
+      backButtonPath={`/books/${bookId}`}
     />
   );
 }
@@ -177,8 +177,8 @@ export default function BookEdit() {
     <PageContainer
       title={book?.title ?? 'Edit Book'}
       breadcrumbs={[
-        { title: 'Books', path: '/dashboard/books' },
-        { title: truncate(book?.title) || 'Book', path: `/dashboard/books/${bookId}` },
+        { title: 'Books', path: '/books' },
+        { title: truncate(book?.title) || 'Book', path: `/books/${bookId}` },
         { title: 'Edit' },
       ]}
     >

@@ -58,7 +58,7 @@ export default function SaleShow() {
   }, [loadData]);
 
   const handleSaleEdit = React.useCallback(() => {
-    navigate(`/dashboard/sales/${saleId}/edit`);
+    navigate(`/sales/${saleId}/edit`);
   }, [navigate, saleId]);
 
   const handleSaleDelete = React.useCallback(async () => {
@@ -81,7 +81,7 @@ export default function SaleShow() {
       try {
         await SalesService.deleteSale(Number(saleId));
 
-        navigate('/dashboard/sales');
+        navigate('/sales');
 
         notifications.show('Sale record deleted successfully.', {
           severity: 'success',
@@ -101,7 +101,7 @@ export default function SaleShow() {
   }, [sale, book, dialogs, saleId, navigate, notifications]);
 
   const handleBack = React.useCallback(() => {
-    navigate('/dashboard/sales');
+    navigate('/sales');
   }, [navigate]);
 
   const formatDate = (year?: number, month?: number) => {
@@ -144,10 +144,10 @@ export default function SaleShow() {
               <Typography variant="body1" sx={{ mb: 1 }}>
                 <Box
                   component="a"
-                  href={`/dashboard/books/${sale.bookId}`}
+                  href={`/books/${sale.bookId}`}
                   onClick={(e: React.MouseEvent) => {
                     e.preventDefault();
-                    navigate(`/dashboard/books/${sale.bookId}`);
+                    navigate(`/books/${sale.bookId}`);
                   }}
                   sx={{
                     color: 'inherit',
@@ -244,7 +244,7 @@ export default function SaleShow() {
   return (
     <PageContainer
       title={pageTitle}
-      breadcrumbs={[{ title: 'Sales Records', path: '/dashboard/sales' }, { title: pageTitle }]}
+      breadcrumbs={[{ title: 'Sales Records', path: '/sales' }, { title: pageTitle }]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>

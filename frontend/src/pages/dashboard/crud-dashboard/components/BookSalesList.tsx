@@ -94,7 +94,7 @@ export default function BookSalesList({
   const handleEdit = React.useCallback(
     (saleId?: number) => {
       if (!saleId) return;
-      navigate(`/dashboard/sales/${saleId}`);
+      navigate(`/sales/${saleId}`);
     },
     [navigate],
   );
@@ -220,7 +220,7 @@ export default function BookSalesList({
   const handleRowClick = React.useCallback(
     (saleId?: number) => {
       if (!saleId) return;
-      navigate(`/dashboard/sales/${saleId}`);
+      navigate(`/sales/${saleId}`);
     },
     [navigate],
   );
@@ -285,7 +285,7 @@ export default function BookSalesList({
             onClick={() => {
               const params = new URLSearchParams();
               if (bookId) params.set('bookId', String(bookId));
-              navigate(`/dashboard/sales/new?${params.toString()}`);
+              navigate(`/sales/new?${params.toString()}`);
             }}
           >
             Add sale

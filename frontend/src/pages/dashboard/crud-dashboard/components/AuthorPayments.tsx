@@ -217,7 +217,7 @@ export default function AuthorPaymentsView() {
   }, []);
 
   const handleCreateClick = React.useCallback(() => {
-    navigate('/dashboard/sales/new');
+    navigate('/sales/new');
   }, [navigate]);
 
   function beginPayAuthor(group: AuthorPaymentGroupResponse) {
@@ -433,7 +433,7 @@ export default function AuthorPaymentsView() {
                                 <Typography
                                   variant="body1"
                                   sx={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                  onClick={() => navigate(`/dashboard/books/${s.bookId}`)}
+                                  onClick={() => navigate(`/books/${s.bookId}`)}
                                 >
                                   {s.bookTitle ?? `Book ${s.bookId}`}
                                 </Typography>
@@ -456,10 +456,7 @@ export default function AuthorPaymentsView() {
                               </TableCell>
 
                               <TableCell>
-                                <Button
-                                  size="small"
-                                  onClick={() => navigate(`/dashboard/sales/${s.id}`)}
-                                >
+                                <Button size="small" onClick={() => navigate(`/sales/${s.id}`)}>
                                   Details
                                 </Button>
                               </TableCell>

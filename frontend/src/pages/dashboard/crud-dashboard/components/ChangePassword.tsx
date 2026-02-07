@@ -55,7 +55,7 @@ export default function ChangePassword() {
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
-        navigate('/dashboard');
+        navigate('/');
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to change password.';
         setError(message);
@@ -75,7 +75,7 @@ export default function ChangePassword() {
   );
 
   const handleBack = React.useCallback(() => {
-    navigate('/dashboard');
+    navigate('/');
   }, [navigate]);
 
   return (
