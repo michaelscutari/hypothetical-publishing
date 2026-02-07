@@ -2,6 +2,7 @@ package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
@@ -190,7 +191,7 @@ public class SaleService {
    */
   @Transactional
   public int markAllPaidByAuthor(String author) {
-    String normalizedAuthor = normalizeWhitespace(author);
+    String normalizedAuthor = StringUtils.normalizeWhitespace(author);
     return saleRepository.markAllPaidByAuthor(normalizedAuthor);
   }
 
@@ -226,11 +227,4 @@ public class SaleService {
     return publisherRevenue.multiply(bookRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
   }
 
-  // Mirrors Book.normalizeFields() whitespace normalization (def 17).
-  private String normalizeWhitespace(String value) {
-    if (value == null) {
-      return null;
-    }
-    return String.join(" ", value.trim().split("\\s+"));
-  }
 }

@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.books;
 
+import edu.duke.bookpublishing.common.StringUtils;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import lombok.*;
@@ -47,10 +48,7 @@ public class Book {
     if (title != null) {
       title = title.trim();
     }
-    // Whitespace normalization for author (def 17)
-    if (author != null) {
-      author = String.join(" ", author.trim().split("\\s+"));
-    }
+    author = StringUtils.normalizeWhitespace(author);
     if (isbn13 != null) {
       isbn13 = isbn13.replaceAll("-", "");
     }

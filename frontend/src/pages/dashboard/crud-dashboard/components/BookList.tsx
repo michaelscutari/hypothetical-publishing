@@ -25,21 +25,7 @@ import { deleteOne as deleteBook, getMany as getBooks, type Book } from '../data
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-
-const MONTH_NAMES = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 
 const INITIAL_PAGE_SIZE = 25;
 

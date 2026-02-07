@@ -175,10 +175,10 @@ export default function BookEdit() {
   }
   return (
     <PageContainer
-      title={`${book!.title}`}
+      title={book?.title ?? 'Edit Book'}
       breadcrumbs={[
         { title: 'Books', path: '/dashboard/books' },
-        { title: truncate(book!.title), path: `/dashboard/books/${bookId}` },
+        { title: truncate(book?.title) || 'Book', path: `/dashboard/books/${bookId}` },
         { title: 'Edit' },
       ]}
     >

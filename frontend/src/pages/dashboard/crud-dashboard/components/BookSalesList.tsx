@@ -26,21 +26,7 @@ import { useNavigate } from 'react-router-dom';
 import * as salesData from '../data/sales';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-
-const MONTH_NAMES = [
-  'January',
-  'February',
-  'March',
-  'April',
-  'May',
-  'June',
-  'July',
-  'August',
-  'September',
-  'October',
-  'November',
-  'December',
-];
+import { MONTH_NAMES } from '../../../../constants/months';
 
 type Props = {
   bookId?: number;
