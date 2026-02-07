@@ -60,8 +60,7 @@ public class SaleController {
 
     Sort sort =
         sortField != null
-            ? Sort.by(
-                new Sort.Order(Sort.Direction.fromString(sortDirection), sortField).ignoreCase())
+            ? Sort.by(new Sort.Order(Sort.Direction.fromString(sortDirection), sortField))
             : Sort.unsorted();
 
     if (showAll) {
