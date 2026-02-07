@@ -33,8 +33,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         JwtUtil.DecodedToken decoded = jwtUtil.validateToken(token);
         var user = userRepository.findByUsername(decoded.username());
         if (user.isPresent() && user.get().getPasswordVersion() == decoded.passwordVersion()) {
-          var auth =
-              new UsernamePasswordAuthenticationToken(decoded.username(), null, List.of());
+          var auth = new UsernamePasswordAuthenticationToken(decoded.username(), null, List.of());
           SecurityContextHolder.getContext().setAuthentication(auth);
         }
       } catch (JWTVerificationException e) {
