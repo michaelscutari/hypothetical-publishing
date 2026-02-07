@@ -65,7 +65,9 @@ public class BookController {
     if (sortField != null) {
       Sort.Direction dir = Sort.Direction.fromString(sortDirection);
       if ("publicationDate".equals(sortField)) {
-        sort = Sort.by(new Sort.Order(dir, "publicationYear"), new Sort.Order(dir, "publicationMonth"));
+        sort =
+            Sort.by(
+                new Sort.Order(dir, "publicationYear"), new Sort.Order(dir, "publicationMonth"));
       } else {
         sort = Sort.by(new Sort.Order(dir, sortField));
       }
