@@ -61,11 +61,19 @@ public class BookController {
       @RequestParam(required = false) String sortField,
       @RequestParam(defaultValue = "asc") String sortDirection) {
 
-    Sort sort =
-        sortField != null
-            ? Sort.by(
-                new Sort.Order(Sort.Direction.fromString(sortDirection), sortField).ignoreCase())
-            : Sort.unsorted();
+    Sort sort;
+    if (sortField != null) {
+      Sort.Direction dir = Sort.Direction.fromString(sortDirection);
+      if ("publicationDate".equals(sortField)) {
+        sort =
+            Sort.by(
+                new Sort.Order(dir, "publicationYear"), new Sort.Order(dir, "publicationMonth"));
+      } else {
+        sort = Sort.by(new Sort.Order(dir, sortField));
+      }
+    } else {
+      sort = Sort.unsorted();
+    }
 
     if (showAll) {
       List<Book> all = bookService.findAll(query, sort);

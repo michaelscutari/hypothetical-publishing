@@ -3,6 +3,7 @@ package edu.duke.bookpublishing.books;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import lombok.*;
+import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(name = "books")
@@ -36,6 +37,9 @@ public class Book {
 
   @Column(name = "royalty_rate", nullable = false, precision = 5, scale = 4)
   private BigDecimal royaltyRate;
+
+  @Formula("(SELECT COALESCE(SUM(s.quantity_sold), 0) FROM sales s WHERE s.book_id = id)")
+  private Long totalSalesToDate;
 
   @PrePersist
   @PreUpdate
