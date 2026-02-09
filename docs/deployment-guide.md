@@ -1,0 +1,114 @@
+# Deployment Guide
+
+This guide walks through deploying the application to a production server from scratch.
+
+## Prerequisites
+
+- A Linux server (Ubuntu 22.04+ or Debian 12+ recommended)
+- [Docker Engine](https://docs.docker.com/engine/install/) and [Docker Compose](https://docs.docker.com/compose/install/) (v2+)
+- Git
+- A domain name pointed at your server (the prod config uses `hypotheticalpublishing.colab.duke.edu`)
+
+No other runtime dependencies are needed. Java, Node.js, and PostgreSQL all run inside containers.
+
+## SSL Certificate
+
+The production Nginx config expects Let's Encrypt certificates. Install certbot and obtain a cert before starting the app:
+
+```bash
+sudo apt update && sudo apt install -y certbot
+sudo certbot certonly --standalone -d hypotheticalpublishing.colab.duke.edu
+```
+
+This places certs at `/etc/letsencrypt/live/hypotheticalpublishing.colab.duke.edu/`. The docker-compose file mounts this directory into the Nginx container.
+
+To set up auto-renewal:
+
+```bash
+sudo certbot renew --dry-run
+```
+
+Certbot installs a systemd timer for automatic renewal by default.
+
+## Clone and Configure
+
+```bash
+git clone <repo-url>
+cd hypothetical-publishing
+cp .env.example .env
+```
+
+Edit `.env` with production values:
+
+| Variable               | Notes                                                    |
+|------------------------|----------------------------------------------------------|
+| `DB_USERNAME`          | PostgreSQL username                                      |
+| `DB_PASSWORD`          | Use a strong, random password                            |
+| `JWT_SECRET`           | Use a long random string (e.g. `openssl rand -hex 32`)   |
+| `JWT_EXPIRATION_HOURS` | Token lifetime in hours (default: `24`)                  |
+| `ADMIN_PASSWORD`       | Password for the default admin account                   |
+
+You also need to set the Spring profile. Add this to `.env`:
+
+```
+SPRING_PROFILES_ACTIVE=prod
+```
+
+This enables secure cookies, disables Swagger UI, and turns off SQL logging.
+
+## Deploy
+
+```bash
+docker compose --profile prod up --build -d
+```
+
+This builds and starts all production services:
+- **db**: PostgreSQL 16 with a persistent volume
+- **backend**: Spring Boot JAR (built from source in a multi-stage Docker build)
+- **frontend-prod**: Static React build served by Nginx
+- **nginx-prod**: Reverse proxy with SSL termination
+
+## Verify
+
+Check that all containers are running:
+
+```bash
+docker compose --profile prod ps
+```
+
+Check backend logs:
+
+```bash
+docker compose --profile prod logs backend
+```
+
+Hit the health endpoint:
+
+```bash
+curl -k https://hypotheticalpublishing.colab.duke.edu/api/health
+```
+
+## Database
+
+There are no migrations. Hibernate manages the schema automatically with `ddl-auto=update`. When the backend starts, it compares the JPA entities to the existing tables and applies any changes (adding columns, creating new tables). It will not drop columns or tables.
+
+Data is stored in a Docker volume called `postgres_data`. This volume persists across container restarts and rebuilds.
+
+To completely wipe the database and start fresh:
+
+```bash
+docker compose --profile prod down -v
+```
+
+The `-v` flag deletes the `postgres_data` volume. The next `docker compose up` will create a new empty database and Hibernate will recreate the schema.
+
+## Updating
+
+To deploy new changes:
+
+```bash
+git pull
+docker compose --profile prod up --build -d
+```
+
+Docker Compose rebuilds only the containers whose source changed. The database volume is preserved across rebuilds.
