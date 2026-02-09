@@ -39,10 +39,19 @@ public final class BookSpecifications {
     String lowerTerm = term.toLowerCase();
     // Normalize term for ISBN search by removing dashes (def 12)
     String normalizedTerm = lowerTerm.replaceAll("-", "");
+    // Normalize term for author search by removing periods (e.g. "JRR" matches "J.R.R.")
+    String authorTerm = lowerTerm.replaceAll("\\.", "");
 
     return cb.or(
         cb.like(cb.lower(bookPath.get("title")), "%" + lowerTerm + "%"),
-        cb.like(cb.lower(bookPath.get("author")), "%" + lowerTerm + "%"),
+        cb.like(
+            cb.function(
+                "REPLACE",
+                String.class,
+                cb.lower(bookPath.get("author")),
+                cb.literal("."),
+                cb.literal("")),
+            "%" + authorTerm + "%"),
         cb.like(cb.lower(bookPath.get("isbn13")), "%" + normalizedTerm + "%"),
         cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"));
   }

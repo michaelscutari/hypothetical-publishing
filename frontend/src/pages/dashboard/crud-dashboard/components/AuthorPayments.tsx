@@ -34,6 +34,7 @@ import {
   TableHead,
   TableRow,
   TextField,
+  ToggleButton,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -55,7 +56,6 @@ import useNotifications from '../hooks/useNotifications/useNotifications';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 const INITIAL_PAGE_SIZE = 25;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-const ALL_SENTINEL = -1;
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 function formatCurrency(n?: number) {
@@ -207,12 +207,7 @@ export default function AuthorPaymentsView() {
   }, []);
 
   const handlePageSizeChange = React.useCallback((v: number) => {
-    if (v === ALL_SENTINEL) {
-      setShowAll(true);
-    } else {
-      setPageSize(v);
-      setShowAll(false);
-    }
+    setPageSize(v);
     setPage(0);
   }, []);
 
@@ -294,14 +289,15 @@ export default function AuthorPaymentsView() {
             enterDelay={1000}
           >
             <div>
-              <Button
+              <ToggleButton
+                value="showAll"
+                selected={showAll}
+                onChange={handleShowAllToggle}
                 size="small"
-                variant={showAll ? 'contained' : 'outlined'}
-                onClick={handleShowAllToggle}
-                startIcon={<ViewListIcon />}
               >
-                {showAll ? 'Paginated' : 'Show All'}
-              </Button>
+                <ViewListIcon sx={{ mr: 0.5 }} />
+                Show All
+              </ToggleButton>
             </div>
           </Tooltip>
 
@@ -470,30 +466,32 @@ export default function AuthorPaymentsView() {
               );
             })}
 
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-              <Pagination
-                count={Math.max(1, computedTotalPages)}
-                page={page + 1}
-                onChange={(_, value) => setPage(value - 1)}
-                color="primary"
-              />
-              <FormControl size="small" sx={{ minWidth: 110 }}>
-                <InputLabel id="ap-page-size-label">Page size</InputLabel>
-                <Select
-                  labelId="ap-page-size-label"
-                  label="Page size"
-                  value={showAll ? ALL_SENTINEL : pageSize}
-                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                  disabled={isLoading}
-                >
-                  {PAGE_SIZE_OPTIONS.map((s) => (
-                    <MenuItem key={s} value={s}>
-                      {s}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Box>
+            {!showAll && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+                <Pagination
+                  count={Math.max(1, computedTotalPages)}
+                  page={page + 1}
+                  onChange={(_, value) => setPage(value - 1)}
+                  color="primary"
+                />
+                <FormControl size="small" sx={{ minWidth: 110 }}>
+                  <InputLabel id="ap-page-size-label">Page size</InputLabel>
+                  <Select
+                    labelId="ap-page-size-label"
+                    label="Page size"
+                    value={pageSize}
+                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                    disabled={isLoading}
+                  >
+                    {PAGE_SIZE_OPTIONS.map((s) => (
+                      <MenuItem key={s} value={s}>
+                        {s}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Box>
+            )}
           </Box>
         )}
       </Box>
