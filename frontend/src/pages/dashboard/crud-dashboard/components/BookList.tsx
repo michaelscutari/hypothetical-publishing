@@ -2,12 +2,16 @@ import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import SearchIcon from '@mui/icons-material/Search';
 import ViewListIcon from '@mui/icons-material/ViewList';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
+import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
 import {
   DataGrid,
@@ -15,7 +19,6 @@ import {
   gridClasses,
   type GridColDef,
   type GridEventListener,
-  type GridFilterModel,
   type GridPaginationModel,
   type GridSortModel,
 } from '@mui/x-data-grid';
@@ -40,8 +43,25 @@ export default function BookList() {
     page: 0,
     pageSize: INITIAL_PAGE_SIZE,
   });
-  const [filterModel, setFilterModel] = React.useState<GridFilterModel>({ items: [] });
   const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
+
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [debouncedQuery, setDebouncedQuery] = React.useState('');
+  const debounceRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    debounceRef.current = window.setTimeout(() => {
+      setDebouncedQuery(searchQuery.trim());
+    }, 300);
+    return () => {
+      if (debounceRef.current) window.clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
+
+  React.useEffect(() => {
+    setPaginationModel((p) => ({ ...p, page: 0 }));
+  }, [debouncedQuery]);
 
   const [rowsState, setRowsState] = React.useState<{
     rows: Book[];
@@ -62,7 +82,7 @@ export default function BookList() {
       const listData = await getBooks({
         paginationModel,
         sortModel,
-        filterModel,
+        query: debouncedQuery || undefined,
         showAll,
       });
 
@@ -75,7 +95,7 @@ export default function BookList() {
     } finally {
       setIsLoading(false);
     }
-  }, [paginationModel, sortModel, filterModel, showAll]);
+  }, [paginationModel, sortModel, debouncedQuery, showAll]);
 
   React.useEffect(() => {
     loadData();
@@ -89,6 +109,7 @@ export default function BookList() {
 
   const handleShowAllToggle = React.useCallback(() => {
     setShowAll((prev) => !prev);
+    setPaginationModel((p) => ({ ...p, page: 0 }));
   }, []);
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
@@ -227,14 +248,15 @@ export default function BookList() {
             enterDelay={1000}
           >
             <div>
-              <Button
+              <ToggleButton
+                value="showAll"
+                selected={showAll}
+                onChange={handleShowAllToggle}
                 size="small"
-                variant={showAll ? 'contained' : 'outlined'}
-                onClick={handleShowAllToggle}
-                startIcon={<ViewListIcon />}
               >
-                {showAll ? 'Paginated' : 'Show All'}
-              </Button>
+                <ViewListIcon sx={{ mr: 0.5 }} />
+                Show All
+              </ToggleButton>
             </div>
           </Tooltip>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
@@ -244,6 +266,28 @@ export default function BookList() {
               </IconButton>
             </div>
           </Tooltip>
+
+          <TextField
+            size="small"
+            placeholder="Search title, author, ISBN..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                if (debounceRef.current) window.clearTimeout(debounceRef.current);
+                setDebouncedQuery(searchQuery.trim());
+              }
+            }}
+            sx={{ minWidth: 280 }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon fontSize="small" />
+                </InputAdornment>
+              ),
+            }}
+          />
+
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             Create
           </Button>
@@ -260,23 +304,18 @@ export default function BookList() {
             rows={rowsState.rows}
             rowCount={rowsState.rowCount}
             columns={columns}
-            pagination
             sortingMode="server"
-            filterMode="server"
             paginationMode="server"
+            hideFooter={showAll}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
             onSortModelChange={setSortModel}
-            filterModel={filterModel}
-            onFilterModelChange={setFilterModel}
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
             loading={isLoading}
             initialState={initialState}
-            showToolbar
             pageSizeOptions={[10, INITIAL_PAGE_SIZE, 50, 100]}
-            slots={{}}
             slotProps={{
               loadingOverlay: {
                 variant: 'circular-progress',
@@ -287,9 +326,6 @@ export default function BookList() {
               },
             }}
             sx={{
-              '& button:has([data-testid="FilterListIcon"])': {
-                display: 'none',
-              },
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },

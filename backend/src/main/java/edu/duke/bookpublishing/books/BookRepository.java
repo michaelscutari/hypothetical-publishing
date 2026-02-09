@@ -25,7 +25,7 @@ public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificat
       """
           select distinct b.author
           from Book b
-          where lower(b.author) like concat('%', lower(:query), '%')
+          where lower(replace(b.author, '.', '')) like concat('%', lower(replace(:query, '.', '')), '%')
           order by lower(b.author) asc
           """)
   List<String> findDistinctAuthors(@Param("query") String query);
@@ -34,7 +34,7 @@ public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificat
       """
           select distinct b.author
           from Book b
-          where lower(b.author) like concat('%', lower(:query), '%')
+          where lower(replace(b.author, '.', '')) like concat('%', lower(replace(:query, '.', '')), '%')
           order by lower(b.author) asc
           """)
   Page<String> findDistinctAuthors(@Param("query") String query, Pageable pageable);

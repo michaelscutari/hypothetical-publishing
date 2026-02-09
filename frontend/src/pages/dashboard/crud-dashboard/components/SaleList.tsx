@@ -9,6 +9,7 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
+import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
 import {
   DataGrid,
@@ -70,7 +71,7 @@ export default function SaleList() {
       const endDateParam = endDate ? endDate.endOf('month').format('YYYY-MM-DD') : undefined;
 
       const response = await SalesService.getSales(
-        showAll ? undefined : paginationModel.page,
+        showAll ? 0 : paginationModel.page,
         showAll ? 1000 : paginationModel.pageSize, // Use large number for showAll
         showAll,
         sortField,
@@ -96,7 +97,7 @@ export default function SaleList() {
     if (!isLoading) loadData();
   }, [isLoading, loadData]);
 
-  // ✅ UPDATED: toggle Show All, but preserve/restore prior date filter
+  // Toggle Show All, but preserve/restore prior date filter
   const handleShowAllToggle = React.useCallback(() => {
     setShowAll((prev) => {
       const next = !prev;
@@ -113,11 +114,10 @@ export default function SaleList() {
         setEndDate(prevEndDate);
       }
 
+      setPaginationModel((p) => ({ ...p, page: 0 }));
+
       return next;
     });
-
-    // Reset to first page when toggling
-    setPaginationModel((p) => ({ ...p, page: 0 }));
   }, [startDate, endDate, prevStartDate, prevEndDate]);
 
   // Requirement 3.1.3 - Navigate to detail/modify view
@@ -235,14 +235,15 @@ export default function SaleList() {
             enterDelay={1000}
           >
             <span>
-              <Button
+              <ToggleButton
+                value="showAll"
+                selected={showAll}
+                onChange={handleShowAllToggle}
                 size="small"
-                variant={showAll ? 'contained' : 'outlined'}
-                onClick={handleShowAllToggle}
-                startIcon={<ViewListIcon />}
               >
-                {showAll ? 'Paginated' : 'Show All'}
-              </Button>
+                <ViewListIcon sx={{ mr: 0.5 }} />
+                Show All
+              </ToggleButton>
             </span>
           </Tooltip>
 
@@ -301,11 +302,11 @@ export default function SaleList() {
         ) : (
           <DataGrid
             rows={sales}
-            rowCount={showAll ? sales.length : totalCount}
+            rowCount={totalCount}
             columns={columns}
-            pagination={!showAll}
             sortingMode="server"
-            paginationMode={showAll ? 'client' : 'server'}
+            paginationMode="server"
+            hideFooter={showAll}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}

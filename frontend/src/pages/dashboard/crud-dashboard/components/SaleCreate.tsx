@@ -38,6 +38,12 @@ class CustomAdapterDayjs extends AdapterDayjs {
   };
 }
 
+function computeRoyalty(book: BookResponse | null, revenue: number | null): number | null {
+  if (!book || revenue == null) return null;
+  const rate = book.royaltyRate ?? 0;
+  return Number((revenue * rate).toFixed(2));
+}
+
 interface SaleRecordInput {
   id: string; // Temporary ID for UI tracking
   saleDate: Dayjs | null; // Combined month/year as Dayjs
@@ -79,12 +85,6 @@ export default function SaleCreate() {
   const [bookSearchInput, setBookSearchInput] = React.useState('');
   const [isLoadingBooks, setIsLoadingBooks] = React.useState(false);
   const [preselectedBook, setPreselectedBook] = React.useState<BookResponse | null>(null);
-
-  function computeRoyalty(book: BookResponse | null, revenue: number | null): number | null {
-    if (!book || revenue == null) return null;
-    const rate = book.royaltyRate ?? 0;
-    return Number((revenue * rate).toFixed(2));
-  }
 
   function createEmptyRecord(
     defaults?: Partial<SaleRecordInput>,
@@ -283,7 +283,7 @@ export default function SaleCreate() {
     [updateRecord],
   );
 
-  // Requirement: editable royalty, override indicator, delete => revert to computed
+  // Requirement: editable royalty, override indicator, delete => revert to computed on blur
   const handleRoyaltyChange = React.useCallback(
     (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
@@ -292,21 +292,41 @@ export default function SaleCreate() {
         const next = [...prev];
         const record = { ...next[index] };
 
-        // ✅ if user types here, activate the row too
         if (record.isPlaceholder) record.isPlaceholder = false;
 
         if (value === '') {
-          // Deleted -> revert to computed + clear override
-          record.authorRoyalty = computeRoyalty(record.book, record.publisherRevenue);
+          // Allow empty while typing — revert happens on blur
+          record.authorRoyalty = null;
           record.isRoyaltyOverridden = false;
         } else {
           const parsed = parseFloat(value);
           record.authorRoyalty = Number.isNaN(parsed) ? null : parsed;
-          record.isRoyaltyOverridden = true;
+          // Only mark as override if value actually differs from computed
+          const computed = computeRoyalty(record.book, record.publisherRevenue);
+          record.isRoyaltyOverridden =
+            !Number.isNaN(parsed) && computed !== null && Math.abs(parsed - computed) > 0.001;
         }
 
         record.errors = { ...(record.errors ?? {}) };
         next[index] = record;
+        return next;
+      });
+    },
+    [],
+  );
+
+  const handleRoyaltyBlur = React.useCallback(
+    (index: number) => () => {
+      setRecords((prev) => {
+        const record = prev[index];
+        if (record.authorRoyalty !== null) return prev;
+        // Field is empty on blur — revert to computed
+        const next = [...prev];
+        next[index] = {
+          ...record,
+          authorRoyalty: computeRoyalty(record.book, record.publisherRevenue),
+          isRoyaltyOverridden: false,
+        };
         return next;
       });
     },
@@ -418,7 +438,9 @@ export default function SaleCreate() {
           quantitySold: record.quantitySold!,
           publisherRevenue: record.publisherRevenue!,
           hasAuthorBeenPaid: record.hasAuthorBeenPaid,
-          authorRoyalty: record.authorRoyalty ?? undefined,
+          authorRoyalty: record.isRoyaltyOverridden
+            ? (record.authorRoyalty ?? undefined)
+            : undefined,
         };
         return SalesService.createSale(req);
       });
@@ -601,6 +623,7 @@ export default function SaleCreate() {
                         value={record.authorRoyalty ?? ''}
                         onFocus={() => activateRow(index)}
                         onChange={handleRoyaltyChange(index)}
+                        onBlur={handleRoyaltyBlur(index)}
                         error={!!record.errors.authorRoyalty}
                         helperText={record.errors.authorRoyalty}
                         inputProps={{ inputMode: 'decimal' }}

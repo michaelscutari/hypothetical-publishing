@@ -43,7 +43,6 @@ export default function SaleEdit() {
   const [authorRoyalty, setAuthorRoyalty] = React.useState<string>('0.00');
   const [hasAuthorBeenPaid, setHasAuthorBeenPaid] = React.useState<boolean>(false);
   const [isRoyaltyOverridden, setIsRoyaltyOverridden] = React.useState<boolean>(false);
-  const [hasRoyaltyBeenEdited, setHasRoyaltyBeenEdited] = React.useState<boolean>(false);
 
   // Track original computed royalty
   const computedRoyalty = React.useMemo(() => {
@@ -93,7 +92,6 @@ export default function SaleEdit() {
       const expectedRoyalty = (saleData.publisherRevenue ?? 0) * (book?.royaltyRate ?? 0);
       const wasOverridden = Math.abs(savedRoyalty - parseFloat(expectedRoyalty.toFixed(2))) > 0.001;
       setIsRoyaltyOverridden(wasOverridden);
-      setHasRoyaltyBeenEdited(false);
     } catch (loadError) {
       setError(loadError as Error);
     } finally {
@@ -116,22 +114,13 @@ export default function SaleEdit() {
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
       setAuthorRoyalty(value);
-      setHasRoyaltyBeenEdited(true);
-      // Only mark as overridden if user has edited and value is a valid number and differs from computedRoyalty
       const valueNum = parseFloat(value);
       const computedNum = parseFloat(computedRoyalty);
-      if (
-        hasRoyaltyBeenEdited &&
-        !isNaN(valueNum) &&
-        value.trim() !== '' &&
-        valueNum !== computedNum
-      ) {
-        setIsRoyaltyOverridden(true);
-      } else {
-        setIsRoyaltyOverridden(false);
-      }
+      setIsRoyaltyOverridden(
+        value.trim() !== '' && !isNaN(valueNum) && Math.abs(valueNum - computedNum) > 0.001,
+      );
     },
-    [computedRoyalty, hasRoyaltyBeenEdited],
+    [computedRoyalty],
   );
 
   const handleSubmit = React.useCallback(
@@ -162,7 +151,7 @@ export default function SaleEdit() {
           saleYear,
           quantitySold,
           publisherRevenue: parseFloat(publisherRevenue),
-          authorRoyalty: parseFloat(authorRoyalty),
+          authorRoyalty: isRoyaltyOverridden ? parseFloat(authorRoyalty) : undefined,
           hasAuthorBeenPaid,
         });
 
@@ -196,6 +185,7 @@ export default function SaleEdit() {
       notifications,
       navigate,
       authorRoyalty,
+      isRoyaltyOverridden,
     ],
   );
 

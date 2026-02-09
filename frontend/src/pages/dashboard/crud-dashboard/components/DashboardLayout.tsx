@@ -43,6 +43,7 @@ export default function DashboardLayout() {
             flex: 1,
             minHeight: 0,
             overflowY: 'auto',
+            bgcolor: 'background.default',
           }}
         >
           <Outlet />
