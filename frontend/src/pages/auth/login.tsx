@@ -1,17 +1,17 @@
-import * as React from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import MuiCard from '@mui/material/Card';
+import CircularProgress from '@mui/material/CircularProgress';
 import CssBaseline from '@mui/material/CssBaseline';
 import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
+import Stack from '@mui/material/Stack';
+import { styled } from '@mui/material/styles';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import Stack from '@mui/material/Stack';
-import MuiCard from '@mui/material/Card';
-import Alert from '@mui/material/Alert';
-import CircularProgress from '@mui/material/CircularProgress';
-import { styled } from '@mui/material/styles';
+import * as React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -117,9 +117,40 @@ export default function Login() {
     <>
       <CssBaseline />
       <SignInContainer direction="column">
-        <Card variant="outlined">
+        <Box sx={{ mb: 4, textAlign: 'center' }}>
+          <Typography
+            variant="h3"
+            component="h1"
+            sx={{
+              fontFamily: '"Playfair Display", "Georgia", serif',
+              fontWeight: 700,
+              fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
+              background: 'linear-gradient(45deg, #2c3e50 30%, #3498db 90%)',
+              backgroundClip: 'text',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              letterSpacing: '0.02em',
+              mb: 0.5,
+            }}
+          >
+            Hypothetical Publishing
+          </Typography>
+          <Typography
+            variant="subtitle1"
+            sx={{
+              fontFamily: '"Crimson Text", "Georgia", serif',
+              fontStyle: 'italic',
+              color: 'text.secondary',
+              fontSize: '1rem',
+              letterSpacing: '0.1em',
+            }}
+          >
+            Page. Print. Profit.
+          </Typography>
+        </Box>
+        <Card variant="outlined" sx={{ mt: 2 }}>
           <Typography component="h1" variant="h4" textAlign="center">
-            Sign in
+            {/* Sign in */}
           </Typography>
 
           {error && (

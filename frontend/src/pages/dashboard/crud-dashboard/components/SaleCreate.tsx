@@ -1,3 +1,5 @@
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Autocomplete,
   Box,
@@ -23,8 +25,6 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BooksService, SalesService, type BookResponse } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
@@ -50,6 +50,7 @@ interface SaleRecordInput {
   book: BookResponse | null;
   quantitySold: number | null;
   publisherRevenue: number | null;
+  publisherRevenueInput: string; //Added to fix decimal bug
   // Requirement: auto-compute unless overridden; delete => revert
   authorRoyalty: number | null;
   isRoyaltyOverridden: boolean;
@@ -96,6 +97,7 @@ export default function SaleCreate() {
       book: defaults?.book ?? null,
       quantitySold: null,
       publisherRevenue: null,
+      publisherRevenueInput: '', //Added to fix decimal bug
       authorRoyalty: null,
       isRoyaltyOverridden: false,
       hasAuthorBeenPaid: defaults?.hasAuthorBeenPaid ?? false,
@@ -272,13 +274,19 @@ export default function SaleCreate() {
   const handleRevenueChange = React.useCallback(
     (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
-      const parsed = value === '' ? null : Number.parseFloat(value);
-      const publisherRevenue = typeof parsed === 'number' && !Number.isNaN(parsed) ? parsed : null;
 
-      updateRecord(index, {
-        publisherRevenue,
-        errors: {},
-      });
+      // Allow typing decimal points and partial numbers
+      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+        const parsed = value === '' ? null : Number.parseFloat(value);
+        const publisherRevenue =
+          typeof parsed === 'number' && !Number.isNaN(parsed) ? parsed : null;
+
+        updateRecord(index, {
+          publisherRevenueInput: value,
+          publisherRevenue,
+          errors: {},
+        });
+      }
     },
     [updateRecord],
   );
@@ -363,10 +371,10 @@ export default function SaleCreate() {
       const month = record.saleDate.month() + 1; // Dayjs months are 0-indexed
 
       if (year < 1900 || year > 2026) {
-        errors.saleDate = 'Year must be between 1900 and 2026';
+        errors.saleDate = 'Date must be between January 1900 and today';
         isValid = false;
       } else if (year === 2026 && month > 2) {
-        errors.saleDate = 'Date cannot be after February 2026';
+        errors.saleDate = 'Date must be between January 1900 and today';
         isValid = false;
       }
     }
@@ -601,7 +609,8 @@ export default function SaleCreate() {
                       size="small"
                       type="text"
                       placeholder="0.00"
-                      value={record.publisherRevenue ?? ''}
+                      //value={record.publisherRevenue ?? ''}
+                      value={record.publisherRevenueInput}
                       onFocus={() => activateRow(index)}
                       onChange={handleRevenueChange(index)}
                       error={!!record.errors.publisherRevenue}

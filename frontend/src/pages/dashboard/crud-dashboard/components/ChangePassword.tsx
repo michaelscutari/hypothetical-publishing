@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -7,10 +6,11 @@ import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import PageContainer from './PageContainer';
-import useNotifications from '../hooks/useNotifications/useNotifications';
+import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../../context/AuthContext';
+import useNotifications from '../hooks/useNotifications/useNotifications';
+import PageContainer from './PageContainer';
 
 export default function ChangePassword() {
   const navigate = useNavigate();
@@ -82,6 +82,10 @@ export default function ChangePassword() {
         noValidate
         sx={{ width: '100%', maxWidth: 600 }}
       >
+        <Alert severity="warning" sx={{ mb: 2 }}>
+          Changing your password will log you out of all other devices for security reasons.
+        </Alert>
+
         {error && (
           <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
             {error}

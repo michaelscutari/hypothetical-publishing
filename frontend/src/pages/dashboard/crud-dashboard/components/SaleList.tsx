@@ -11,6 +11,10 @@ import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
+import Switch from '@mui/material/Switch';
+import Typography from '@mui/material/Typography';
+import { GridFooter } from '@mui/x-data-grid';
+
 import {
   DataGrid,
   type GridColDef,
@@ -229,24 +233,7 @@ export default function SaleList() {
       breadcrumbs={[{ title: pageTitle }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Tooltip
-            title={showAll ? 'Switch to paginated view' : 'Show all records'}
-            placement="bottom"
-            enterDelay={1000}
-          >
-            <span>
-              <ToggleButton
-                value="showAll"
-                selected={showAll}
-                onChange={handleShowAllToggle}
-                size="small"
-              >
-                <ViewListIcon sx={{ mr: 0.5 }} />
-                Show All
-              </ToggleButton>
-            </span>
-          </Tooltip>
-
+          {}
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <span>
               <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
@@ -306,7 +293,7 @@ export default function SaleList() {
             columns={columns}
             sortingMode="server"
             paginationMode="server"
-            hideFooter={showAll}
+            hideFooter={false}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
@@ -315,6 +302,42 @@ export default function SaleList() {
             onRowClick={handleRowClick}
             loading={isLoading}
             pageSizeOptions={[10, INITIAL_PAGE_SIZE, 50, 100]}
+          
+            slots={{
+              footer: () => (
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                  {!showAll ? (
+                    <>
+                      <Box sx={{ flex: 1, '& .MuiDataGrid-footerContainer': { borderTop: 'none' } }}>
+                        <GridFooter />
+                      </Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ViewListIcon fontSize="small" color="primary" />
+                        <Typography variant="body2" color="primary">Show All</Typography>
+                        <Switch
+                          checked={showAll}
+                          onChange={handleShowAllToggle}
+                          size="small"
+                        />
+                      </Box>
+                    </>
+                  ) : (
+                    <>
+                      <Box sx={{ flex: 1 }} />
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <ViewListIcon fontSize="small" color="primary" />
+                        <Typography variant="body2" color="primary">Show All</Typography>
+                        <Switch
+                          checked={showAll}
+                          onChange={handleShowAllToggle}
+                          size="small"
+                        />
+                      </Box>
+                    </>
+                  )}
+                </Box>
+              ),
+            }}
             sx={{
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
