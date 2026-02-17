@@ -248,14 +248,21 @@ export default function SaleList() {
               value={startDate}
               onChange={(v) => setStartDate(v)}
               views={['year', 'month']}
-              format="MMM YYYY"
+              format="MM/YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
               maxDate={dayjs('2026-02-28')}
               disabled={showAll}
               slotProps={{
-                textField: { size: 'small' },
+                textField: { 
+                  size: 'small',
+                  placeholder: 'MM/YYYY',
+                  InputLabelProps: { shrink: true },
+                },
                 toolbar: { hidden: true },
+                field: {
+                  clearable: true,
+                },
               }}
             />
             <DatePicker
@@ -263,14 +270,21 @@ export default function SaleList() {
               value={endDate}
               onChange={(v) => setEndDate(v)}
               views={['year', 'month']}
-              format="MMM YYYY"
+              format="MM/YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
               maxDate={dayjs('2026-02-28')}
               disabled={showAll}
               slotProps={{
-                textField: { size: 'small' },
+                textField: { 
+                  size: 'small',
+                  placeholder: 'MM/YYYY',
+                  InputLabelProps: { shrink: true },
+                },
                 toolbar: { hidden: true },
+                field: {
+                  clearable: true,
+                },
               }}
             />
           </LocalizationProvider>

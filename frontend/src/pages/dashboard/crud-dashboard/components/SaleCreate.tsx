@@ -67,6 +67,9 @@ interface SaleRecordInput {
     publisherRevenue?: string;
     authorRoyalty?: string;
   };
+  
+  // Date validation error
+  dateError?: string | null;
 }
 
 export default function SaleCreate() {
@@ -103,6 +106,7 @@ export default function SaleCreate() {
       hasAuthorBeenPaid: defaults?.hasAuthorBeenPaid ?? false,
       isPlaceholder,
       errors: {},
+      dateError: null,
     };
   }
   // Prefill first row with book when opened from Book Detail (?bookId=...)
@@ -206,7 +210,7 @@ export default function SaleCreate() {
 
         // ✅ If user updates anything (other than errors), activate placeholder row
         if (next.isPlaceholder) {
-          const keys = Object.keys(updates).filter((k) => k !== 'errors');
+          const keys = Object.keys(updates).filter((k) => k !== 'errors' && k !== 'dateError');
           if (keys.length > 0) next.isPlaceholder = false;
         }
 
@@ -244,9 +248,30 @@ export default function SaleCreate() {
 
   const handleDateChange = React.useCallback(
     (index: number) => (value: Dayjs | null) => {
-      updateRecord(index, { saleDate: value, errors: {} });
+      updateRecord(index, { saleDate: value, errors: {}, dateError: null });
     },
     [updateRecord],
+  );
+
+  const handleDateError = React.useCallback(
+    (index: number) => (error: any) => {
+      let errorMessage: string | null = null;
+      
+      if (error === 'minDate') {
+        errorMessage = 'Date cannot be before January 1900';
+      } else if (error === 'maxDate') {
+        errorMessage = 'Date cannot be after February 2026';
+      } else if (error === 'invalidDate') {
+        errorMessage = 'Invalid date format';
+      }
+      
+      setRecords((prev) => {
+        const next = [...prev];
+        next[index] = { ...next[index], dateError: errorMessage };
+        return next;
+      });
+    },
+    [],
   );
 
   const handleBookChange = React.useCallback(
@@ -530,18 +555,19 @@ export default function SaleCreate() {
                       <DatePicker
                         value={record.saleDate}
                         onChange={handleDateChange(index)}
+                        onError={handleDateError(index)}
                         views={['year', 'month']}
                         openTo="year"
-                        format="MMM YYYY"
+                        format="MM/YYYY"
                         minDate={dayjs('1900-01-01')}
                         maxDate={dayjs('2026-02-28')}
                         slotProps={{
                           textField: {
                             size: 'small',
                             fullWidth: true,
-                            error: !!record.errors.saleDate,
-                            helperText: record.errors.saleDate,
-                            placeholder: '',
+                            error: !!record.errors.saleDate || !!record.dateError,
+                            helperText: record.errors.saleDate || record.dateError,
+                            placeholder: 'MM/YYYY',
                             InputLabelProps: { shrink: true },
                             onFocus: () => activateRow(index),
                           },

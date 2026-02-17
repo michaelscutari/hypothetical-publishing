@@ -1,5 +1,6 @@
 import Box from '@mui/material/Box';
 import Drawer from '@mui/material/Drawer';
+import IconButton from '@mui/material/IconButton';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemButton from '@mui/material/ListItemButton';
@@ -14,6 +15,7 @@ import * as React from 'react';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import MenuIcon from '@mui/icons-material/Menu';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
@@ -44,6 +46,10 @@ export default function DashboardSidebar({ container }: DashboardSidebarProps) {
   // Profile menu state
   const [profileAnchorEl, setProfileAnchorEl] = React.useState<null | HTMLElement>(null);
   const profileMenuOpen = Boolean(profileAnchorEl);
+
+  const handleDrawerToggle = React.useCallback(() => {
+    setMobileOpen((prev) => !prev);
+  }, []);
 
   const handlePageItemClick = React.useCallback(() => {
     if (!isOverSmViewport) {
@@ -216,12 +222,34 @@ export default function DashboardSidebar({ container }: DashboardSidebarProps) {
 
   return (
     <DashboardSidebarContext.Provider value={sidebarContextValue}>
+      {/* Hamburger menu button - only visible on mobile */}
+      <IconButton
+        color="inherit"
+        aria-label="open drawer"
+        edge="start"
+        onClick={handleDrawerToggle}
+        sx={{
+          position: 'fixed',
+          top: 8,
+          left: 8,
+          zIndex: theme.zIndex.drawer + 1,
+          display: { xs: 'block', md: 'none' },
+          bgcolor: 'background.paper',
+          boxShadow: 1,
+          '&:hover': {
+            bgcolor: 'action.hover',
+          },
+        }}
+      >
+        <MenuIcon />
+      </IconButton>
+
       {/* Mobile temporary drawer */}
       <Drawer
         container={container}
         variant="temporary"
         open={mobileOpen}
-        onClose={() => setMobileOpen(false)}
+        onClose={handleDrawerToggle}
         ModalProps={{
           keepMounted: true,
         }}
