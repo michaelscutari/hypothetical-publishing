@@ -150,7 +150,10 @@ export function validate(book: Partial<Book>): ValidationResult {
     if (Number.isNaN(rate) || rate < 0 || rate > 1) {
       issues = [
         ...issues,
-        { message: 'Handsold royalty rate must be between 0 and 1', path: ['handsoldAuthorRoyaltyRate'] },
+        {
+          message: 'Handsold royalty rate must be between 0 and 1',
+          path: ['handsoldAuthorRoyaltyRate'],
+        },
       ];
     }
   }

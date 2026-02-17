@@ -61,8 +61,8 @@ function computeRoyalty(
   if (!book || revenue == null) return null;
   const rate =
     saleSource === SaleRequest.saleSource.HAND_SOLD
-      ? book.handsoldAuthorRoyaltyRate ?? 0
-      : book.distributorAuthorRoyaltyRate ?? 0;
+      ? (book.handsoldAuthorRoyaltyRate ?? 0)
+      : (book.distributorAuthorRoyaltyRate ?? 0);
   return Number((revenue * rate).toFixed(2));
 }
 

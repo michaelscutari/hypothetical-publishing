@@ -1,4 +1,9 @@
-import { SalesService, SaleRequest, type PagedResponseSaleResponse, type SaleResponse } from '../../../../api';
+import {
+  SalesService,
+  SaleRequest,
+  type PagedResponseSaleResponse,
+  type SaleResponse,
+} from '../../../../api';
 import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
 
 export type Sale = SaleResponse;

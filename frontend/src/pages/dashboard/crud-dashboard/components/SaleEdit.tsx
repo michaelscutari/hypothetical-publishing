@@ -64,8 +64,8 @@ export default function SaleEdit() {
   const computedRoyalty = React.useMemo(() => {
     const rate =
       saleSource === SaleRequest.saleSource.HAND_SOLD
-        ? selectedBook?.handsoldAuthorRoyaltyRate ?? 0
-        : selectedBook?.distributorAuthorRoyaltyRate ?? 0;
+        ? (selectedBook?.handsoldAuthorRoyaltyRate ?? 0)
+        : (selectedBook?.distributorAuthorRoyaltyRate ?? 0);
     return Number((computedRevenue * rate).toFixed(2));
   }, [computedRevenue, saleSource, selectedBook]);
 
@@ -347,12 +347,7 @@ export default function SaleEdit() {
           <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
             Back
           </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={isSubmitting}
-          >
+          <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Save'}
           </Button>
         </Stack>
