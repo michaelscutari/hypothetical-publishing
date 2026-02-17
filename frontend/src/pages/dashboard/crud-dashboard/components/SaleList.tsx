@@ -9,7 +9,6 @@ import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
-import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
 import Switch from '@mui/material/Switch';
 import Typography from '@mui/material/Typography';
@@ -254,7 +253,7 @@ export default function SaleList() {
               maxDate={dayjs('2026-02-28')}
               disabled={showAll}
               slotProps={{
-                textField: { 
+                textField: {
                   size: 'small',
                   placeholder: 'MM/YYYY',
                   InputLabelProps: { shrink: true },
@@ -276,7 +275,7 @@ export default function SaleList() {
               maxDate={dayjs('2026-02-28')}
               disabled={showAll}
               slotProps={{
-                textField: { 
+                textField: {
                   size: 'small',
                   placeholder: 'MM/YYYY',
                   InputLabelProps: { shrink: true },
@@ -316,23 +315,32 @@ export default function SaleList() {
             onRowClick={handleRowClick}
             loading={isLoading}
             pageSizeOptions={[10, INITIAL_PAGE_SIZE, 50, 100]}
-          
             slots={{
               footer: () => (
-                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, py: 1.5, borderTop: 1, borderColor: 'divider' }}>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    px: 2,
+                    py: 1.5,
+                    borderTop: 1,
+                    borderColor: 'divider',
+                  }}
+                >
                   {!showAll ? (
                     <>
-                      <Box sx={{ flex: 1, '& .MuiDataGrid-footerContainer': { borderTop: 'none' } }}>
+                      <Box
+                        sx={{ flex: 1, '& .MuiDataGrid-footerContainer': { borderTop: 'none' } }}
+                      >
                         <GridFooter />
                       </Box>
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ViewListIcon fontSize="small" color="primary" />
-                        <Typography variant="body2" color="primary">Show All</Typography>
-                        <Switch
-                          checked={showAll}
-                          onChange={handleShowAllToggle}
-                          size="small"
-                        />
+                        <Typography variant="body2" color="primary">
+                          Show All
+                        </Typography>
+                        <Switch checked={showAll} onChange={handleShowAllToggle} size="small" />
                       </Box>
                     </>
                   ) : (
@@ -340,12 +348,10 @@ export default function SaleList() {
                       <Box sx={{ flex: 1 }} />
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                         <ViewListIcon fontSize="small" color="primary" />
-                        <Typography variant="body2" color="primary">Show All</Typography>
-                        <Switch
-                          checked={showAll}
-                          onChange={handleShowAllToggle}
-                          size="small"
-                        />
+                        <Typography variant="body2" color="primary">
+                          Show All
+                        </Typography>
+                        <Switch checked={showAll} onChange={handleShowAllToggle} size="small" />
                       </Box>
                     </>
                   )}

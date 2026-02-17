@@ -67,7 +67,7 @@ interface SaleRecordInput {
     publisherRevenue?: string;
     authorRoyalty?: string;
   };
-  
+
   // Date validation error
   dateError?: string | null;
 }
@@ -254,9 +254,9 @@ export default function SaleCreate() {
   );
 
   const handleDateError = React.useCallback(
-    (index: number) => (error: any) => {
+    (index: number) => (error: unknown) => {
       let errorMessage: string | null = null;
-      
+
       if (error === 'minDate') {
         errorMessage = 'Date cannot be before January 1900';
       } else if (error === 'maxDate') {
@@ -264,7 +264,7 @@ export default function SaleCreate() {
       } else if (error === 'invalidDate') {
         errorMessage = 'Invalid date format';
       }
-      
+
       setRecords((prev) => {
         const next = [...prev];
         next[index] = { ...next[index], dateError: errorMessage };
