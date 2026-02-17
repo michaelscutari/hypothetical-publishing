@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 @Schema(description = "Request body for creating or updating a book")
@@ -35,7 +36,27 @@ public record BookRequest(
         @Min(1)
         @Max(12)
         Integer publicationMonth,
-    @Schema(description = "Author royalty rate (0.0 to 1.0)", example = "0.50")
+    @Schema(description = "Distributor author royalty rate (0.0 to 1.0)", example = "0.50")
         @DecimalMin("0.0")
         @DecimalMax("1.0")
-        BigDecimal royaltyRate) {}
+        BigDecimal distributorAuthorRoyaltyRate,
+    @Schema(description = "Handsold author royalty rate (0.0 to 1.0)", example = "0.20")
+        @DecimalMin("0.0")
+        @DecimalMax("1.0")
+        BigDecimal handsoldAuthorRoyaltyRate,
+    @Schema(description = "Series name", example = "Lord of the Rings") String seriesName,
+    @Schema(
+            description = "Series position (positive integer). Required if series is set.",
+            example = "3")
+        @Positive
+        Integer seriesPosition,
+    @Schema(description = "Cover price (USD)", example = "19.99")
+        @NotNull(message = "Cover price is required")
+        @DecimalMin("0.00")
+        BigDecimal coverPrice,
+    @Schema(description = "Print cost (USD)", example = "4.50")
+        @NotNull(message = "Print cost is required")
+        @DecimalMin("0.00")
+        BigDecimal printCost,
+    @Schema(description = "Cover image file destination", example = "home/images/img1.png")
+        String coverImage) {}

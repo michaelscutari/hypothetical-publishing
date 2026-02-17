@@ -51,7 +51,13 @@ export async function createOne(data: Omit<Book, 'id' | 'totalSalesToDate'>): Pr
     isbn10: data.isbn10 ?? undefined,
     publicationYear: data.publicationYear ?? new Date().getFullYear(),
     publicationMonth: data.publicationMonth ?? 1,
-    royaltyRate: data.royaltyRate ?? 0.5,
+    distributorAuthorRoyaltyRate: data.distributorAuthorRoyaltyRate ?? 0.5,
+    handsoldAuthorRoyaltyRate: data.handsoldAuthorRoyaltyRate ?? 0.2,
+    seriesName: data.seriesName ?? undefined,
+    seriesPosition: data.seriesPosition ?? undefined,
+    coverPrice: data.coverPrice ?? 0,
+    printCost: data.printCost ?? 0,
+    coverImage: data.coverImage ?? undefined,
   };
   return BooksService.createBook(request);
 }
@@ -67,7 +73,13 @@ export async function updateOne(
     isbn10: data.isbn10 ?? undefined,
     publicationYear: data.publicationYear ?? new Date().getFullYear(),
     publicationMonth: data.publicationMonth ?? 1,
-    royaltyRate: data.royaltyRate ?? 0.5,
+    distributorAuthorRoyaltyRate: data.distributorAuthorRoyaltyRate ?? 0.5,
+    handsoldAuthorRoyaltyRate: data.handsoldAuthorRoyaltyRate ?? 0.2,
+    seriesName: data.seriesName ?? undefined,
+    seriesPosition: data.seriesPosition ?? undefined,
+    coverPrice: data.coverPrice ?? 0,
+    printCost: data.printCost ?? 0,
+    coverImage: data.coverImage ?? undefined,
   };
   return BooksService.updateBook(bookId, request);
 }
@@ -120,14 +132,46 @@ export function validate(book: Partial<Book>): ValidationResult {
     ];
   }
 
-  if (book.royaltyRate != null) {
-    const rate = Number(book.royaltyRate);
+  if (book.distributorAuthorRoyaltyRate != null) {
+    const rate = Number(book.distributorAuthorRoyaltyRate);
     if (Number.isNaN(rate) || rate < 0 || rate > 1) {
       issues = [
         ...issues,
-        { message: 'Royalty rate must be between 0 and 1', path: ['royaltyRate'] },
+        {
+          message: 'Distributor royalty rate must be between 0 and 1',
+          path: ['distributorAuthorRoyaltyRate'],
+        },
       ];
     }
+  }
+
+  if (book.handsoldAuthorRoyaltyRate != null) {
+    const rate = Number(book.handsoldAuthorRoyaltyRate);
+    if (Number.isNaN(rate) || rate < 0 || rate > 1) {
+      issues = [
+        ...issues,
+        { message: 'Handsold royalty rate must be between 0 and 1', path: ['handsoldAuthorRoyaltyRate'] },
+      ];
+    }
+  }
+
+  if (book.coverPrice == null) {
+    issues = [...issues, { message: 'Cover price is required', path: ['coverPrice'] }];
+  } else if (Number.isNaN(Number(book.coverPrice)) || Number(book.coverPrice) < 0) {
+    issues = [...issues, { message: 'Cover price must be non-negative', path: ['coverPrice'] }];
+  }
+
+  if (book.printCost == null) {
+    issues = [...issues, { message: 'Print cost is required', path: ['printCost'] }];
+  } else if (Number.isNaN(Number(book.printCost)) || Number(book.printCost) < 0) {
+    issues = [...issues, { message: 'Print cost must be non-negative', path: ['printCost'] }];
+  }
+
+  if (book.seriesName && !book.seriesPosition) {
+    issues = [
+      ...issues,
+      { message: 'Series position is required when series name is set', path: ['seriesPosition'] },
+    ];
   }
 
   return { issues };

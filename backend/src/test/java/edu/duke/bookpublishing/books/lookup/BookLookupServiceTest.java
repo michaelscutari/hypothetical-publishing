@@ -38,7 +38,10 @@ class BookLookupServiceTest {
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.5"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.5"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.2"))
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
             .build();
 
     when(bookRepository.findByIsbn13("9780743273565")).thenReturn(Optional.of(existing));
@@ -95,7 +98,10 @@ class BookLookupServiceTest {
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.5"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.5"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.2"))
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
             .build();
 
     when(bookRepository.findByIsbn10("0743273567")).thenReturn(Optional.empty());

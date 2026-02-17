@@ -161,8 +161,19 @@ public class BookController {
             .isbn10(request.isbn10())
             .publicationYear(request.publicationYear())
             .publicationMonth(request.publicationMonth())
-            .royaltyRate(
-                request.royaltyRate() != null ? request.royaltyRate() : new BigDecimal("0.5"))
+            .distributorAuthorRoyaltyRate(
+                request.distributorAuthorRoyaltyRate() != null
+                    ? request.distributorAuthorRoyaltyRate()
+                    : new BigDecimal("0.5"))
+            .handsoldAuthorRoyaltyRate(
+                request.handsoldAuthorRoyaltyRate() != null
+                    ? request.handsoldAuthorRoyaltyRate()
+                    : new BigDecimal("0.2"))
+            .seriesName(request.seriesName())
+            .seriesPosition(request.seriesPosition())
+            .coverPrice(request.coverPrice())
+            .printCost(request.printCost())
+            .coverImage(request.coverImage())
             .build();
     return BookResponse.from(bookService.save(book));
   }
@@ -183,8 +194,19 @@ public class BookController {
     book.setIsbn10(request.isbn10());
     book.setPublicationYear(request.publicationYear());
     book.setPublicationMonth(request.publicationMonth());
-    book.setRoyaltyRate(
-        request.royaltyRate() != null ? request.royaltyRate() : new BigDecimal("0.5"));
+    book.setDistributorAuthorRoyaltyRate(
+        request.distributorAuthorRoyaltyRate() != null
+            ? request.distributorAuthorRoyaltyRate()
+            : new BigDecimal("0.5"));
+    book.setHandsoldAuthorRoyaltyRate(
+        request.handsoldAuthorRoyaltyRate() != null
+            ? request.handsoldAuthorRoyaltyRate()
+            : new BigDecimal("0.2"));
+    book.setSeriesName(request.seriesName());
+    book.setSeriesPosition(request.seriesPosition());
+    book.setCoverPrice(request.coverPrice());
+    book.setPrintCost(request.printCost());
+    book.setCoverImage(request.coverImage());
 
     return BookResponse.from(bookService.save(book));
   }

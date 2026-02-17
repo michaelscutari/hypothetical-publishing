@@ -11,6 +11,7 @@ import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
 import edu.duke.bookpublishing.sales.SaleRepository;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +62,30 @@ class BookControllerTest {
     return result.getResponse().getCookie("token");
   }
 
+  private BookRequest buildBookRequest(
+      String title,
+      String author,
+      String isbn13,
+      String isbn10,
+      Integer publicationYear,
+      Integer publicationMonth,
+      BigDecimal distributorAuthorRoyaltyRate) {
+    return new BookRequest(
+        title,
+        author,
+        isbn13,
+        isbn10,
+        publicationYear,
+        publicationMonth,
+        distributorAuthorRoyaltyRate,
+        new BigDecimal("0.2"),
+        null,
+        null,
+        new BigDecimal("20.00"),
+        new BigDecimal("5.00"),
+        null);
+  }
+
   @Test
   void getAllBooksReturnsEmptyList() throws Exception {
     mockMvc
@@ -74,7 +99,7 @@ class BookControllerTest {
   void getAllBooksReturnsBooks() throws Exception {
     Cookie token = login();
     BookRequest request =
-        new BookRequest(
+        buildBookRequest(
             "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
 
     mockMvc.perform(
@@ -103,7 +128,7 @@ class BookControllerTest {
               .contentType(MediaType.APPLICATION_JSON)
               .content(
                   objectMapper.writeValueAsString(
-                      new BookRequest(
+                      buildBookRequest(
                           "Book " + i,
                           "Author " + i,
                           isbn13,
@@ -143,7 +168,7 @@ class BookControllerTest {
               .contentType(MediaType.APPLICATION_JSON)
               .content(
                   objectMapper.writeValueAsString(
-                      new BookRequest(
+                      buildBookRequest(
                           "Book " + i,
                           "Author " + i,
                           isbn13,
@@ -165,7 +190,7 @@ class BookControllerTest {
   void getBooksReturnsMonthYearFormat() throws Exception {
     Cookie token = login();
     BookRequest request =
-        new BookRequest(
+        buildBookRequest(
             "Test Book", "Test Author", "9780743273565", null, 2024, 6, new BigDecimal("0.5"));
 
     mockMvc.perform(
@@ -191,7 +216,7 @@ class BookControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(
                 objectMapper.writeValueAsString(
-                    new BookRequest(
+                    buildBookRequest(
                         "Harry Potter and the Sorcerer's Stone",
                         "Rowling, J.K.",
                         "9780590353427",
@@ -206,7 +231,7 @@ class BookControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(
                 objectMapper.writeValueAsString(
-                    new BookRequest(
+                    buildBookRequest(
                         "The Great Gatsby",
                         "Fitzgerald, F. Scott",
                         "9780743273565",
@@ -221,7 +246,7 @@ class BookControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(
                 objectMapper.writeValueAsString(
-                    new BookRequest(
+                    buildBookRequest(
                         "Harry Potter and the Chamber of Secrets",
                         "Rowling, J.K.",
                         "9780439064873",
@@ -259,7 +284,7 @@ class BookControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(
                 objectMapper.writeValueAsString(
-                    new BookRequest(
+                    buildBookRequest(
                         "Test Book",
                         "Test Author",
                         "9780743273565",
@@ -290,7 +315,7 @@ class BookControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(
                 objectMapper.writeValueAsString(
-                    new BookRequest(
+                    buildBookRequest(
                         "Book One",
                         "Author One",
                         "9780743273565",
@@ -305,7 +330,7 @@ class BookControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(
                 objectMapper.writeValueAsString(
-                    new BookRequest(
+                    buildBookRequest(
                         "Book Two",
                         "Author Two",
                         "9780743273566",
@@ -320,7 +345,7 @@ class BookControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(
                 objectMapper.writeValueAsString(
-                    new BookRequest(
+                    buildBookRequest(
                         "Book Three",
                         "Author One",
                         "9780743273567",
@@ -345,7 +370,7 @@ class BookControllerTest {
   @Test
   void createBookReturnsCreatedBook() throws Exception {
     BookRequest request =
-        new BookRequest(
+        buildBookRequest(
             "The Great Gatsby",
             "Fitzgerald, F. Scott",
             "978-0-7432-7356-5",
@@ -368,13 +393,14 @@ class BookControllerTest {
         .andExpect(jsonPath("$.isbn10").value("0743273567"))
         .andExpect(jsonPath("$.publicationYear").value(1925))
         .andExpect(jsonPath("$.publicationMonth").value(4))
-        .andExpect(jsonPath("$.royaltyRate").value(0.15));
+        .andExpect(jsonPath("$.distributorAuthorRoyaltyRate").value(0.15))
+        .andExpect(jsonPath("$.handsoldAuthorRoyaltyRate").value(0.2));
   }
 
   @Test
   void createBookNormalizesAuthorWhitespace() throws Exception {
     BookRequest request =
-        new BookRequest(
+        buildBookRequest(
             "Test Book",
             "  Author   with   spaces  ",
             "9780743273565",
@@ -396,7 +422,7 @@ class BookControllerTest {
   @Test
   void createBookUsesDefaultRoyaltyRate() throws Exception {
     BookRequest request =
-        new BookRequest("Test Book", "Test Author", "9780743273565", null, 2020, 1, null);
+        buildBookRequest("Test Book", "Test Author", "9780743273565", null, 2020, 1, null);
 
     mockMvc
         .perform(
@@ -405,13 +431,15 @@ class BookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.royaltyRate").value(0.5));
+        .andExpect(jsonPath("$.distributorAuthorRoyaltyRate").value(0.5))
+        .andExpect(jsonPath("$.handsoldAuthorRoyaltyRate").value(0.2));
   }
 
   @Test
   void createBookValidationErrorMissingTitle() throws Exception {
     BookRequest request =
-        new BookRequest(null, "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
+        buildBookRequest(
+            null, "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
 
     mockMvc
         .perform(
@@ -426,7 +454,7 @@ class BookControllerTest {
   @Test
   void createBookValidationErrorInvalidIsbn() throws Exception {
     BookRequest request =
-        new BookRequest(
+        buildBookRequest(
             "Test Book", "Test Author", "978074327356X", null, 2020, 1, new BigDecimal("0.5"));
 
     mockMvc
@@ -442,7 +470,7 @@ class BookControllerTest {
   @Test
   void createBookValidationErrorInvalidMonth() throws Exception {
     BookRequest request =
-        new BookRequest(
+        buildBookRequest(
             "Test Book", "Test Author", "9780743273565", null, 2020, 13, new BigDecimal("0.5"));
 
     mockMvc
@@ -459,7 +487,7 @@ class BookControllerTest {
   void createBookDuplicateIsbnReturns409() throws Exception {
     Cookie token = login();
     BookRequest request =
-        new BookRequest(
+        buildBookRequest(
             "Book One", "Author One", "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
 
     mockMvc
@@ -471,7 +499,7 @@ class BookControllerTest {
         .andExpect(status().isCreated());
 
     BookRequest duplicateRequest =
-        new BookRequest(
+        buildBookRequest(
             "Book Two", "Author Two", "9780743273565", null, 2021, 5, new BigDecimal("0.3"));
 
     mockMvc
@@ -490,7 +518,7 @@ class BookControllerTest {
     Long bookId =
         createBook(
             token,
-            new BookRequest(
+            buildBookRequest(
                 "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
 
     mockMvc
@@ -506,7 +534,7 @@ class BookControllerTest {
     Long bookId =
         createBook(
             token,
-            new BookRequest(
+            buildBookRequest(
                 "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
 
     mockMvc
@@ -525,11 +553,11 @@ class BookControllerTest {
     Long bookId =
         createBook(
             token,
-            new BookRequest(
+            buildBookRequest(
                 "Old Title", "Old Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
 
     BookRequest updateRequest =
-        new BookRequest(
+        buildBookRequest(
             "New Title",
             "New Author",
             "9780743273565",
@@ -550,7 +578,8 @@ class BookControllerTest {
         .andExpect(jsonPath("$.isbn10").value("0743273567"))
         .andExpect(jsonPath("$.publicationYear").value(2021))
         .andExpect(jsonPath("$.publicationMonth").value(5))
-        .andExpect(jsonPath("$.royaltyRate").value(0.75));
+        .andExpect(jsonPath("$.distributorAuthorRoyaltyRate").value(0.75))
+        .andExpect(jsonPath("$.handsoldAuthorRoyaltyRate").value(0.2));
   }
 
   @Test
@@ -559,7 +588,7 @@ class BookControllerTest {
     Long bookId =
         createBook(
             token,
-            new BookRequest(
+            buildBookRequest(
                 "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
 
     mockMvc
@@ -580,7 +609,7 @@ class BookControllerTest {
     Long bookId =
         createBook(
             token,
-            new BookRequest(
+            buildBookRequest(
                 "Detail Book",
                 "Detail Author",
                 "9780743279999",
@@ -592,12 +621,12 @@ class BookControllerTest {
     createSale(
         token,
         new SaleRequest(
-            bookId, 1, 2025, 10, new BigDecimal("1000.00"), new BigDecimal("100.00"), true));
+            bookId, SaleSource.DISTRIBUTOR, 1, 2025, 10, new BigDecimal("1000.00"), true, null));
 
     createSale(
         token,
         new SaleRequest(
-            bookId, 2, 2025, 5, new BigDecimal("250.00"), new BigDecimal("50.00"), false));
+            bookId, SaleSource.DISTRIBUTOR, 2, 2025, 5, new BigDecimal("250.00"), false, null));
 
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
@@ -607,9 +636,9 @@ class BookControllerTest {
         .andExpect(jsonPath("$.author").value("Detail Author"))
         .andExpect(jsonPath("$.totalSalesToDate").value(15))
         .andExpect(jsonPath("$.revenue").value(1250.00))
-        .andExpect(jsonPath("$.paidRoyalty").value(100.00))
-        .andExpect(jsonPath("$.unpaidRoyalty").value(50.00))
-        .andExpect(jsonPath("$.totalRoyalty").value(150.00));
+        .andExpect(jsonPath("$.paidRoyalty").value(500.00))
+        .andExpect(jsonPath("$.unpaidRoyalty").value(125.00))
+        .andExpect(jsonPath("$.totalRoyalty").value(625.00));
   }
 
   @Test
@@ -622,7 +651,7 @@ class BookControllerTest {
             .contentType(MediaType.APPLICATION_JSON)
             .content(
                 objectMapper.writeValueAsString(
-                    new BookRequest(
+                    buildBookRequest(
                         "The Elements of Style",
                         "Strunk, William",
                         "9780205309023",

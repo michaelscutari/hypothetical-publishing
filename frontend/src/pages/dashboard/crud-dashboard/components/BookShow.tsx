@@ -222,10 +222,66 @@ export default function BookShow() {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Royalty Rate</Typography>
+              <Typography variant="overline">Distributor Royalty Rate</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {formatRoyaltyRate(book.royaltyRate)}
+                {formatRoyaltyRate(book.distributorAuthorRoyaltyRate)}
               </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Handsold Royalty Rate</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {formatRoyaltyRate(book.handsoldAuthorRoyaltyRate)}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Series</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {book.seriesName
+                  ? `${book.seriesName}${book.seriesPosition ? ` (${book.seriesPosition})` : ''}`
+                  : '—'}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Cover Price</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {book.coverPrice != null ? `$${Number(book.coverPrice).toFixed(2)}` : '—'}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Print Cost</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {book.printCost != null ? `$${Number(book.printCost).toFixed(2)}` : '—'}
+              </Typography>
+            </Paper>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Cover Image</Typography>
+              {book.coverImage ? (
+                <Box
+                  component="img"
+                  src={book.coverImage}
+                  alt={`${book.title} cover`}
+                  sx={{ mt: 1, maxWidth: '100%', maxHeight: 240, objectFit: 'contain' }}
+                />
+              ) : (
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  —
+                </Typography>
+              )}
             </Paper>
           </Grid>
 

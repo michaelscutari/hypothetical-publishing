@@ -10,4 +10,5 @@ public record BookLookupResponse(
     @Schema(description = "ISBN-13 identifier") String isbn13,
     @Schema(description = "ISBN-10 identifier") String isbn10,
     @Schema(description = "Publication year") Integer publicationYear,
-    @Schema(description = "Publication month (1-12)") Integer publicationMonth) {}
+    @Schema(description = "Publication month (1-12)") Integer publicationMonth,
+    @Schema(description = "Cover image URL") String coverImage) {}

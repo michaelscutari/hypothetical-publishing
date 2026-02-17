@@ -15,6 +15,7 @@ import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -80,7 +81,10 @@ class SaleControllerTest {
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.20"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.20"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
+            .coverPrice(new BigDecimal("20.00"))
+            .printCost(new BigDecimal("5.00"))
             .build());
   }
 
@@ -92,7 +96,10 @@ class SaleControllerTest {
             .isbn13(isbn13)
             .publicationYear(2020)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.20"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.20"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
+            .coverPrice(new BigDecimal("20.00"))
+            .printCost(new BigDecimal("5.00"))
             .build());
   }
 
@@ -125,7 +132,15 @@ class SaleControllerTest {
     Book book = createBook();
 
     SaleRequest request =
-        new SaleRequest(book.getId(), 1, 2024, 50, new BigDecimal("100.00"), null, true);
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            50,
+            new BigDecimal("100.00"),
+            true,
+            "Imported from Ingram Spark");
 
     mockMvc
         .perform(
@@ -141,7 +156,9 @@ class SaleControllerTest {
         .andExpect(jsonPath("$.quantitySold").value(50))
         .andExpect(jsonPath("$.publisherRevenue").value(100.00))
         .andExpect(jsonPath("$.authorRoyalty").value(20.00))
-        .andExpect(jsonPath("$.hasAuthorBeenPaid").value(true));
+        .andExpect(jsonPath("$.hasAuthorBeenPaid").value(true))
+        .andExpect(jsonPath("$.saleSource").value("DISTRIBUTOR"))
+        .andExpect(jsonPath("$.comment").value("Imported from Ingram Spark"));
   }
 
   @Test
@@ -153,12 +170,13 @@ class SaleControllerTest {
     SaleRequest request =
         new SaleRequest(
             book.getId(),
+            SaleSource.DISTRIBUTOR,
             future.getMonthValue(),
             future.getYear(),
             1,
             new BigDecimal("10.00"),
-            null,
-            false);
+            false,
+            null);
 
     mockMvc
         .perform(
@@ -170,6 +188,27 @@ class SaleControllerTest {
   }
 
   @Test
+  void createHandsoldSaleComputesRevenueAndRoyalty() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(book.getId(), SaleSource.HAND_SOLD, 2, 2024, 10, null, false, "Handsale");
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.publisherRevenue").value(150.00))
+        .andExpect(jsonPath("$.authorRoyalty").value(15.00))
+        .andExpect(jsonPath("$.saleSource").value("HAND_SOLD"))
+        .andExpect(jsonPath("$.comment").value("Handsale"));
+  }
+
+  @Test
   void getSaleByIdReturnsSale() throws Exception {
     Cookie token = login();
     Book book = createBook();
@@ -177,13 +216,23 @@ class SaleControllerTest {
     SaleResponse created =
         createSale(
             token,
-            new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), null, false));
+            new SaleRequest(
+                book.getId(),
+                SaleSource.DISTRIBUTOR,
+                2,
+                2024,
+                10,
+                new BigDecimal("50.00"),
+                false,
+                "Initial import"));
 
     mockMvc
         .perform(get("/api/sales/{id}", created.id()).cookie(token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.id").value(created.id()))
-        .andExpect(jsonPath("$.bookId").value(book.getId()));
+        .andExpect(jsonPath("$.bookId").value(book.getId()))
+        .andExpect(jsonPath("$.saleSource").value("DISTRIBUTOR"))
+        .andExpect(jsonPath("$.comment").value("Initial import"));
   }
 
   @Test
@@ -194,10 +243,26 @@ class SaleControllerTest {
     SaleResponse created =
         createSale(
             token,
-            new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), null, false));
+            new SaleRequest(
+                book.getId(),
+                SaleSource.DISTRIBUTOR,
+                2,
+                2024,
+                10,
+                new BigDecimal("50.00"),
+                false,
+                null));
 
     SaleRequest update =
-        new SaleRequest(book.getId(), 3, 2024, 25, new BigDecimal("200.00"), null, true);
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            3,
+            2024,
+            25,
+            new BigDecimal("200.00"),
+            true,
+            "Corrected batch");
 
     mockMvc
         .perform(
@@ -210,7 +275,9 @@ class SaleControllerTest {
         .andExpect(jsonPath("$.quantitySold").value(25))
         .andExpect(jsonPath("$.publisherRevenue").value(200.00))
         .andExpect(jsonPath("$.authorRoyalty").value(40.00))
-        .andExpect(jsonPath("$.hasAuthorBeenPaid").value(true));
+        .andExpect(jsonPath("$.hasAuthorBeenPaid").value(true))
+        .andExpect(jsonPath("$.saleSource").value("DISTRIBUTOR"))
+        .andExpect(jsonPath("$.comment").value("Corrected batch"));
   }
 
   @Test
@@ -221,7 +288,15 @@ class SaleControllerTest {
     SaleResponse created =
         createSale(
             token,
-            new SaleRequest(book.getId(), 2, 2024, 10, new BigDecimal("50.00"), null, false));
+            new SaleRequest(
+                book.getId(),
+                SaleSource.DISTRIBUTOR,
+                2,
+                2024,
+                10,
+                new BigDecimal("50.00"),
+                false,
+                null));
 
     mockMvc
         .perform(delete("/api/sales/{id}", created.id()).cookie(token))
@@ -239,7 +314,16 @@ class SaleControllerTest {
 
     for (int i = 1; i <= 30; i++) {
       createSale(
-          token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), null, false));
+          token,
+          new SaleRequest(
+              book.getId(),
+              SaleSource.DISTRIBUTOR,
+              1,
+              2024,
+              i,
+              new BigDecimal("10.00"),
+              false,
+              null));
     }
 
     mockMvc
@@ -256,7 +340,16 @@ class SaleControllerTest {
 
     for (int i = 1; i <= 30; i++) {
       createSale(
-          token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), null, false));
+          token,
+          new SaleRequest(
+              book.getId(),
+              SaleSource.DISTRIBUTOR,
+              1,
+              2024,
+              i,
+              new BigDecimal("10.00"),
+              false,
+              null));
     }
 
     mockMvc
@@ -282,7 +375,16 @@ class SaleControllerTest {
 
     for (int i = 1; i <= 21; i++) {
       createSale(
-          token, new SaleRequest(book.getId(), 1, 2024, i, new BigDecimal("10.00"), null, false));
+          token,
+          new SaleRequest(
+              book.getId(),
+              SaleSource.DISTRIBUTOR,
+              1,
+              2024,
+              i,
+              new BigDecimal("10.00"),
+              false,
+              null));
     }
 
     mockMvc
@@ -307,11 +409,38 @@ class SaleControllerTest {
     Book book = createBook();
 
     createSale(
-        token, new SaleRequest(book.getId(), 1, 2024, 5, new BigDecimal("10.00"), null, false));
+        token,
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("10.00"),
+            false,
+            null));
     createSale(
-        token, new SaleRequest(book.getId(), 3, 2024, 5, new BigDecimal("10.00"), null, false));
+        token,
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            3,
+            2024,
+            5,
+            new BigDecimal("10.00"),
+            false,
+            null));
     createSale(
-        token, new SaleRequest(book.getId(), 5, 2024, 5, new BigDecimal("10.00"), null, false));
+        token,
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            5,
+            2024,
+            5,
+            new BigDecimal("10.00"),
+            false,
+            null));
 
     LocalDate start = LocalDate.of(2024, 3, 1);
     LocalDate end = LocalDate.of(2024, 4, 30);
@@ -336,13 +465,40 @@ class SaleControllerTest {
 
     // Author Alpha: one unpaid (month 1), one paid (month 3)
     createSale(
-        token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
+        token,
+        new SaleRequest(
+            alpha.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("100.00"),
+            false,
+            null));
     createSale(
-        token, new SaleRequest(alpha.getId(), 3, 2024, 5, new BigDecimal("50.00"), null, true));
+        token,
+        new SaleRequest(
+            alpha.getId(),
+            SaleSource.DISTRIBUTOR,
+            3,
+            2024,
+            5,
+            new BigDecimal("50.00"),
+            true,
+            null));
 
     // Author Beta: one unpaid
     createSale(
-        token, new SaleRequest(beta.getId(), 2, 2024, 5, new BigDecimal("80.00"), null, false));
+        token,
+        new SaleRequest(
+            beta.getId(),
+            SaleSource.DISTRIBUTOR,
+            2,
+            2024,
+            5,
+            new BigDecimal("80.00"),
+            false,
+            null));
 
     mockMvc
         .perform(get("/api/sales/author-payments").cookie(token).param("showAll", "true"))
@@ -363,13 +519,49 @@ class SaleControllerTest {
     Book beta = createBook("Beta Book", "Author Beta", "9780000000004");
 
     createSale(
-        token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
+        token,
+        new SaleRequest(
+            alpha.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("100.00"),
+            false,
+            null));
     createSale(
-        token, new SaleRequest(alpha.getId(), 2, 2024, 5, new BigDecimal("100.00"), null, false));
+        token,
+        new SaleRequest(
+            alpha.getId(),
+            SaleSource.DISTRIBUTOR,
+            2,
+            2024,
+            5,
+            new BigDecimal("100.00"),
+            false,
+            null));
     createSale(
-        token, new SaleRequest(alpha.getId(), 3, 2024, 5, new BigDecimal("100.00"), null, true));
+        token,
+        new SaleRequest(
+            alpha.getId(),
+            SaleSource.DISTRIBUTOR,
+            3,
+            2024,
+            5,
+            new BigDecimal("100.00"),
+            true,
+            null));
     createSale(
-        token, new SaleRequest(beta.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
+        token,
+        new SaleRequest(
+            beta.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("100.00"),
+            false,
+            null));
 
     mockMvc
         .perform(
@@ -395,7 +587,16 @@ class SaleControllerTest {
     Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000005");
 
     createSale(
-        token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
+        token,
+        new SaleRequest(
+            alpha.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("100.00"),
+            false,
+            null));
 
     mockMvc
         .perform(
@@ -419,9 +620,27 @@ class SaleControllerTest {
     Book beta = createBook("Beta Book", "Author Beta", "9780000000007");
 
     createSale(
-        token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
+        token,
+        new SaleRequest(
+            alpha.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("100.00"),
+            false,
+            null));
     createSale(
-        token, new SaleRequest(beta.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
+        token,
+        new SaleRequest(
+            beta.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("100.00"),
+            false,
+            null));
 
     mockMvc
         .perform(

@@ -1,8 +1,11 @@
 package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.books.Book;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -44,28 +47,33 @@ public class Sale {
   @OnDelete(action = OnDeleteAction.CASCADE)
   private Book book;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "sale_source", nullable = false)
+  private SaleSource saleSource;
+
   @Min(1)
   @Max(12)
-  @Column(nullable = false)
+  @Column(name = "sale_month", nullable = false)
   private Integer saleMonth;
 
   @Min(1900)
   @Max(2100)
-  @Column(nullable = false)
+  @Column(name = "sale_year", nullable = false)
   private Integer saleYear;
 
   @PositiveOrZero
-  @Column(nullable = false)
+  @Column(name = "quantity_sold", nullable = false)
   private Integer quantitySold;
 
-  @PositiveOrZero
-  @Column(nullable = false, precision = 19, scale = 2)
+  @Column(name = "publisher_revenue", nullable = false, precision = 19, scale = 2)
   private BigDecimal publisherRevenue;
 
-  @PositiveOrZero
-  @Column(nullable = false, precision = 19, scale = 2)
+  @Column(name = "author_royalty", nullable = false, precision = 19, scale = 2)
   private BigDecimal authorRoyalty;
 
-  @Column(nullable = false)
+  @Column(name = "has_author_been_paid", nullable = false)
   private Boolean hasAuthorBeenPaid;
+
+  @Column(name = "comment", length = 256)
+  private String comment;
 }
