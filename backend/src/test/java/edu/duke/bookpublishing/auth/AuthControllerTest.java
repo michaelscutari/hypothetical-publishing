@@ -149,14 +149,21 @@ class AuthControllerTest {
   @Test
   void changePasswordUpdatesPassword() throws Exception {
     Cookie token = login();
-    mockMvc
-        .perform(
-            put("/api/auth/password")
-                .cookie(token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"currentPassword\":\"admin\",\"newPassword\":\"newpass\",\"confirmPassword\":\"newpass\"}"))
-        .andExpect(status().isOk());
+    MvcResult changeResult =
+        mockMvc
+            .perform(
+                put("/api/auth/password")
+                    .cookie(token)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"currentPassword\":\"admin\",\"newPassword\":\"newpass\",\"confirmPassword\":\"newpass\"}"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    // Verify a new token cookie is returned
+    Cookie newToken = changeResult.getResponse().getCookie("token");
+    assertNotNull(newToken);
+    assertTrue(newToken.getValue().length() > 0);
 
     mockMvc
         .perform(
@@ -170,28 +177,24 @@ class AuthControllerTest {
   void changePasswordInvalidatesOldToken() throws Exception {
     Cookie oldToken = login();
 
-    // Change password
-    mockMvc
-        .perform(
-            put("/api/auth/password")
-                .cookie(oldToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    "{\"currentPassword\":\"admin\",\"newPassword\":\"newpass\",\"confirmPassword\":\"newpass\"}"))
-        .andExpect(status().isOk());
+    // Change password — response should include a fresh token
+    MvcResult changeResult =
+        mockMvc
+            .perform(
+                put("/api/auth/password")
+                    .cookie(oldToken)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(
+                        "{\"currentPassword\":\"admin\",\"newPassword\":\"newpass\",\"confirmPassword\":\"newpass\"}"))
+            .andExpect(status().isOk())
+            .andReturn();
 
     // Old token should no longer work for protected endpoints
     mockMvc.perform(get("/api/auth/me").cookie(oldToken)).andExpect(status().isUnauthorized());
 
-    // Login with new password should give a working token
-    MvcResult result =
-        mockMvc
-            .perform(
-                post("/api/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .content("{\"username\":\"admin\",\"password\":\"newpass\"}"))
-            .andReturn();
-    Cookie newToken = result.getResponse().getCookie("token");
+    // New token from password change response should work immediately
+    Cookie newToken = changeResult.getResponse().getCookie("token");
+    assertNotNull(newToken);
     mockMvc
         .perform(get("/api/auth/me").cookie(newToken))
         .andExpect(status().isOk())
