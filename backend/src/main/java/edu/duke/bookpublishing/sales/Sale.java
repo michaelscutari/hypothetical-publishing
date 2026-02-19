@@ -1,5 +1,8 @@
 package edu.duke.bookpublishing.sales;
 
+import java.math.BigDecimal;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.persistence.Column;
@@ -14,15 +17,12 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.PositiveOrZero;
-import java.math.BigDecimal;
+import jakarta.validation.constraints.Positive;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * Entity/Database for Sale
@@ -61,10 +61,11 @@ public class Sale {
   @Column(name = "sale_year", nullable = false)
   private Integer saleYear;
 
-  @PositiveOrZero
+  @Positive
   @Column(name = "quantity_sold", nullable = false)
   private Integer quantitySold;
 
+  @Positive
   @Column(name = "publisher_revenue", nullable = false, precision = 19, scale = 2)
   private BigDecimal publisherRevenue;
 

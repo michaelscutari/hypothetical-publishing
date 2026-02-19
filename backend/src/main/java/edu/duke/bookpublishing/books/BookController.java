@@ -43,6 +43,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Tag(name = "Books", description = "Book management endpoints")
 public class BookController {
 
+  private static final BigDecimal DEFAULT_HAND_SOLD_ROYALTY_RATE = new BigDecimal("0.2");
+  private static final BigDecimal DEFAULT_DISTRIBUTOR_ROYALTY_RATE = new BigDecimal("0.5");
+
   private final BookService bookService;
   private final SaleService saleService;
   private final BookLookupService bookLookupService;
@@ -164,11 +167,11 @@ public class BookController {
             .distributorAuthorRoyaltyRate(
                 request.distributorAuthorRoyaltyRate() != null
                     ? request.distributorAuthorRoyaltyRate()
-                    : new BigDecimal("0.5"))
+                    : DEFAULT_DISTRIBUTOR_ROYALTY_RATE)
             .handsoldAuthorRoyaltyRate(
                 request.handsoldAuthorRoyaltyRate() != null
                     ? request.handsoldAuthorRoyaltyRate()
-                    : new BigDecimal("0.2"))
+                    : DEFAULT_HAND_SOLD_ROYALTY_RATE)
             .seriesName(request.seriesName())
             .seriesPosition(request.seriesPosition())
             .coverPrice(request.coverPrice())
@@ -197,11 +200,11 @@ public class BookController {
     book.setDistributorAuthorRoyaltyRate(
         request.distributorAuthorRoyaltyRate() != null
             ? request.distributorAuthorRoyaltyRate()
-            : new BigDecimal("0.5"));
+            : DEFAULT_DISTRIBUTOR_ROYALTY_RATE);
     book.setHandsoldAuthorRoyaltyRate(
         request.handsoldAuthorRoyaltyRate() != null
             ? request.handsoldAuthorRoyaltyRate()
-            : new BigDecimal("0.2"));
+            : DEFAULT_HAND_SOLD_ROYALTY_RATE);
     book.setSeriesName(request.seriesName());
     book.setSeriesPosition(request.seriesPosition());
     book.setCoverPrice(request.coverPrice());

@@ -1,5 +1,7 @@
 package edu.duke.bookpublishing.books;
 
+import java.math.BigDecimal;
+import org.hibernate.annotations.Formula;
 import edu.duke.bookpublishing.common.StringUtils;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -15,12 +17,10 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
-import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(name = "books")
@@ -81,7 +81,7 @@ public class Book {
   @Column(name = "print_cost", nullable = false, precision = 19, scale = 2)
   private BigDecimal printCost;
 
-  @Column(name = "coverImage", nullable = true)
+  @Column(name = "cover_image", nullable = true)
   private String coverImage;
 
   @Formula("(SELECT COALESCE(SUM(s.quantity_sold), 0) FROM sales s WHERE s.book_id = id)")

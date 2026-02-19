@@ -1,5 +1,7 @@
 package edu.duke.bookpublishing.sales.dto;
 
+import java.math.BigDecimal;
+import java.time.YearMonth;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
@@ -7,10 +9,8 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
-import java.math.BigDecimal;
-import java.time.YearMonth;
 
 /**
  * DTO for a Sale Request
@@ -37,7 +37,7 @@ public record SaleRequest(
         Integer saleYear,
     @Schema(description = "The amount of books sold in this sale", example = "50")
         @NotNull(message = "Quantity is required")
-        @PositiveOrZero
+        @Positive
         Integer quantitySold,
     @Schema(
             description =
