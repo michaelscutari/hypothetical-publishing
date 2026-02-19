@@ -1,8 +1,5 @@
 package edu.duke.bookpublishing.sales;
 
-import java.math.BigDecimal;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.persistence.Column;
@@ -18,11 +15,14 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 /**
  * Entity/Database for Sale

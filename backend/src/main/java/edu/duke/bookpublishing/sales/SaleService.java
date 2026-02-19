@@ -1,19 +1,5 @@
 package edu.duke.bookpublishing.sales;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.common.StringUtils;
@@ -23,7 +9,21 @@ import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
 
 /**
  * Backend service for SaleController. All business logic is handled here.
@@ -227,9 +227,10 @@ public class SaleService {
       return request.publisherRevenue();
     }
 
-    BigDecimal computedRevenue = book.getCoverPrice()
-      .subtract(book.getPrintCost())
-      .multiply(BigDecimal.valueOf(request.quantitySold()));
+    BigDecimal computedRevenue =
+        book.getCoverPrice()
+            .subtract(book.getPrintCost())
+            .multiply(BigDecimal.valueOf(request.quantitySold()));
 
     return computedRevenue.max(BigDecimal.ZERO);
   }

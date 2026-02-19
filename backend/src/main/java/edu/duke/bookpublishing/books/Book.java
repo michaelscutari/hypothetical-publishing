@@ -1,7 +1,5 @@
 package edu.duke.bookpublishing.books;
 
-import java.math.BigDecimal;
-import org.hibernate.annotations.Formula;
 import edu.duke.bookpublishing.common.StringUtils;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -17,10 +15,12 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Formula;
 
 @Entity
 @Table(name = "books")
