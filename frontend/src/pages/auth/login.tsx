@@ -47,7 +47,7 @@ export default function Login() {
   const [error, setError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoading, sessionExpired } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -121,6 +121,10 @@ export default function Login() {
           <Typography component="h1" variant="h4" textAlign="center">
             Sign in
           </Typography>
+
+          {sessionExpired && (
+            <Alert severity="info">Your session has expired. Please sign in again.</Alert>
+          )}
 
           {error && (
             <Alert severity="error" onClose={() => setError(null)}>
