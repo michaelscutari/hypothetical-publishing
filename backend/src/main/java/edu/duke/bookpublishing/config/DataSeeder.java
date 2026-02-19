@@ -1,8 +1,11 @@
 package edu.duke.bookpublishing.config;
 
 import com.opencsv.CSVReader;
+import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.sales.Sale;
 import edu.duke.bookpublishing.sales.SaleRepository;
 import java.io.InputStreamReader;
@@ -22,6 +25,7 @@ import org.springframework.stereotype.Component;
 @Order(2)
 public class DataSeeder implements CommandLineRunner {
 
+  private final AuthorRepository authorRepository;
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
 
@@ -40,6 +44,7 @@ public class DataSeeder implements CommandLineRunner {
 
   private Map<String, Book> seedBooks() throws Exception {
     Map<String, Book> isbnToBook = new HashMap<>();
+    Map<String, Author> authorCache = new HashMap<>();
     ClassPathResource resource = new ClassPathResource("seed/books.csv");
 
     try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
@@ -47,11 +52,22 @@ public class DataSeeder implements CommandLineRunner {
       String[] line;
       while ((line = reader.readNext()) != null) {
         String title = line[0];
-        String author = line[1];
+        String authorName = StringUtils.normalizeWhitespace(line[1]);
         String isbn13 = line[2];
         String isbn10 = line[3];
         String publicationDate = line[4];
         String royaltyPercent = line[5];
+
+        Author author =
+            authorCache.computeIfAbsent(
+                authorName,
+                name ->
+                    authorRepository.save(
+                        Author.builder()
+                            .name(name)
+                            .email(
+                                name.toLowerCase().replaceAll("[^a-z0-9]", "") + "@placeholder.com")
+                            .build()));
 
         String[] dateParts = publicationDate.split("/");
         int month = Integer.parseInt(dateParts[0]);

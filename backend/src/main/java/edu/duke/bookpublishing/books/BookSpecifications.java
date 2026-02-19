@@ -15,6 +15,11 @@ public final class BookSpecifications {
     return (root, cq, cb) -> buildQueryPredicate(root, cb, query);
   }
 
+  /** Filters books by author ID. */
+  public static Specification<Book> hasAuthorId(Long authorId) {
+    return (root, cq, cb) -> cb.equal(root.get("author").get("id"), authorId);
+  }
+
   /**
    * Builds a predicate for book fields given a path to a Book entity. This allows reuse from other
    * entities that have a book relationship (e.g., Sale.book).
@@ -71,6 +76,14 @@ public final class BookSpecifications {
     return cb.or(
         cb.like(cb.lower(bookPath.get("title")), "%" + lowerTerm + "%"),
         authorPredicate,
+        cb.like(
+            cb.function(
+                "REPLACE",
+                String.class,
+                cb.lower(bookPath.get("author").get("name")),
+                cb.literal("."),
+                cb.literal("")),
+            "%" + authorTerm + "%"),
         cb.like(cb.lower(bookPath.get("isbn13")), "%" + normalizedTerm + "%"),
         cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"));
   }

@@ -1,8 +1,8 @@
 package edu.duke.bookpublishing.sales;
 
+import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
-import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
@@ -38,6 +38,7 @@ public class SaleService {
 
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
+  private final AuthorRepository authorRepository;
 
   public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, String query, Sort sort) {
     Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
@@ -77,7 +78,7 @@ public class SaleService {
 
     Sort sort =
         Sort.by(
-            Sort.Order.asc("book.author").ignoreCase(),
+            Sort.Order.asc("book.author.name").ignoreCase(),
             Sort.Order.desc("saleYear"),
             Sort.Order.desc("saleMonth"));
 
@@ -95,27 +96,31 @@ public class SaleService {
 
     List<Sale> sales = saleRepository.findAll(spec, sort);
 
-    // Group sales by author while preserving the sort order established above.
-    Map<String, List<Sale>> grouped = new LinkedHashMap<>();
+    // Group sales by author ID while preserving the sort order established above.
+    Map<Long, List<Sale>> grouped = new LinkedHashMap<>();
     for (Sale sale : sales) {
-      String author = sale.getBook().getAuthor();
-      grouped.computeIfAbsent(author, key -> new ArrayList<>()).add(sale);
+      Long authorId = sale.getBook().getAuthor().getId();
+      grouped.computeIfAbsent(authorId, key -> new ArrayList<>()).add(sale);
     }
 
     // Build group responses with unpaid totals.
     List<AuthorPaymentGroupResponse> groups = new ArrayList<>();
-    for (Map.Entry<String, List<Sale>> entry : grouped.entrySet()) {
+    for (Map.Entry<Long, List<Sale>> entry : grouped.entrySet()) {
       BigDecimal unpaidTotal = BigDecimal.ZERO;
       List<AuthorPaymentSaleResponse> saleRows = new ArrayList<>();
+      String authorName = null;
 
       for (Sale sale : entry.getValue()) {
         saleRows.add(AuthorPaymentSaleResponse.from(sale));
+        if (authorName == null) {
+          authorName = sale.getBook().getAuthor().getName();
+        }
         if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
           unpaidTotal = unpaidTotal.add(sale.getAuthorRoyalty());
         }
       }
 
-      groups.add(new AuthorPaymentGroupResponse(entry.getKey(), unpaidTotal, saleRows));
+      groups.add(new AuthorPaymentGroupResponse(entry.getKey(), authorName, unpaidTotal, saleRows));
     }
 
     return groups;
@@ -190,9 +195,11 @@ public class SaleService {
    * @return number of sales updated
    */
   @Transactional
-  public int markAllPaidByAuthor(String author) {
-    String normalizedAuthor = StringUtils.normalizeWhitespace(author);
-    return saleRepository.markAllPaidByAuthor(normalizedAuthor);
+  public int markAllPaidByAuthorId(Long authorId) {
+    authorRepository
+        .findById(authorId)
+        .orElseThrow(() -> new IllegalArgumentException("Author not found"));
+    return saleRepository.markAllPaidByAuthorId(authorId);
   }
 
   // Req 2.2.2

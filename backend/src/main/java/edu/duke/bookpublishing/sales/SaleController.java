@@ -131,8 +131,8 @@ public class SaleController {
   @PutMapping("/author-payments/mark-paid")
   public MarkAllPaidResponse markAuthorPaymentsPaid(
       @Valid @RequestBody MarkAllPaidRequest request) {
-    int updatedCount = saleService.markAllPaidByAuthor(request.author());
-    return new MarkAllPaidResponse(request.author(), updatedCount);
+    int updatedCount = saleService.markAllPaidByAuthorId(request.authorId());
+    return new MarkAllPaidResponse(request.authorId(), updatedCount);
   }
 
   // ------- DELETE MAPPINGS -------

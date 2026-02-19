@@ -2,6 +2,8 @@ package edu.duke.bookpublishing.sales;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import jakarta.persistence.EntityManager;
@@ -14,6 +16,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 @DataJpaTest
 class SaleCascadeDeleteTest {
 
+  @Autowired private AuthorRepository authorRepository;
+
   @Autowired private BookRepository bookRepository;
 
   @Autowired private SaleRepository saleRepository;
@@ -23,11 +27,14 @@ class SaleCascadeDeleteTest {
   @Test
   @DisplayName("Deleting a Book also deletes its Sales (ON DELETE CASCADE)")
   void deletingBookAlsoDeletesSales() {
-    // arrange: create and save a book
+    Author author =
+        authorRepository.saveAndFlush(
+            Author.builder().name("Test Author").email("test@example.com").build());
+
     Book book =
         Book.builder()
             .title("Test Book")
-            .author("Test Author")
+            .author(author)
             .isbn13("1234567890123")
             .isbn10("1234567890")
             .publicationYear(2024)
@@ -37,7 +44,6 @@ class SaleCascadeDeleteTest {
 
     book = bookRepository.saveAndFlush(book);
 
-    // arrange: create and save a couple of sales for this book
     Sale sale1 =
         Sale.builder()
             .book(book)
@@ -66,14 +72,11 @@ class SaleCascadeDeleteTest {
 
     assertThat(saleRepository.count()).isEqualTo(2L);
 
-    // act: delete the book
     bookRepository.delete(book);
 
-    // make sure changes hit the DB
     bookRepository.flush();
     entityManager.clear();
 
-    // assert: all sales for that book should be gone
     assertThat(saleRepository.count()).isZero();
   }
 }

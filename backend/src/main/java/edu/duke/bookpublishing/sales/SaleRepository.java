@@ -70,10 +70,10 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
   @Modifying(clearAutomatically = true)
   @Query(
       """
-            update Sale s
-            set s.hasAuthorBeenPaid = true
-            where s.hasAuthorBeenPaid = false
-              and s.book.author = :author
-            """)
-  int markAllPaidByAuthor(@Param("author") String author);
+    update Sale s
+    set s.hasAuthorBeenPaid = true
+    where s.hasAuthorBeenPaid = false
+      and s.book.author.id = :authorId
+""")
+  int markAllPaidByAuthorId(@Param("authorId") Long authorId);
 }
