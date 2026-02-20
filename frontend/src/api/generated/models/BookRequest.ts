@@ -58,5 +58,6 @@ export type BookRequest = {
      * Cover image file destination
      */
     coverImage?: string;
+    coverPriceGreaterThanPrintCost?: boolean;
 };
 

@@ -15,6 +15,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -65,7 +66,7 @@ public class Sale {
   @Column(name = "quantity_sold", nullable = false)
   private Integer quantitySold;
 
-  @Positive
+  @PositiveOrZero
   @Column(name = "publisher_revenue", nullable = false, precision = 19, scale = 2)
   private BigDecimal publisherRevenue;
 

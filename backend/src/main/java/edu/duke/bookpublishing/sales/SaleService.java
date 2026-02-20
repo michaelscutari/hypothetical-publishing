@@ -227,12 +227,9 @@ public class SaleService {
       return request.publisherRevenue();
     }
 
-    BigDecimal computedRevenue =
-        book.getCoverPrice()
-            .subtract(book.getPrintCost())
-            .multiply(BigDecimal.valueOf(request.quantitySold()));
-
-    return computedRevenue.max(BigDecimal.ZERO);
+    return book.getCoverPrice()
+        .subtract(book.getPrintCost())
+        .multiply(BigDecimal.valueOf(request.quantitySold()));
   }
 
   private BigDecimal resolveAuthorRoyaltyRate(SaleRequest request, Book book) {

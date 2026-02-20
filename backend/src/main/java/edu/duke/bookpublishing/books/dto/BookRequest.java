@@ -3,6 +3,7 @@ package edu.duke.bookpublishing.books.dto;
 import edu.duke.bookpublishing.books.validation.ISBN10;
 import edu.duke.bookpublishing.books.validation.ISBN13;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -59,4 +60,14 @@ public record BookRequest(
         @DecimalMin("0.00")
         BigDecimal printCost,
     @Schema(description = "Cover image file destination", example = "home/images/img1.png")
-        String coverImage) {}
+        String coverImage) {
+
+  @AssertTrue(message = "Cover price must be greater than print cost")
+  public boolean isCoverPriceGreaterThanPrintCost() {
+    // @NotNull handles null error reporting
+    if (coverPrice == null || printCost == null) {
+      return true;
+    }
+    return coverPrice.compareTo(printCost) >= 0;
+  }
+}
