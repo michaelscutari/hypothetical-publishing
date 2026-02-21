@@ -23,7 +23,7 @@ export default function BookCreate() {
     errors: {},
   }));
   const formValues = formState.values;
-  const formErrors = formState.errors;
+  const [lookupAuthorName, setLookupAuthorName] = React.useState<string | null>(null);
 
   const setFormValues = React.useCallback((newFormValues: Partial<BookFormState['values']>) => {
     setFormState((previousState) => ({
@@ -41,20 +41,18 @@ export default function BookCreate() {
 
   const handleFormFieldChange = React.useCallback(
     (name: keyof BookFormState['values'], value: FormFieldValue) => {
-      const validateField = async (values: Partial<BookFormState['values']>) => {
-        const { issues } = validateBook(values);
-        setFormErrors({
-          ...formErrors,
-          [name]: issues?.find((issue) => issue.path?.[0] === name)?.message,
-        });
-      };
-
-      const newFormValues = { ...formValues, [name]: value };
-
-      setFormValues(newFormValues);
-      validateField(newFormValues);
+      setFormState((prev) => {
+        const newValues = { ...prev.values, [name]: value };
+        const { issues } = validateBook(newValues);
+        const fieldError = issues?.find((issue) => issue.path?.[0] === name)?.message;
+        return {
+          ...prev,
+          values: newValues,
+          errors: { ...prev.errors, [name]: fieldError },
+        };
+      });
     },
-    [formValues, formErrors, setFormErrors, setFormValues],
+    [],
   );
 
   const handleLookupSuccess = React.useCallback(
@@ -62,13 +60,15 @@ export default function BookCreate() {
       const newValues: Partial<BookFormState['values']> = {
         ...formValues,
         title: data.title ?? formValues.title,
-        author: data.author ?? formValues.author,
         isbn13: data.isbn13 ?? formValues.isbn13,
         isbn10: data.isbn10 ?? formValues.isbn10,
         publicationYear: data.publicationYear ?? formValues.publicationYear,
         publicationMonth: data.publicationMonth ?? formValues.publicationMonth,
       };
       setFormValues(newValues);
+      if (data.author) {
+        setLookupAuthorName(data.author);
+      }
       const { issues } = validateBook(newValues);
       if (issues && issues.length > 0) {
         setFormErrors(Object.fromEntries(issues.map((issue) => [issue.path?.[0], issue.message])));
@@ -120,6 +120,7 @@ export default function BookCreate() {
         onSubmit={handleFormSubmit}
         onReset={handleFormReset}
         submitButtonLabel="Create"
+        lookupAuthorName={lookupAuthorName}
       />
     </PageContainer>
   );
