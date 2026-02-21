@@ -66,6 +66,7 @@ export default function BookForm(props: BookFormProps) {
     initialAuthor ?? null,
   );
   const [authorSearchInput, setAuthorSearchInput] = React.useState('');
+  const processedLookupRef = React.useRef<string | null>(null);
 
   const [createAuthorOpen, setCreateAuthorOpen] = React.useState(false);
   const [newAuthorName, setNewAuthorName] = React.useState('');
@@ -108,7 +109,9 @@ export default function BookForm(props: BookFormProps) {
   }, []);
 
   React.useEffect(() => {
-    if (!lookupAuthorName) return;
+    if (!lookupAuthorName || lookupAuthorName === processedLookupRef.current) return;
+    if (authorOptions.length === 0) return;
+    processedLookupRef.current = lookupAuthorName;
     const term = lookupAuthorName.toLowerCase();
     const match = authorOptions.find((a) => (a.name ?? '').toLowerCase() === term);
     if (match) {
