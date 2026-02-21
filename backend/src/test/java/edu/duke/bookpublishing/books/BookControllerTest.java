@@ -645,6 +645,118 @@ class BookControllerTest {
         .andExpect(jsonPath("$.content", hasSize(1)));
   }
 
+  @Test
+  void searchBooksWithPeriodMatchesLiterally() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        new BookRequest(
+            "The Hobbit",
+            "Tolkien, J.R.R.",
+            "9780547928227",
+            null,
+            1937,
+            9,
+            new BigDecimal("0.5")));
+    createBook(
+        token,
+        new BookRequest(
+            "Some Book", "Murray, Bill", "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
+
+    // "R.R." contains punctuation → literal match → only Tolkien
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "R.R."))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].author").value("Tolkien, J.R.R."));
+
+    // "rr" has no punctuation → lenient match → both Tolkien (jrr) and Murray (murray)
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "rr"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(2)));
+  }
+
+  @Test
+  void searchBooksWithApostropheMatchesLiterally() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        new BookRequest(
+            "At Swim", "O'Brien, Flann", "9780141182681", null, 1939, 3, new BigDecimal("0.5")));
+
+    // "O'Brien" contains punctuation → literal → matches
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "O'Brien"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].author").value("O'Brien, Flann"));
+
+    // "obrien" no punctuation → lenient → still matches (strips apostrophe from DB)
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "obrien"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].author").value("O'Brien, Flann"));
+  }
+
+  @Test
+  void searchBooksWithHyphenMatchesLiterally() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        new BookRequest(
+            "Nausea", "Sartre, Jean-Paul", "9780811220309", null, 1938, 1, new BigDecimal("0.5")));
+
+    // "Jean-Paul" contains punctuation → literal → matches
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "Jean-Paul"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].author").value("Sartre, Jean-Paul"));
+
+    // "jeanpaul" no punctuation → lenient → still matches (strips hyphen from DB)
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "jeanpaul"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].author").value("Sartre, Jean-Paul"));
+  }
+
+  @Test
+  void authorAutocompletePunctuationAware() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        new BookRequest(
+            "The Hobbit",
+            "Tolkien, J.R.R.",
+            "9780547928227",
+            null,
+            1937,
+            9,
+            new BigDecimal("0.5")));
+    createBook(
+        token,
+        new BookRequest(
+            "Some Book", "Murray, Bill", "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
+
+    // "R.R." literal → only Tolkien
+    mockMvc
+        .perform(
+            get("/api/books/authors").cookie(token).param("query", "R.R.").param("showAll", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0]").value("Tolkien, J.R.R."));
+
+    // "rr" lenient → both
+    mockMvc
+        .perform(
+            get("/api/books/authors").cookie(token).param("query", "rr").param("showAll", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(2)));
+  }
+
   private Long createBook(Cookie token, BookRequest request) throws Exception {
     MvcResult result =
         mockMvc
