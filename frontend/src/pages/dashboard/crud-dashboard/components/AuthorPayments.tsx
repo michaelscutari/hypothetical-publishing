@@ -347,6 +347,7 @@ export default function AuthorPaymentsView() {
                     borderRadius: 2,
                     border: 1,
                     borderColor: 'divider',
+                    boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
                     '&:before': { display: 'none' },
                     '&:first-of-type': { borderRadius: 2 },
                     '&:last-of-type': { borderRadius: 2 },

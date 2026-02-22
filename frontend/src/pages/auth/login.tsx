@@ -125,7 +125,7 @@ export default function Login() {
         >
           Hypothetical Publishing
         </Typography>
-        <Card variant="outlined">
+        <Card variant="outlined" sx={{ boxShadow: 3 }}>
           {error && (
             <Alert severity="error" onClose={() => setError(null)}>
               {error}

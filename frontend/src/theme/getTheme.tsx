@@ -19,6 +19,8 @@ export const getTheme = (mode: 'light' | 'dark') =>
               secondary: '#6b5d4f',
             },
             divider: '#a0906e',
+            success: { main: '#4a8c5c', light: '#6aaa7a', dark: '#357045' },
+            warning: { main: '#9c5044', light: '#b8706a', dark: '#7a3830' },
           }
         : {
             primary: { main: '#d4b896', light: '#e2ccb0', dark: '#b89a72' },

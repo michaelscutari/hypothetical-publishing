@@ -18,7 +18,11 @@ const AppBar = styled(MuiAppBar)(({ theme }) => ({
   borderBottomWidth: 1,
   borderStyle: 'solid',
   borderColor: (theme.vars ?? theme).palette.divider,
-  boxShadow: 'none',
+  backgroundColor: (theme.vars ?? theme).palette.background.paper,
+  boxShadow:
+    theme.palette.mode === 'dark'
+      ? '0 2px 8px 0 rgba(0,0,0,0.4)'
+      : '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
 }));
 
 const NAV_ITEMS = [
