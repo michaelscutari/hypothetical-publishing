@@ -19,6 +19,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { BooksService, SalesService, type BookResponse, type SaleResponse } from '../../../../api';
+import { isValidMonetaryInput } from '../../../../utils/monetary';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 import { MONTH_NAMES } from '../../../../constants/months';
@@ -113,6 +114,7 @@ export default function SaleEdit() {
   const handleRoyaltyChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
+      if (!isValidMonetaryInput(value)) return;
       setAuthorRoyalty(value);
       const valueNum = parseFloat(value);
       const computedNum = parseFloat(computedRoyalty);
@@ -293,12 +295,14 @@ export default function SaleEdit() {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              type="number"
+              type="text"
               value={publisherRevenue}
-              onChange={(e) => setPublisherRevenue(e.target.value)}
+              onChange={(e) => {
+                if (isValidMonetaryInput(e.target.value)) setPublisherRevenue(e.target.value);
+              }}
               label="Publisher Revenue"
               fullWidth
-              inputProps={{ min: 0, step: 0.01 }}
+              inputProps={{ inputMode: 'decimal' }}
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
@@ -307,14 +311,14 @@ export default function SaleEdit() {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              type="number"
+              type="text"
               value={authorRoyalty}
               onChange={handleRoyaltyChange}
               label="Author Royalty"
               fullWidth
               error={!!royaltyError}
               helperText={royaltyError || ' '}
-              inputProps={{ min: 0, step: 0.01, max: parseFloat(publisherRevenue) || undefined }}
+              inputProps={{ inputMode: 'decimal' }}
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
