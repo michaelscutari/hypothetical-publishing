@@ -18,24 +18,16 @@ import ColorModeIconDropdown from '../../components/ColorModeIconDropdown';
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
-  alignSelf: 'center',
   width: '100%',
   padding: theme.spacing(4),
   gap: theme.spacing(2),
-  margin: 'auto',
   [theme.breakpoints.up('sm')]: {
-    maxWidth: '450px',
+    maxWidth: '420px',
   },
-  boxShadow:
-    'hsla(220, 30%, 5%, 0.05) 0px 5px 15px 0px, hsla(220, 25%, 10%, 0.05) 0px 15px 35px -5px',
 }));
 
-const SignInContainer = styled(Stack)(({ theme }) => ({
+const SignInContainer = styled(Stack)(() => ({
   minHeight: '100vh',
-  padding: theme.spacing(2),
-  [theme.breakpoints.up('sm')]: {
-    padding: theme.spacing(4),
-  },
   alignItems: 'center',
   justifyContent: 'center',
 }));
@@ -52,7 +44,6 @@ export default function Login() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Redirect if already authenticated
   React.useEffect(() => {
     if (isAuthenticated && !isLoading) {
       const from = (location.state as { from?: Location })?.from?.pathname || '/';
@@ -90,7 +81,6 @@ export default function Login() {
 
     try {
       await login(username, password);
-      // Navigation happens in useEffect when isAuthenticated changes
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
     } finally {
@@ -98,7 +88,6 @@ export default function Login() {
     }
   };
 
-  // Show loading while checking auth status
   if (isLoading) {
     return (
       <Box
@@ -121,38 +110,22 @@ export default function Login() {
         <ColorModeIconDropdown />
       </Box>
       <SignInContainer direction="column">
-        <Box sx={{ mb: 4, textAlign: 'center' }}>
-          <Typography
-            variant="h3"
-            component="h1"
-            sx={{
-              fontFamily: '"Playfair Display", "Georgia", serif',
-              fontWeight: 700,
-              fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-              background: 'linear-gradient(45deg, #2c3e50 30%, #3498db 90%)',
-              backgroundClip: 'text',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              letterSpacing: '0.02em',
-              mb: 0.5,
-            }}
-          >
-            Hypothetical Publishing
-          </Typography>
-          <Typography
-            variant="subtitle1"
-            sx={{
-              fontFamily: '"Crimson Text", "Georgia", serif',
-              fontStyle: 'italic',
-              color: 'text.secondary',
-              fontSize: '1rem',
-              letterSpacing: '0.1em',
-            }}
-          >
-            Page. Print. Profit.
-          </Typography>
-        </Box>
-        <Card variant="outlined" sx={{ mt: 2 }}>
+        <Typography
+          variant="h3"
+          component="h1"
+          sx={{
+            fontFamily: '"Playfair Display", "Georgia", serif',
+            fontWeight: 700,
+            fontSize: { xs: '2.5rem', sm: '3rem', md: '3.5rem' },
+            color: 'text.primary',
+            letterSpacing: '0.02em',
+            mb: 3,
+            textAlign: 'center',
+          }}
+        >
+          Hypothetical Publishing
+        </Typography>
+        <Card variant="outlined">
           {error && (
             <Alert severity="error" onClose={() => setError(null)}>
               {error}

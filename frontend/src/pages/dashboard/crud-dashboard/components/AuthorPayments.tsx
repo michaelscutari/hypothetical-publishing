@@ -342,7 +342,15 @@ export default function AuthorPaymentsView() {
                 <Accordion
                   key={`${group.author ?? 'author'}-${idx}`}
                   defaultExpanded={false}
-                  sx={{ mb: 1 }}
+                  sx={{
+                    mb: 1,
+                    borderRadius: 2,
+                    border: 1,
+                    borderColor: 'divider',
+                    '&:before': { display: 'none' },
+                    '&:first-of-type': { borderRadius: 2 },
+                    '&:last-of-type': { borderRadius: 2 },
+                  }}
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Stack
@@ -387,7 +395,7 @@ export default function AuthorPaymentsView() {
 
                   <AccordionDetails>
                     <Box sx={{ width: '100%' }}>
-                      <Table size="small">
+                      <Table size="small" sx={{ '& td, & th': { borderColor: 'divider' } }}>
                         <TableHead>
                           <TableRow>
                             <TableCell>Book Title</TableCell>

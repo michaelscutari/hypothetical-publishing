@@ -306,6 +306,12 @@ export default function BookList() {
               },
             }}
             sx={{
+              '--DataGrid-rowBorderColor': (theme) => theme.palette.divider,
+              '--DataGrid-containerBackground': (theme) => theme.palette.background.paper,
+              borderColor: 'divider',
+              '& .MuiDataGrid-footerContainer': {
+                borderColor: 'divider',
+              },
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },

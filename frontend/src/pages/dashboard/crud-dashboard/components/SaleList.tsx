@@ -284,6 +284,12 @@ export default function SaleList() {
             loading={isLoading}
             pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}
             sx={{
+              '--DataGrid-rowBorderColor': (theme) => theme.palette.divider,
+              '--DataGrid-containerBackground': (theme) => theme.palette.background.paper,
+              borderColor: 'divider',
+              '& .MuiDataGrid-footerContainer': {
+                borderColor: 'divider',
+              },
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },
