@@ -182,14 +182,14 @@ export default function AuthorList() {
       },
       {
         field: 'paidRoyalty',
-        headerName: 'Paid',
+        headerName: 'Paid Royalty',
         type: 'number',
         width: 130,
         valueFormatter: (value) => (value != null ? currencyFormatter.format(Number(value)) : ''),
       },
       {
         field: 'unpaidRoyalty',
-        headerName: 'Unpaid',
+        headerName: 'Unpaid Royalty',
         type: 'number',
         width: 130,
         valueFormatter: (value) => (value != null ? currencyFormatter.format(Number(value)) : ''),

@@ -21,10 +21,9 @@ import {
   AuthorsService,
   BooksService,
   type AuthorResponse,
-  type BookResponse,
+  type BookDetailResponse,
 } from '../../../../api';
 import FullPageLoader from '../../../../components/FullPageLoader';
-import FinancialSummary from '../components/FinancialSummary';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
@@ -36,7 +35,7 @@ export default function AuthorShow() {
   const notifications = useNotifications();
 
   const [author, setAuthor] = React.useState<AuthorResponse | null>(null);
-  const [books, setBooks] = React.useState<BookResponse[]>([]);
+  const [books, setBooks] = React.useState<BookDetailResponse[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
@@ -49,7 +48,9 @@ export default function AuthorShow() {
       setAuthor(authorData);
 
       const booksResponse = await BooksService.getAllBooks(0, 1000, true, undefined, authorData.id);
-      setBooks(booksResponse.content ?? []);
+      const bookList = booksResponse.content ?? [];
+      const bookDetails = await Promise.all(bookList.map((b) => BooksService.getBookById(b.id!)));
+      setBooks(bookDetails);
     } catch (loadError) {
       setError(loadError as Error);
     } finally {
@@ -100,6 +101,9 @@ export default function AuthorShow() {
   const handleBack = React.useCallback(() => {
     navigate('/authors');
   }, [navigate]);
+
+  const formatCurrency = (value?: number) =>
+    value != null ? value.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '$0.00';
 
   if (isLoading) {
     return <FullPageLoader />;
@@ -157,23 +161,12 @@ export default function AuthorShow() {
               </Typography>
             </Paper>
           </Grid>
-
-          <Grid size={{ xs: 12 }}>
-            <FinancialSummary
-              summary={{
-                unpaidRoyalty: author.unpaidRoyalty,
-                paidRoyalty: author.paidRoyalty,
-                totalRoyalty: author.totalRoyalty,
-                totalSalesToDate: author.bookCount,
-              }}
-            />
-          </Grid>
         </Grid>
 
         <Box sx={{ mt: 3 }}>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" sx={{ mb: 2 }}>
-              Books ({books.length})
+              Books
             </Typography>
 
             {books.length === 0 ? (
@@ -187,6 +180,9 @@ export default function AuthorShow() {
                       <TableCell>ISBN-13</TableCell>
                       <TableCell align="right">Royalty Rate</TableCell>
                       <TableCell align="right">Total Sales</TableCell>
+                      <TableCell align="right">Total Royalty</TableCell>
+                      <TableCell align="right">Paid Royalty</TableCell>
+                      <TableCell align="right">Unpaid Royalty</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -205,6 +201,9 @@ export default function AuthorShow() {
                             : '—'}
                         </TableCell>
                         <TableCell align="right">{book.totalSalesToDate ?? 0}</TableCell>
+                        <TableCell align="right">{formatCurrency(book.totalRoyalty)}</TableCell>
+                        <TableCell align="right">{formatCurrency(book.paidRoyalty)}</TableCell>
+                        <TableCell align="right">{formatCurrency(book.unpaidRoyalty)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
