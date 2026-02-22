@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import ColorModeIconDropdown from '../../components/ColorModeIconDropdown';
 
 const Card = styled(MuiCard)(({ theme }) => ({
   display: 'flex',
@@ -116,6 +117,9 @@ export default function Login() {
   return (
     <>
       <CssBaseline />
+      <Box sx={{ position: 'absolute', top: 16, right: 16 }}>
+        <ColorModeIconDropdown />
+      </Box>
       <SignInContainer direction="column">
         <Box sx={{ mb: 4, textAlign: 'center' }}>
           <Typography
@@ -149,10 +153,6 @@ export default function Login() {
           </Typography>
         </Box>
         <Card variant="outlined" sx={{ mt: 2 }}>
-          <Typography component="h1" variant="h4" textAlign="center">
-            {/* Sign in */}
-          </Typography>
-
           {error && (
             <Alert severity="error" onClose={() => setError(null)}>
               {error}

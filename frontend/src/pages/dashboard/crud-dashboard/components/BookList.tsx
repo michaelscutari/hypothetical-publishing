@@ -3,7 +3,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -11,7 +10,6 @@ import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
 import {
   DataGrid,
@@ -30,7 +28,8 @@ import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 
-const INITIAL_PAGE_SIZE = 25;
+const INITIAL_PAGE_SIZE = 10;
+const SHOW_ALL_SIZE = 10000;
 
 export default function BookList() {
   const navigate = useNavigate();
@@ -38,12 +37,15 @@ export default function BookList() {
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
-  const [showAll, setShowAll] = React.useState(false);
   const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
     page: 0,
     pageSize: INITIAL_PAGE_SIZE,
   });
-  const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
+
+  const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
+  const [sortModel, setSortModel] = React.useState<GridSortModel>([
+    { field: 'title', sort: 'asc' },
+  ]);
 
   const [searchQuery, setSearchQuery] = React.useState('');
   const [debouncedQuery, setDebouncedQuery] = React.useState('');
@@ -106,11 +108,6 @@ export default function BookList() {
       loadData();
     }
   }, [isLoading, loadData]);
-
-  const handleShowAllToggle = React.useCallback(() => {
-    setShowAll((prev) => !prev);
-    setPaginationModel((p) => ({ ...p, page: 0 }));
-  }, []);
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }) => {
@@ -242,23 +239,6 @@ export default function BookList() {
       breadcrumbs={[{ title: pageTitle }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Tooltip
-            title={showAll ? 'Switch to paginated view' : 'Show all records'}
-            placement="bottom"
-            enterDelay={1000}
-          >
-            <div>
-              <ToggleButton
-                value="showAll"
-                selected={showAll}
-                onChange={handleShowAllToggle}
-                size="small"
-              >
-                <ViewListIcon sx={{ mr: 0.5 }} />
-                Show All
-              </ToggleButton>
-            </div>
-          </Tooltip>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <div>
               <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
@@ -306,7 +286,7 @@ export default function BookList() {
             columns={columns}
             sortingMode="server"
             paginationMode="server"
-            hideFooter={showAll}
+            hideFooter={false}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
@@ -315,7 +295,7 @@ export default function BookList() {
             onRowClick={handleRowClick}
             loading={isLoading}
             initialState={initialState}
-            pageSizeOptions={[10, INITIAL_PAGE_SIZE, 50, 100]}
+            pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}
             slotProps={{
               loadingOverlay: {
                 variant: 'circular-progress',

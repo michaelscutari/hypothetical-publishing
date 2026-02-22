@@ -1,6 +1,7 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
+  Alert,
   Autocomplete,
   Box,
   Button,
@@ -27,6 +28,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BooksService, SalesService, type BookResponse } from '../../../../api';
+import { isValidMonetaryInput } from '../../../../utils/monetary';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 
@@ -85,6 +87,7 @@ export default function SaleCreate() {
 
   const [records, setRecords] = React.useState<SaleRecordInput[]>([createEmptyRecord({}, false)]);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [validationError, setValidationError] = React.useState<string | null>(null);
   const [books, setBooks] = React.useState<BookResponse[]>([]);
   const [bookSearchInput, setBookSearchInput] = React.useState('');
   const [isLoadingBooks, setIsLoadingBooks] = React.useState(false);
@@ -162,12 +165,15 @@ export default function SaleCreate() {
     }
   }, [searchParams, notifications]);
 
-  // ✅ NEW: activate (un-grey) a placeholder row as soon as the user focuses any field
   const activateRow = React.useCallback((index: number) => {
     setRecords((prev) => {
       const next = [...prev];
       if (!next[index] || !next[index].isPlaceholder) return prev;
       next[index] = { ...next[index], isPlaceholder: false };
+      // Spawn a new ghost row when the last row gets activated
+      if (index === next.length - 1) {
+        next.push(createEmptyRecord({ saleDate: next[index].saleDate }, true));
+      }
       return next;
     });
   }, []);
@@ -224,20 +230,12 @@ export default function SaleCreate() {
 
         newRecords[index] = next;
 
-        // Auto-add new PLACEHOLDER row when current row is being filled
-        const isLastRecord = index === newRecords.length - 1;
-        const hasMinimalData = !!(next.saleDate && next.book);
-
-        if (isLastRecord && hasMinimalData && !next.isPlaceholder) {
-          newRecords.push(
-            createEmptyRecord(
-              {
-                saleDate: next.saleDate,
-                book: preselectedBook, // ✅ Carry forward the preselected book to new rows
-              },
-              true,
-            ),
-          );
+        // If this is the last row and it just became active, add a ghost row
+        if (index === newRecords.length - 1 && !next.isPlaceholder) {
+          const hasGhostAlready = prev.length > index + 1 && prev[index + 1]?.isPlaceholder;
+          if (!hasGhostAlready) {
+            newRecords.push(createEmptyRecord({ saleDate: next.saleDate }, true));
+          }
         }
 
         return newRecords;
@@ -260,7 +258,7 @@ export default function SaleCreate() {
       if (error === 'minDate') {
         errorMessage = 'Date cannot be before January 1900';
       } else if (error === 'maxDate') {
-        errorMessage = 'Date cannot be after February 2026';
+        errorMessage = 'Date cannot be in the future';
       } else if (error === 'invalidDate') {
         errorMessage = 'Invalid date format';
       }
@@ -300,8 +298,7 @@ export default function SaleCreate() {
     (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
 
-      // Allow typing decimal points and partial numbers
-      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+      if (isValidMonetaryInput(value)) {
         const parsed = value === '' ? null : Number.parseFloat(value);
         const publisherRevenue =
           typeof parsed === 'number' && !Number.isNaN(parsed) ? parsed : null;
@@ -320,6 +317,7 @@ export default function SaleCreate() {
   const handleRoyaltyChange = React.useCallback(
     (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
       const value = event.target.value;
+      if (!isValidMonetaryInput(value)) return;
 
       setRecords((prev) => {
         const next = [...prev];
@@ -393,12 +391,12 @@ export default function SaleCreate() {
       isValid = false;
     } else {
       const year = record.saleDate.year();
-      const month = record.saleDate.month() + 1; // Dayjs months are 0-indexed
+      const now = dayjs();
 
-      if (year < 1900 || year > 2026) {
+      if (year < 1900) {
         errors.saleDate = 'Date must be between January 1900 and today';
         isValid = false;
-      } else if (year === 2026 && month > 2) {
+      } else if (record.saleDate.isAfter(now, 'month')) {
         errors.saleDate = 'Date must be between January 1900 and today';
         isValid = false;
       }
@@ -418,10 +416,12 @@ export default function SaleCreate() {
     }
 
     if (record.publisherRevenue == null) {
-      errors.publisherRevenue = 'Revenue is required';
+      errors.publisherRevenue = record.publisherRevenueInput?.trim()
+        ? 'Invalid number'
+        : 'Required';
       isValid = false;
     } else if (record.publisherRevenue < 0) {
-      errors.publisherRevenue = 'Revenue must be non-negative';
+      errors.publisherRevenue = 'Must be non-negative';
       isValid = false;
     }
 
@@ -442,15 +442,13 @@ export default function SaleCreate() {
 
     const allValid = filledRecords.every((record) => validateRecord(record));
 
-    setRecords(filledRecords);
-
     if (!allValid) {
-      notifications.show('Please fix validation errors before submitting', {
-        severity: 'error',
-        autoHideDuration: 3000,
-      });
+      setValidationError('Please fix the highlighted fields before submitting.');
+      setRecords([...filledRecords, ...records.filter((r) => r.isPlaceholder)]);
       return;
     }
+
+    setValidationError(null);
 
     if (filledRecords.length === 0) {
       notifications.show('Please enter at least one sale record', {
@@ -520,24 +518,32 @@ export default function SaleCreate() {
   }, [bookIdParam]);
 
   return (
-    <PageContainer title="New Sales Records" breadcrumbs={breadcrumbs}>
+    <PageContainer title="New Sales Records" breadcrumbs={breadcrumbs} maxWidth={false}>
       <Stack spacing={3} sx={{ width: '100%' }}>
         <Typography variant="body2" color="text.secondary">
-          Enter multiple sale records efficiently. The month/year will carry forward to help you
-          input multiple sales from the same period. Use Tab to navigate between fields.
+          Use Tab to navigate between fields.
         </Typography>
 
         <TableContainer component={Paper}>
-          <Table size="small">
+          <Table size="small" sx={{ tableLayout: 'fixed' }}>
+            <colgroup>
+              <col style={{ width: '28%' }} /> {/* Book */}
+              <col style={{ width: '16%' }} /> {/* Date */}
+              <col style={{ width: '10%' }} /> {/* Quantity */}
+              <col style={{ width: '14%' }} /> {/* Revenue */}
+              <col style={{ width: '14%' }} /> {/* Royalty */}
+              <col style={{ width: '10%' }} /> {/* Paid */}
+              <col style={{ width: '4%' }} />  {/* Delete */}
+            </colgroup>
             <TableHead>
-              <TableRow>
-                <TableCell width="20">Sale Date (Month/Year)</TableCell>
-                <TableCell width="250">Book</TableCell>
-                <TableCell width="130">Quantity</TableCell>
-                <TableCell width="160">Publisher Revenue</TableCell>
-                <TableCell width="350">Author Royalty</TableCell>
-                <TableCell width="170">Payment Status</TableCell>
-                <TableCell width="60"></TableCell>
+              <TableRow sx={{ '& th': { whiteSpace: 'nowrap' } }}>
+                <TableCell>Book</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Quantity</TableCell>
+                <TableCell>Revenue</TableCell>
+                <TableCell>Royalty</TableCell>
+                <TableCell>Paid</TableCell>
+                <TableCell />
               </TableRow>
             </TableHead>
 
@@ -551,41 +557,13 @@ export default function SaleCreate() {
                   }}
                 >
                   <TableCell>
-                    <LocalizationProvider dateAdapter={CustomAdapterDayjs}>
-                      <DatePicker
-                        value={record.saleDate}
-                        onChange={handleDateChange(index)}
-                        onError={handleDateError(index)}
-                        views={['year', 'month']}
-                        openTo="year"
-                        format="MM/YYYY"
-                        minDate={dayjs('1900-01-01')}
-                        maxDate={dayjs('2026-02-28')}
-                        slotProps={{
-                          textField: {
-                            size: 'small',
-                            fullWidth: true,
-                            error: !!record.errors.saleDate || !!record.dateError,
-                            helperText: record.errors.saleDate || record.dateError,
-                            placeholder: 'MM/YYYY',
-                            InputLabelProps: { shrink: true },
-                            onFocus: () => activateRow(index),
-                          },
-                          field: {
-                            clearable: true,
-                          },
-                        }}
-                      />
-                    </LocalizationProvider>
-                  </TableCell>
-
-                  <TableCell>
                     <Autocomplete
                       size="small"
                       options={books}
                       value={record.book}
                       onChange={handleBookChange(index)}
                       loading={isLoadingBooks}
+                      onOpen={() => loadBooks('')}
                       onInputChange={(_, value) => {
                         activateRow(index);
                         setBookSearchInput(value);
@@ -597,7 +575,8 @@ export default function SaleCreate() {
                       renderInput={(params: AutocompleteRenderInputParams) => (
                         <TextField
                           {...params}
-                          placeholder="Search by title, author, or ISBN"
+                          placeholder="Search book..."
+                          error={!!record.errors.book}
                           onFocus={() => activateRow(index)}
                         />
                       )}
@@ -606,13 +585,37 @@ export default function SaleCreate() {
                           <Box>
                             <Typography variant="body2">{option.title}</Typography>
                             <Typography variant="caption" color="text.secondary">
-                              {option.author} • ISBN: {option.isbn13}
-                              {option.isbn10 && ` / ${option.isbn10}`}
+                              {option.author} • {option.isbn13}
                             </Typography>
                           </Box>
                         </li>
                       )}
                     />
+                  </TableCell>
+
+                  <TableCell>
+                    <LocalizationProvider dateAdapter={CustomAdapterDayjs}>
+                      <DatePicker
+                        value={record.saleDate}
+                        onChange={handleDateChange(index)}
+                        onError={handleDateError(index)}
+                        views={['year', 'month']}
+                        openTo="year"
+                        format="MM/YYYY"
+                        minDate={dayjs('1900-01-01')}
+                        maxDate={dayjs()}
+                        slotProps={{
+                          textField: {
+                            size: 'small',
+                            fullWidth: true,
+                            error: !!record.errors.saleDate || !!record.dateError,
+                            placeholder: 'MM/YYYY',
+                            onFocus: () => activateRow(index),
+                          },
+                          field: { clearable: true },
+                        }}
+                      />
+                    </LocalizationProvider>
                   </TableCell>
 
                   <TableCell>
@@ -624,7 +627,6 @@ export default function SaleCreate() {
                       onFocus={() => activateRow(index)}
                       onChange={handleQuantityChange(index)}
                       error={!!record.errors.quantitySold}
-                      helperText={record.errors.quantitySold}
                       inputProps={{ inputMode: 'numeric' }}
                       fullWidth
                     />
@@ -635,12 +637,10 @@ export default function SaleCreate() {
                       size="small"
                       type="text"
                       placeholder="0.00"
-                      //value={record.publisherRevenue ?? ''}
                       value={record.publisherRevenueInput}
                       onFocus={() => activateRow(index)}
                       onChange={handleRevenueChange(index)}
                       error={!!record.errors.publisherRevenue}
-                      helperText={record.errors.publisherRevenue}
                       inputProps={{ inputMode: 'decimal' }}
                       fullWidth
                       InputProps={{
@@ -650,43 +650,31 @@ export default function SaleCreate() {
                   </TableCell>
 
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TextField
-                        size="small"
-                        type="text"
-                        placeholder="0.00"
-                        value={record.authorRoyalty ?? ''}
-                        onFocus={() => activateRow(index)}
-                        onChange={handleRoyaltyChange(index)}
-                        onBlur={handleRoyaltyBlur(index)}
-                        error={!!record.errors.authorRoyalty}
-                        helperText={record.errors.authorRoyalty}
-                        inputProps={{ inputMode: 'decimal' }}
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <Typography>$</Typography>,
-                        }}
-                        sx={
-                          record.isRoyaltyOverridden
-                            ? { '& .MuiInputBase-root': { bgcolor: 'warning.lighter' } }
-                            : undefined
-                        }
-                      />
-
-                      {record.isRoyaltyOverridden && (
-                        <Chip
-                          label="Override"
-                          size="small"
-                          color="warning"
-                          sx={{ ml: 'auto', height: 20, fontSize: '0.7rem' }}
-                        />
-                      )}
-                    </Box>
+                    <TextField
+                      size="small"
+                      type="text"
+                      placeholder="0.00"
+                      value={record.authorRoyalty ?? ''}
+                      onFocus={() => activateRow(index)}
+                      onChange={handleRoyaltyChange(index)}
+                      onBlur={handleRoyaltyBlur(index)}
+                      error={!!record.errors.authorRoyalty}
+                      inputProps={{ inputMode: 'decimal' }}
+                      fullWidth
+                      InputProps={{
+                        startAdornment: <Typography>$</Typography>,
+                      }}
+                      sx={
+                        record.isRoyaltyOverridden
+                          ? { '& .MuiInputBase-root': { bgcolor: 'warning.lighter' } }
+                          : undefined
+                      }
+                    />
                   </TableCell>
 
                   <TableCell>
                     <FormControlLabel
-                      sx={{ m: 0, minWidth: 120 }}
+                      sx={{ m: 0 }}
                       control={
                         <Switch
                           checked={record.hasAuthorBeenPaid}
@@ -714,6 +702,12 @@ export default function SaleCreate() {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {validationError && (
+          <Alert severity="error" onClose={() => setValidationError(null)}>
+            {validationError}
+          </Alert>
+        )}
 
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={handleBack}>

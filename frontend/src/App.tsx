@@ -1,25 +1,13 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Box from '@mui/material/Box';
 import Auth from './pages/auth';
 import Dashboard from './pages/dashboard';
 import ApiTest from './pages/api-test';
-import ColorModeIconDropdown from './components/ColorModeIconDropdown';
 import BackendStatus from './components/BackendStatus';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
     <BrowserRouter>
-      <Box
-        sx={(theme) => ({
-          position: 'fixed',
-          top: theme.spacing(2),
-          right: theme.spacing(2),
-          zIndex: theme.zIndex.tooltip,
-        })}
-      >
-        <ColorModeIconDropdown size="small" />
-      </Box>
       <Routes>
         {/* Public routes */}
         <Route path="/login" element={<Auth />} />

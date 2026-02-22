@@ -2,7 +2,6 @@ import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -10,9 +9,6 @@ import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
 import Tooltip from '@mui/material/Tooltip';
-import Switch from '@mui/material/Switch';
-import Typography from '@mui/material/Typography';
-import { GridFooter } from '@mui/x-data-grid';
 
 import {
   DataGrid,
@@ -31,16 +27,18 @@ import { Link, useNavigate } from 'react-router-dom';
 import { type SaleResponse, SalesService } from '../../../../api';
 import PageContainer from './PageContainer';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
-const INITIAL_PAGE_SIZE = 25;
+const INITIAL_PAGE_SIZE = 10;
+const SHOW_ALL_SIZE = 10000;
 
 export default function SaleList() {
   const navigate = useNavigate();
 
-  const [showAll, setShowAll] = React.useState(false);
   const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
     page: 0,
     pageSize: INITIAL_PAGE_SIZE,
   });
+
+  const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
 
   // Default sort: descending by date (newest first) - requirement 3.1.1
   const [sortModel, setSortModel] = React.useState<GridSortModel>([
@@ -53,10 +51,6 @@ export default function SaleList() {
   const [error, setError] = React.useState<Error | null>(null);
   const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
   const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
-
-  // ✅ NEW: remember the user's date filter when they temporarily switch to "Show All"
-  const [prevStartDate, setPrevStartDate] = React.useState<Dayjs | null>(null);
-  const [prevEndDate, setPrevEndDate] = React.useState<Dayjs | null>(null);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -99,29 +93,6 @@ export default function SaleList() {
   const handleRefresh = React.useCallback(() => {
     if (!isLoading) loadData();
   }, [isLoading, loadData]);
-
-  // Toggle Show All, but preserve/restore prior date filter
-  const handleShowAllToggle = React.useCallback(() => {
-    setShowAll((prev) => {
-      const next = !prev;
-
-      if (next) {
-        // going INTO "Show All": remember current filters, then clear them
-        setPrevStartDate(startDate);
-        setPrevEndDate(endDate);
-        setStartDate(null);
-        setEndDate(null);
-      } else {
-        // going BACK to Paginated view: restore what user had before
-        setStartDate(prevStartDate);
-        setEndDate(prevEndDate);
-      }
-
-      setPaginationModel((p) => ({ ...p, page: 0 }));
-
-      return next;
-    });
-  }, [startDate, endDate, prevStartDate, prevEndDate]);
 
   // Requirement 3.1.3 - Navigate to detail/modify view
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
@@ -232,7 +203,6 @@ export default function SaleList() {
       breadcrumbs={[{ title: pageTitle }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
-          {}
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <span>
               <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
@@ -250,8 +220,7 @@ export default function SaleList() {
               format="MM/YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
-              maxDate={dayjs('2026-02-28')}
-              disabled={showAll}
+              maxDate={dayjs()}
               slotProps={{
                 textField: {
                   size: 'small',
@@ -272,8 +241,7 @@ export default function SaleList() {
               format="MM/YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
-              maxDate={dayjs('2026-02-28')}
-              disabled={showAll}
+              maxDate={dayjs()}
               slotProps={{
                 textField: {
                   size: 'small',
@@ -314,50 +282,7 @@ export default function SaleList() {
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
             loading={isLoading}
-            pageSizeOptions={[10, INITIAL_PAGE_SIZE, 50, 100]}
-            slots={{
-              footer: () => (
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    px: 2,
-                    py: 1.5,
-                    borderTop: 1,
-                    borderColor: 'divider',
-                  }}
-                >
-                  {!showAll ? (
-                    <>
-                      <Box
-                        sx={{ flex: 1, '& .MuiDataGrid-footerContainer': { borderTop: 'none' } }}
-                      >
-                        <GridFooter />
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ViewListIcon fontSize="small" color="primary" />
-                        <Typography variant="body2" color="primary">
-                          Show All
-                        </Typography>
-                        <Switch checked={showAll} onChange={handleShowAllToggle} size="small" />
-                      </Box>
-                    </>
-                  ) : (
-                    <>
-                      <Box sx={{ flex: 1 }} />
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <ViewListIcon fontSize="small" color="primary" />
-                        <Typography variant="body2" color="primary">
-                          Show All
-                        </Typography>
-                        <Switch checked={showAll} onChange={handleShowAllToggle} size="small" />
-                      </Box>
-                    </>
-                  )}
-                </Box>
-              ),
-            }}
+            pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}
             sx={{
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
