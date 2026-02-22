@@ -39,6 +39,9 @@ public class BookService {
     if (normalizedQuery == null || normalizedQuery.isBlank()) {
       return List.of();
     }
+    if (BookSpecifications.containsAuthorPunctuation(normalizedQuery)) {
+      return bookRepository.findDistinctAuthorsLiteral(normalizedQuery);
+    }
     return bookRepository.findDistinctAuthors(normalizedQuery);
   }
 
@@ -46,6 +49,9 @@ public class BookService {
     String normalizedQuery = StringUtils.normalizeWhitespace(query);
     if (normalizedQuery == null || normalizedQuery.isBlank()) {
       return Page.empty(pageable);
+    }
+    if (BookSpecifications.containsAuthorPunctuation(normalizedQuery)) {
+      return bookRepository.findDistinctAuthorsLiteral(normalizedQuery, pageable);
     }
     return bookRepository.findDistinctAuthors(normalizedQuery, pageable);
   }
