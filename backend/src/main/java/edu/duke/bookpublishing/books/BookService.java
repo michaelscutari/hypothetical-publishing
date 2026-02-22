@@ -48,29 +48,6 @@ public class BookService {
     return bookRepository.findAll();
   }
 
-  // Distinct author search for autocomplete.
-  public List<String> findDistinctAuthors(String query) {
-    String normalizedQuery = StringUtils.normalizeWhitespace(query);
-    if (normalizedQuery == null || normalizedQuery.isBlank()) {
-      return List.of();
-    }
-    if (BookSpecifications.containsAuthorPunctuation(normalizedQuery)) {
-      return bookRepository.findDistinctAuthorsLiteral(normalizedQuery);
-    }
-    return bookRepository.findDistinctAuthors(normalizedQuery);
-  }
-
-  public Page<String> findDistinctAuthors(String query, Pageable pageable) {
-    String normalizedQuery = StringUtils.normalizeWhitespace(query);
-    if (normalizedQuery == null || normalizedQuery.isBlank()) {
-      return Page.empty(pageable);
-    }
-    if (BookSpecifications.containsAuthorPunctuation(normalizedQuery)) {
-      return bookRepository.findDistinctAuthorsLiteral(normalizedQuery, pageable);
-    }
-    return bookRepository.findDistinctAuthors(normalizedQuery, pageable);
-  }
-
   public Book save(Book book) {
     return bookRepository.save(book);
   }

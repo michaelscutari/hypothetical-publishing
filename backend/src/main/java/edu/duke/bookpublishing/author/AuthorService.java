@@ -1,6 +1,8 @@
 package edu.duke.bookpublishing.author;
 
 import edu.duke.bookpublishing.author.dto.AuthorRequest;
+import edu.duke.bookpublishing.books.BookSpecifications;
+import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import java.util.List;
 import java.util.Optional;
@@ -46,19 +48,24 @@ public class AuthorService {
   }
 
   public List<Author> findAll(String query, Sort sort) {
-    if (query == null || query.isBlank()) {
+    String q = StringUtils.normalizeWhitespace(query);
+    if (q == null || q.isBlank()) {
       return authorRepository.findAll(sort);
     }
-    String q = query.trim();
-    return authorRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(q, q, sort);
+    if (BookSpecifications.containsAuthorPunctuation(q)) {
+      return authorRepository.findByNameLiteral(q, sort);
+    }
+    return authorRepository.findByNameLenient(q, sort);
   }
 
   public Page<Author> findAll(Pageable pageable, String query) {
-    if (query == null || query.isBlank()) {
+    String q = StringUtils.normalizeWhitespace(query);
+    if (q == null || q.isBlank()) {
       return authorRepository.findAll(pageable);
     }
-    String q = query.trim();
-    return authorRepository.findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
-        q, q, pageable);
+    if (BookSpecifications.containsAuthorPunctuation(q)) {
+      return authorRepository.findByNameLiteral(q, pageable);
+    }
+    return authorRepository.findByNameLenient(q, pageable);
   }
 }

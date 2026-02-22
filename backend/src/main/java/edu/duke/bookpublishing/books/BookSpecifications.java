@@ -50,7 +50,8 @@ public final class BookSpecifications {
     boolean hasAuthorPunctuation = containsAuthorPunctuation(lowerTerm);
     Predicate authorPredicate;
     if (hasAuthorPunctuation) {
-      authorPredicate = cb.like(cb.lower(bookPath.get("author")), "%" + lowerTerm + "%");
+      authorPredicate =
+          cb.like(cb.lower(bookPath.get("author").get("name")), "%" + lowerTerm + "%");
     } else {
       authorPredicate =
           cb.like(
@@ -63,7 +64,7 @@ public final class BookSpecifications {
                       cb.function(
                           "REPLACE",
                           String.class,
-                          cb.lower(bookPath.get("author")),
+                          cb.lower(bookPath.get("author").get("name")),
                           cb.literal("."),
                           cb.literal("")),
                       cb.literal("'"),
@@ -76,19 +77,11 @@ public final class BookSpecifications {
     return cb.or(
         cb.like(cb.lower(bookPath.get("title")), "%" + lowerTerm + "%"),
         authorPredicate,
-        cb.like(
-            cb.function(
-                "REPLACE",
-                String.class,
-                cb.lower(bookPath.get("author").get("name")),
-                cb.literal("."),
-                cb.literal("")),
-            "%" + authorTerm + "%"),
         cb.like(cb.lower(bookPath.get("isbn13")), "%" + normalizedTerm + "%"),
         cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"));
   }
 
-  static boolean containsAuthorPunctuation(String s) {
+  public static boolean containsAuthorPunctuation(String s) {
     return s.chars().anyMatch(c -> c == '.' || c == '\'' || c == '-');
   }
 }

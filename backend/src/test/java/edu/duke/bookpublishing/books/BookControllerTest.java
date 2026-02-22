@@ -667,20 +667,16 @@ class BookControllerTest {
   @Test
   void searchBooksWithPeriodMatchesLiterally() throws Exception {
     Cookie token = login();
+    Author tolkien = createAuthor("Tolkien, J.R.R.");
+    Author murray = createAuthor("Murray, Bill");
     createBook(
         token,
         new BookRequest(
-            "The Hobbit",
-            "Tolkien, J.R.R.",
-            "9780547928227",
-            null,
-            1937,
-            9,
-            new BigDecimal("0.5")));
+            "The Hobbit", tolkien.getId(), "9780547928227", null, 1937, 9, new BigDecimal("0.5")));
     createBook(
         token,
         new BookRequest(
-            "Some Book", "Murray, Bill", "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
+            "Some Book", murray.getId(), "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
 
     // "R.R." contains punctuation → literal match → only Tolkien
     mockMvc
@@ -699,10 +695,11 @@ class BookControllerTest {
   @Test
   void searchBooksWithApostropheMatchesLiterally() throws Exception {
     Cookie token = login();
+    Author obrien = createAuthor("O'Brien, Flann");
     createBook(
         token,
         new BookRequest(
-            "At Swim", "O'Brien, Flann", "9780141182681", null, 1939, 3, new BigDecimal("0.5")));
+            "At Swim", obrien.getId(), "9780141182681", null, 1939, 3, new BigDecimal("0.5")));
 
     // "O'Brien" contains punctuation → literal → matches
     mockMvc
@@ -722,10 +719,11 @@ class BookControllerTest {
   @Test
   void searchBooksWithHyphenMatchesLiterally() throws Exception {
     Cookie token = login();
+    Author sartre = createAuthor("Sartre, Jean-Paul");
     createBook(
         token,
         new BookRequest(
-            "Nausea", "Sartre, Jean-Paul", "9780811220309", null, 1938, 1, new BigDecimal("0.5")));
+            "Nausea", sartre.getId(), "9780811220309", null, 1938, 1, new BigDecimal("0.5")));
 
     // "Jean-Paul" contains punctuation → literal → matches
     mockMvc
@@ -745,35 +743,26 @@ class BookControllerTest {
   @Test
   void authorAutocompletePunctuationAware() throws Exception {
     Cookie token = login();
-    createBook(
-        token,
-        new BookRequest(
-            "The Hobbit",
-            "Tolkien, J.R.R.",
-            "9780547928227",
-            null,
-            1937,
-            9,
-            new BigDecimal("0.5")));
-    createBook(
-        token,
-        new BookRequest(
-            "Some Book", "Murray, Bill", "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
+    createAuthor("Tolkien, J.R.R.");
+    createAuthor("Murray, Bill");
 
-    // "R.R." literal → only Tolkien
+    // "R.R." contains punctuation → literal match → only Tolkien
     mockMvc
         .perform(
             get("/api/books/authors").cookie(token).param("query", "R.R.").param("showAll", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
-        .andExpect(jsonPath("$.content[0]").value("Tolkien, J.R.R."));
+        .andExpect(jsonPath("$.content[0].name").value("Tolkien, J.R.R."));
 
-    // "rr" lenient → both
+    // "rr" no punctuation → lenient match → both Tolkien (jrr) and Murray (murray)
     mockMvc
         .perform(
             get("/api/books/authors").cookie(token).param("query", "rr").param("showAll", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(2)));
+  }
+
+  @Test
   void createBookWithNonExistentAuthorReturns400() throws Exception {
     BookRequest request =
         new BookRequest("Test Book", 99999L, "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
