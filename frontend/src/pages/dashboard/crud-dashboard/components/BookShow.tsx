@@ -11,7 +11,7 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import FullPageLoader from '../../../../components/FullPageLoader';
 import BookSalesList from '../components/BookSalesList';
 import FinancialSummary from '../components/FinancialSummary';
@@ -25,6 +25,8 @@ import { MONTH_NAMES } from '../../../../constants/months';
 export default function BookShow() {
   const { bookId } = useParams<{ bookId?: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = (location.state as { from?: string } | null)?.from ?? '/books';
 
   const dialogs = useDialogs();
   const notifications = useNotifications();
@@ -114,8 +116,8 @@ export default function BookShow() {
   }, [book, dialogs, bookId, navigate, notifications]);
 
   const handleBack = React.useCallback(() => {
-    navigate('/books');
-  }, [navigate]);
+    navigate(backPath);
+  }, [navigate, backPath]);
 
   const formatPublicationDate = (year?: number, month?: number) => {
     if (!year || !month) return '—';
@@ -267,7 +269,7 @@ export default function BookShow() {
   return (
     <PageContainer
       title={book?.title}
-      breadcrumbs={[{ title: 'Books', path: '/books' }, { title: breadcrumbTitle }]}
+      breadcrumbs={[{ title: backPath === '/author-payments' ? 'Author Payments' : 'Books', path: backPath }, { title: breadcrumbTitle }]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>

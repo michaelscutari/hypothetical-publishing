@@ -1,5 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Alert from '@mui/material/Alert';
@@ -12,6 +14,7 @@ import Tooltip from '@mui/material/Tooltip';
 
 import {
   DataGrid,
+  GridActionsCellItem,
   type GridColDef,
   type GridEventListener,
   type GridPaginationModel,
@@ -25,6 +28,8 @@ import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type SaleResponse, SalesService } from '../../../../api';
+import { useDialogs } from '../hooks/useDialogs/useDialogs';
+import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 const INITIAL_PAGE_SIZE = 10;
@@ -32,6 +37,8 @@ const SHOW_ALL_SIZE = 10000;
 
 export default function SaleList() {
   const navigate = useNavigate();
+  const dialogs = useDialogs();
+  const notifications = useNotifications();
 
   const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
     page: 0,
@@ -106,6 +113,49 @@ export default function SaleList() {
   const handleCreateClick = React.useCallback(() => {
     navigate('/sales/new');
   }, [navigate]);
+
+  const handleRowEdit = React.useCallback(
+    (sale: SaleResponse) => () => {
+      navigate(`/sales/${sale.id}/edit`);
+    },
+    [navigate],
+  );
+
+  const handleRowDelete = React.useCallback(
+    (sale: SaleResponse) => async () => {
+      const confirmed = await dialogs.confirm(
+        `Do you wish to delete this sale record for ${sale.bookTitle || 'this book'}?`,
+        {
+          title: 'Delete sale record?',
+          severity: 'error',
+          okText: 'Delete',
+          cancelText: 'Cancel',
+        },
+      );
+
+      if (confirmed) {
+        setIsLoading(true);
+        try {
+          await SalesService.deleteSale(Number(sale.id));
+          notifications.show('Sale record deleted successfully.', {
+            severity: 'success',
+            autoHideDuration: 3000,
+          });
+          loadData();
+        } catch (deleteError) {
+          notifications.show(
+            `Failed to delete sale record. Reason: ${(deleteError as Error).message}`,
+            {
+              severity: 'error',
+              autoHideDuration: 3000,
+            },
+          );
+        }
+        setIsLoading(false);
+      }
+    },
+    [dialogs, notifications, loadData],
+  );
 
   const columns = React.useMemo<GridColDef<SaleResponse>[]>(
     () => [
@@ -191,8 +241,28 @@ export default function SaleList() {
           );
         },
       },
+      {
+        field: 'actions',
+        type: 'actions',
+        flex: 1,
+        align: 'right',
+        getActions: ({ row }) => [
+          <GridActionsCellItem
+            key="edit-item"
+            icon={<EditIcon />}
+            label="Edit"
+            onClick={handleRowEdit(row)}
+          />,
+          <GridActionsCellItem
+            key="delete-item"
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={handleRowDelete(row)}
+          />,
+        ],
+      },
     ],
-    [],
+    [handleRowEdit, handleRowDelete],
   );
 
   const pageTitle = 'Sales Records';

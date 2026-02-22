@@ -404,18 +404,26 @@ export default function AuthorPaymentsView() {
                             <TableCell align="right">Qty</TableCell>
                             <TableCell align="right">Author Royalty</TableCell>
                             <TableCell>Status</TableCell>
-                            <TableCell>Actions</TableCell>
                           </TableRow>
                         </TableHead>
 
                         <TableBody>
                           {(group.sales ?? []).map((s) => (
-                            <TableRow key={s.id} hover>
+                            <TableRow
+                              key={s.id}
+                              hover
+                              sx={{ cursor: 'pointer' }}
+                              onClick={() => navigate(`/sales/${s.id}`, { state: { from: '/author-payments' } })}
+                            >
                               <TableCell>
                                 <Typography
+                                  component="span"
                                   variant="body1"
                                   sx={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                  onClick={() => navigate(`/books/${s.bookId}`)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/books/${s.bookId}`, { state: { from: '/author-payments' } });
+                                  }}
                                 >
                                   {s.bookTitle ?? `Book ${s.bookId}`}
                                 </Typography>
@@ -435,12 +443,6 @@ export default function AuthorPaymentsView() {
                                   size="small"
                                   variant={s.hasAuthorBeenPaid ? 'filled' : 'outlined'}
                                 />
-                              </TableCell>
-
-                              <TableCell>
-                                <Button size="small" onClick={() => navigate(`/sales/${s.id}`)}>
-                                  Details
-                                </Button>
                               </TableCell>
                             </TableRow>
                           ))}
