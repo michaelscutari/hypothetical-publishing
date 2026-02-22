@@ -5,7 +5,6 @@ import {
   Autocomplete,
   Box,
   Button,
-  Chip,
   FormControlLabel,
   IconButton,
   Paper,
@@ -533,7 +532,7 @@ export default function SaleCreate() {
               <col style={{ width: '14%' }} /> {/* Revenue */}
               <col style={{ width: '14%' }} /> {/* Royalty */}
               <col style={{ width: '10%' }} /> {/* Paid */}
-              <col style={{ width: '4%' }} />  {/* Delete */}
+              <col style={{ width: '4%' }} /> {/* Delete */}
             </colgroup>
             <TableHead>
               <TableRow sx={{ '& th': { whiteSpace: 'nowrap' } }}>

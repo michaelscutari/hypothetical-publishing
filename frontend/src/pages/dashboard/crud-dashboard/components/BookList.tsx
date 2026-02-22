@@ -29,7 +29,7 @@ import PageContainer from './PageContainer';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 
 const INITIAL_PAGE_SIZE = 10;
-const SHOW_ALL_SIZE = 10000;
+const SHOW_ALL_SIZE = -1;
 
 export default function BookList() {
   const navigate = useNavigate();

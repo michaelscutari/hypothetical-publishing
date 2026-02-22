@@ -269,7 +269,10 @@ export default function BookShow() {
   return (
     <PageContainer
       title={book?.title}
-      breadcrumbs={[{ title: backPath === '/author-payments' ? 'Author Payments' : 'Books', path: backPath }, { title: breadcrumbTitle }]}
+      breadcrumbs={[
+        { title: backPath === '/author-payments' ? 'Author Payments' : 'Books', path: backPath },
+        { title: breadcrumbTitle },
+      ]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>

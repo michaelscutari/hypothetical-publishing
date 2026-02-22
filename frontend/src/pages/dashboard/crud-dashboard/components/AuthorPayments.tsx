@@ -413,7 +413,9 @@ export default function AuthorPaymentsView() {
                               key={s.id}
                               hover
                               sx={{ cursor: 'pointer' }}
-                              onClick={() => navigate(`/sales/${s.id}`, { state: { from: '/author-payments' } })}
+                              onClick={() =>
+                                navigate(`/sales/${s.id}`, { state: { from: '/author-payments' } })
+                              }
                             >
                               <TableCell>
                                 <Typography
@@ -422,7 +424,9 @@ export default function AuthorPaymentsView() {
                                   sx={{ cursor: 'pointer', textDecoration: 'underline' }}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigate(`/books/${s.bookId}`, { state: { from: '/author-payments' } });
+                                    navigate(`/books/${s.bookId}`, {
+                                      state: { from: '/author-payments' },
+                                    });
                                   }}
                                 >
                                   {s.bookTitle ?? `Book ${s.bookId}`}

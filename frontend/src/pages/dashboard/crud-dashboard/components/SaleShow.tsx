@@ -246,7 +246,13 @@ export default function SaleShow() {
   return (
     <PageContainer
       title={pageTitle}
-      breadcrumbs={[{ title: backPath === '/author-payments' ? 'Author Payments' : 'Sales Records', path: backPath }, { title: pageTitle }]}
+      breadcrumbs={[
+        {
+          title: backPath === '/author-payments' ? 'Author Payments' : 'Sales Records',
+          path: backPath,
+        },
+        { title: pageTitle },
+      ]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>

@@ -68,12 +68,7 @@ export default function DashboardHeader() {
       <Toolbar sx={{ backgroundColor: 'inherit', gap: 2 }}>
         <Tabs value={activeTab} sx={{ flex: 1 }}>
           {NAV_ITEMS.map((item) => (
-            <Tab
-              key={item.path}
-              label={item.label}
-              component={Link}
-              to={item.path}
-            />
+            <Tab key={item.path} label={item.label} component={Link} to={item.path} />
           ))}
         </Tabs>
 
