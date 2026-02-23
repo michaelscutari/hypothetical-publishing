@@ -13,7 +13,7 @@ export type BookRequest = {
     /**
      * Author name(s)
      */
-    authorId: number;
+    author: string;
     /**
      * ISBN-13 identifier
      */
@@ -54,6 +54,10 @@ export type BookRequest = {
      * Print cost (USD)
      */
     printCost: number;
+    /**
+     * Cover image file destination
+     */
+    coverImage?: string;
     coverPriceGreaterThanPrintCost?: boolean;
 };
 

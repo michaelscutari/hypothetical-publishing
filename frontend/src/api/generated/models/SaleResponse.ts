@@ -19,11 +19,7 @@ export type SaleResponse = {
      */
     bookTitle?: string;
     /**
-     * Author ID of the sold book
-     */
-    authorId?: number;
-    /**
-     * Author name of the sold book
+     * Author of the sold book
      */
     bookAuthor?: string;
     /**

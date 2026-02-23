@@ -6,8 +6,8 @@ import type { BookDetailResponse } from '../models/BookDetailResponse';
 import type { BookLookupResponse } from '../models/BookLookupResponse';
 import type { BookRequest } from '../models/BookRequest';
 import type { BookResponse } from '../models/BookResponse';
-import type { PagedResponseAuthorResponse } from '../models/PagedResponseAuthorResponse';
 import type { PagedResponseBookResponse } from '../models/PagedResponseBookResponse';
+import type { PagedResponseString } from '../models/PagedResponseString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -73,7 +73,6 @@ export class BooksService {
      * @param size
      * @param showAll
      * @param query
-     * @param authorId
      * @param sortField
      * @param sortDirection
      * @returns PagedResponseBookResponse OK
@@ -84,7 +83,6 @@ export class BooksService {
         size: number = 25,
         showAll: boolean = false,
         query?: string,
-        authorId?: number,
         sortField?: string,
         sortDirection: string = 'asc',
     ): CancelablePromise<PagedResponseBookResponse> {
@@ -96,7 +94,6 @@ export class BooksService {
                 'size': size,
                 'showAll': showAll,
                 'query': query,
-                'authorId': authorId,
                 'sortField': sortField,
                 'sortDirection': sortDirection,
             },
@@ -142,12 +139,12 @@ export class BooksService {
         });
     }
     /**
-     * Search authors for autocomplete
+     * Search distinct author names
      * @param query
      * @param page
      * @param size
      * @param showAll
-     * @returns PagedResponseAuthorResponse OK
+     * @returns PagedResponseString OK
      * @throws ApiError
      */
     public static searchAuthors(
@@ -155,7 +152,7 @@ export class BooksService {
         page?: number,
         size: number = 25,
         showAll: boolean = false,
-    ): CancelablePromise<PagedResponseAuthorResponse> {
+    ): CancelablePromise<PagedResponseString> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/books/authors',

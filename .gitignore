@@ -28,6 +28,4 @@ application-local.properties
 # AI
 .claude/
 requirements/
-.code/agents/
-.code/agents/**
-.code/**/*.txt
+.code/*

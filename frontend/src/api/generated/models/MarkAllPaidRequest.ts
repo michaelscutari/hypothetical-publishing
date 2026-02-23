@@ -7,8 +7,8 @@
  */
 export type MarkAllPaidRequest = {
     /**
-     * Author id to mark payments as paid
+     * Author name to mark paid
      */
-    authorId: number;
+    author: string;
 };
 
