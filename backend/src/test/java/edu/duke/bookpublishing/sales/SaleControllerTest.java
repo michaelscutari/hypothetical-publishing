@@ -11,6 +11,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.duke.bookpublishing.auth.User;
 import edu.duke.bookpublishing.auth.UserRepository;
+import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
@@ -44,6 +46,8 @@ class SaleControllerTest {
 
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired private AuthorRepository authorRepository;
+
   @Autowired private BookRepository bookRepository;
 
   @Autowired private SaleRepository saleRepository;
@@ -52,13 +56,19 @@ class SaleControllerTest {
 
   @Autowired private PasswordEncoder passwordEncoder;
 
+  private Author defaultAuthor;
+
   @BeforeEach
   void setUp() {
     saleRepository.deleteAll();
     bookRepository.deleteAll();
+    authorRepository.deleteAll();
     userRepository.deleteAll();
     userRepository.save(
         User.builder().username("admin").password(passwordEncoder.encode("admin")).build());
+    defaultAuthor =
+        authorRepository.save(
+            Author.builder().name("Test Author").email("test@example.com").build());
   }
 
   private Cookie login() throws Exception {
@@ -76,7 +86,7 @@ class SaleControllerTest {
     return bookRepository.save(
         Book.builder()
             .title("Test Book")
-            .author("Test Author")
+            .author(defaultAuthor)
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
@@ -84,7 +94,13 @@ class SaleControllerTest {
             .build());
   }
 
-  private Book createBook(String title, String author, String isbn13) {
+  private Book createBook(String title, String authorName, String isbn13) {
+    Author author =
+        authorRepository.save(
+            Author.builder()
+                .name(authorName)
+                .email(authorName.toLowerCase().replaceAll("[^a-z]", "") + "@test.com")
+                .build());
     return bookRepository.save(
         Book.builder()
             .title(title)
@@ -334,13 +350,11 @@ class SaleControllerTest {
     Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000001");
     Book beta = createBook("Beta Book", "Author Beta", "9780000000002");
 
-    // Author Alpha: one unpaid (month 1), one paid (month 3)
     createSale(
         token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
     createSale(
         token, new SaleRequest(alpha.getId(), 3, 2024, 5, new BigDecimal("50.00"), null, true));
 
-    // Author Beta: one unpaid
     createSale(
         token, new SaleRequest(beta.getId(), 2, 2024, 5, new BigDecimal("80.00"), null, false));
 
@@ -349,6 +363,7 @@ class SaleControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(2)))
         .andExpect(jsonPath("$.content[0].author").value("Author Alpha"))
+        .andExpect(jsonPath("$.content[0].authorId").value(alpha.getAuthor().getId()))
         .andExpect(jsonPath("$.content[0].unpaidTotal").value(20.00))
         .andExpect(jsonPath("$.content[0].sales[0].saleMonth").value(3))
         .andExpect(jsonPath("$.content[0].sales[0].bookTitle").value("Alpha Book"))
@@ -371,12 +386,14 @@ class SaleControllerTest {
     createSale(
         token, new SaleRequest(beta.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
 
+    Long alphaAuthorId = alpha.getAuthor().getId();
+
     mockMvc
         .perform(
             put("/api/sales/author-payments/mark-paid")
                 .cookie(token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"author\":\"Author Alpha\"}"))
+                .content("{\"authorId\":" + alphaAuthorId + "}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.updatedCount").value(2));
 
@@ -390,26 +407,24 @@ class SaleControllerTest {
   }
 
   @Test
-  void markAuthorPaymentsPaidNormalizesWhitespace() throws Exception {
+  void markAuthorPaymentsPaidReturnsAuthorId() throws Exception {
     Cookie token = login();
     Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000005");
 
     createSale(
         token, new SaleRequest(alpha.getId(), 1, 2024, 5, new BigDecimal("100.00"), null, false));
 
+    Long alphaAuthorId = alpha.getAuthor().getId();
+
     mockMvc
         .perform(
             put("/api/sales/author-payments/mark-paid")
                 .cookie(token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"author\":\"  Author   Alpha  \"}"))
+                .content("{\"authorId\":" + alphaAuthorId + "}"))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.authorId").value(alphaAuthorId))
         .andExpect(jsonPath("$.updatedCount").value(1));
-
-    mockMvc
-        .perform(get("/api/sales/author-payments").cookie(token).param("showAll", "true"))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content[0].sales[0].hasAuthorBeenPaid").value(true));
   }
 
   @Test
