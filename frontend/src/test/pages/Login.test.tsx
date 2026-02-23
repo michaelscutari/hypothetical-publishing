@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { AuthProvider } from '../../context/AuthContext';
+import { ColorSchemeProvider } from '../../context/ColorSchemeContext';
 import Login from '../../pages/auth/login';
 
 afterEach(() => {
@@ -36,9 +37,11 @@ function renderLogin() {
 
   render(
     <BrowserRouter>
-      <AuthProvider>
-        <Login />
-      </AuthProvider>
+      <ColorSchemeProvider>
+        <AuthProvider>
+          <Login />
+        </AuthProvider>
+      </ColorSchemeProvider>
     </BrowserRouter>,
   );
 
@@ -50,7 +53,7 @@ describe('Login Page', () => {
     renderLogin();
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /sign in/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /hypothetical publishing/i })).toBeInTheDocument();
     });
 
     expect(screen.getByLabelText(/username/i)).toBeInTheDocument();
@@ -126,9 +129,11 @@ describe('Login Page', () => {
 
     render(
       <BrowserRouter>
-        <AuthProvider>
-          <Login />
-        </AuthProvider>
+        <ColorSchemeProvider>
+          <AuthProvider>
+            <Login />
+          </AuthProvider>
+        </ColorSchemeProvider>
       </BrowserRouter>,
     );
 

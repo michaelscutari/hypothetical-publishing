@@ -5,7 +5,6 @@ import PaymentIcon from '@mui/icons-material/Payments';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import {
   Accordion,
   AccordionDetails,
@@ -34,7 +33,6 @@ import {
   TableHead,
   TableRow,
   TextField,
-  ToggleButton,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -54,7 +52,8 @@ import {
 } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
-const INITIAL_PAGE_SIZE = 25;
+const INITIAL_PAGE_SIZE = 10;
+const SHOW_ALL_SIZE = 10000;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -87,9 +86,10 @@ export default function AuthorPaymentsView() {
   const navigate = useNavigate();
   const notifications = useNotifications();
 
-  const [showAll, setShowAll] = React.useState<boolean>(false);
   const [page, setPage] = React.useState<number>(0);
   const [pageSize, setPageSize] = React.useState<number>(INITIAL_PAGE_SIZE);
+
+  const showAll = pageSize === SHOW_ALL_SIZE;
 
   const [groups, setGroups] = React.useState<AuthorPaymentGroupResponse[]>([]);
   const [totalPages, setTotalPages] = React.useState<number>(0);
@@ -201,11 +201,6 @@ export default function AuthorPaymentsView() {
     if (!isLoading) void loadGroups();
   }, [isLoading, loadGroups]);
 
-  const handleShowAllToggle = React.useCallback(() => {
-    setShowAll((prev) => !prev);
-    setPage(0);
-  }, []);
-
   const handlePageSizeChange = React.useCallback((v: number) => {
     setPageSize(v);
     setPage(0);
@@ -283,24 +278,6 @@ export default function AuthorPaymentsView() {
       breadcrumbs={[{ title: pageTitle }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Tooltip
-            title={showAll ? 'Switch to paginated view' : 'Show all records'}
-            placement="bottom"
-            enterDelay={1000}
-          >
-            <div>
-              <ToggleButton
-                value="showAll"
-                selected={showAll}
-                onChange={handleShowAllToggle}
-                size="small"
-              >
-                <ViewListIcon sx={{ mr: 0.5 }} />
-                Show All
-              </ToggleButton>
-            </div>
-          </Tooltip>
-
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <div>
               <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
@@ -365,7 +342,16 @@ export default function AuthorPaymentsView() {
                 <Accordion
                   key={`${group.author ?? 'author'}-${idx}`}
                   defaultExpanded={false}
-                  sx={{ mb: 1 }}
+                  sx={{
+                    mb: 1,
+                    borderRadius: 2,
+                    border: 1,
+                    borderColor: 'divider',
+                    boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
+                    '&:before': { display: 'none' },
+                    '&:first-of-type': { borderRadius: 2 },
+                    '&:last-of-type': { borderRadius: 2 },
+                  }}
                 >
                   <AccordionSummary expandIcon={<ExpandMoreIcon />}>
                     <Stack
@@ -410,7 +396,7 @@ export default function AuthorPaymentsView() {
 
                   <AccordionDetails>
                     <Box sx={{ width: '100%' }}>
-                      <Table size="small">
+                      <Table size="small" sx={{ '& td, & th': { borderColor: 'divider' } }}>
                         <TableHead>
                           <TableRow>
                             <TableCell>Book Title</TableCell>
@@ -418,18 +404,30 @@ export default function AuthorPaymentsView() {
                             <TableCell align="right">Qty</TableCell>
                             <TableCell align="right">Author Royalty</TableCell>
                             <TableCell>Status</TableCell>
-                            <TableCell>Actions</TableCell>
                           </TableRow>
                         </TableHead>
 
                         <TableBody>
                           {(group.sales ?? []).map((s) => (
-                            <TableRow key={s.id} hover>
+                            <TableRow
+                              key={s.id}
+                              hover
+                              sx={{ cursor: 'pointer' }}
+                              onClick={() =>
+                                navigate(`/sales/${s.id}`, { state: { from: '/author-payments' } })
+                              }
+                            >
                               <TableCell>
                                 <Typography
+                                  component="span"
                                   variant="body1"
                                   sx={{ cursor: 'pointer', textDecoration: 'underline' }}
-                                  onClick={() => navigate(`/books/${s.bookId}`)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    navigate(`/books/${s.bookId}`, {
+                                      state: { from: '/author-payments' },
+                                    });
+                                  }}
                                 >
                                   {s.bookTitle ?? `Book ${s.bookId}`}
                                 </Typography>
@@ -450,12 +448,6 @@ export default function AuthorPaymentsView() {
                                   variant={s.hasAuthorBeenPaid ? 'filled' : 'outlined'}
                                 />
                               </TableCell>
-
-                              <TableCell>
-                                <Button size="small" onClick={() => navigate(`/sales/${s.id}`)}>
-                                  Details
-                                </Button>
-                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -466,32 +458,39 @@ export default function AuthorPaymentsView() {
               );
             })}
 
-            {!showAll && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-                <Pagination
-                  count={Math.max(1, computedTotalPages)}
-                  page={page + 1}
-                  onChange={(_, value) => setPage(value - 1)}
-                  color="primary"
-                />
-                <FormControl size="small" sx={{ minWidth: 110 }}>
-                  <InputLabel id="ap-page-size-label">Page size</InputLabel>
-                  <Select
-                    labelId="ap-page-size-label"
-                    label="Page size"
-                    value={pageSize}
-                    onChange={(e) => handlePageSizeChange(Number(e.target.value))}
-                    disabled={isLoading}
-                  >
-                    {PAGE_SIZE_OPTIONS.map((s) => (
-                      <MenuItem key={s} value={s}>
-                        {s}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Box>
-            )}
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                mt: 2,
+                gap: 2,
+              }}
+            >
+              <Pagination
+                count={Math.max(1, computedTotalPages)}
+                page={page + 1}
+                onChange={(_, value) => setPage(value - 1)}
+                color="primary"
+              />
+              <FormControl size="small" sx={{ minWidth: 110 }}>
+                <InputLabel id="ap-page-size-label">Page size</InputLabel>
+                <Select
+                  labelId="ap-page-size-label"
+                  label="Page size"
+                  value={pageSize}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                  disabled={isLoading}
+                >
+                  {PAGE_SIZE_OPTIONS.map((s) => (
+                    <MenuItem key={s} value={s}>
+                      {s}
+                    </MenuItem>
+                  ))}
+                  <MenuItem value={SHOW_ALL_SIZE}>All</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
           </Box>
         )}
       </Box>

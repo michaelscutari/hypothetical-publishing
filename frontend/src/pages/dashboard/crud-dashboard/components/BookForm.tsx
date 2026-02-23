@@ -1,12 +1,17 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import FormGroup from '@mui/material/FormGroup';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
 import type { Book } from '../data/books';
 import { MONTH_NAMES } from '../../../../constants/months';
@@ -25,10 +30,21 @@ export interface BookFormProps {
   onReset?: (formValues: Partial<BookFormState['values']>) => void;
   submitButtonLabel: string;
   backButtonPath?: string;
+  onIsbnLookup?: (isbn: string) => Promise<void>;
+  isbnLookupLoading?: boolean;
 }
 
 export default function BookForm(props: BookFormProps) {
-  const { formState, onFieldChange, onSubmit, onReset, submitButtonLabel, backButtonPath } = props;
+  const {
+    formState,
+    onFieldChange,
+    onSubmit,
+    onReset,
+    submitButtonLabel,
+    backButtonPath,
+    onIsbnLookup,
+    isbnLookupLoading,
+  } = props;
 
   const formValues = formState.values;
   const formErrors = formState.errors;
@@ -127,11 +143,47 @@ export default function BookForm(props: BookFormProps) {
             <TextField
               value={formValues.isbn13 ?? ''}
               onChange={handleTextFieldChange}
+              onKeyDown={
+                onIsbnLookup
+                  ? (e) => {
+                      if (e.key === 'Enter' && (formValues.isbn13 ?? '').trim()) {
+                        e.preventDefault();
+                        onIsbnLookup((formValues.isbn13 ?? '').trim());
+                      }
+                    }
+                  : undefined
+              }
               name="isbn13"
               label="ISBN-13"
               error={!!formErrors.isbn13}
               helperText={formErrors.isbn13 ?? ' '}
               fullWidth
+              InputProps={
+                onIsbnLookup
+                  ? {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title="Look up book details by ISBN">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => onIsbnLookup((formValues.isbn13 ?? '').trim())}
+                                disabled={!(formValues.isbn13 ?? '').trim() || isbnLookupLoading}
+                                edge="end"
+                              >
+                                {isbnLookupLoading ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <SearchIcon />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    }
+                  : undefined
+              }
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>

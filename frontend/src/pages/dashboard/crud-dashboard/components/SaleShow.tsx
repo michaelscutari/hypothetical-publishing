@@ -14,7 +14,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PendingIcon from '@mui/icons-material/Pending';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import { SalesService, BooksService, type SaleResponse, type BookResponse } from '../../../../api';
@@ -24,6 +24,8 @@ import { MONTH_NAMES } from '../../../../constants/months';
 export default function SaleShow() {
   const { saleId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const backPath = (location.state as { from?: string } | null)?.from ?? '/sales';
 
   const dialogs = useDialogs();
   const notifications = useNotifications();
@@ -101,8 +103,8 @@ export default function SaleShow() {
   }, [sale, book, dialogs, saleId, navigate, notifications]);
 
   const handleBack = React.useCallback(() => {
-    navigate('/sales');
-  }, [navigate]);
+    navigate(backPath);
+  }, [navigate, backPath]);
 
   const formatDate = (year?: number, month?: number) => {
     if (!year || !month) return '—';
@@ -137,6 +139,25 @@ export default function SaleShow() {
 
     return sale ? (
       <Box sx={{ flexGrow: 1, width: '100%' }}>
+        <Stack direction="row" spacing={2} justifyContent="space-between">
+          <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
+            Back
+          </Button>
+          <Stack direction="row" spacing={2}>
+            <Button variant="contained" startIcon={<EditIcon />} onClick={handleSaleEdit}>
+              Edit
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              startIcon={<DeleteIcon />}
+              onClick={handleSaleDelete}
+            >
+              Delete
+            </Button>
+          </Stack>
+        </Stack>
+        <Divider sx={{ my: 3 }} />
         <Grid container spacing={2} sx={{ width: '100%' }}>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
@@ -232,25 +253,6 @@ export default function SaleShow() {
             </Paper>
           </Grid>
         </Grid>
-        <Divider sx={{ my: 3 }} />
-        <Stack direction="row" spacing={2} justifyContent="space-between">
-          <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
-            Back
-          </Button>
-          <Stack direction="row" spacing={2}>
-            <Button variant="contained" startIcon={<EditIcon />} onClick={handleSaleEdit}>
-              Edit
-            </Button>
-            <Button
-              variant="contained"
-              color="error"
-              startIcon={<DeleteIcon />}
-              onClick={handleSaleDelete}
-            >
-              Delete
-            </Button>
-          </Stack>
-        </Stack>
       </Box>
     ) : null;
   }, [isLoading, error, sale, book, handleBack, handleSaleEdit, handleSaleDelete, navigate]);
@@ -260,7 +262,13 @@ export default function SaleShow() {
   return (
     <PageContainer
       title={pageTitle}
-      breadcrumbs={[{ title: 'Sales Records', path: '/sales' }, { title: pageTitle }]}
+      breadcrumbs={[
+        {
+          title: backPath === '/author-payments' ? 'Author Payments' : 'Sales Records',
+          path: backPath,
+        },
+        { title: pageTitle },
+      ]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>
     </PageContainer>

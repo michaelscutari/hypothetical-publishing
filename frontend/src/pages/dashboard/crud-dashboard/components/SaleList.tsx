@@ -1,18 +1,20 @@
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import IconButton from '@mui/material/IconButton';
 import Stack from '@mui/material/Stack';
-import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
+
 import {
   DataGrid,
+  GridActionsCellItem,
   type GridColDef,
   type GridEventListener,
   type GridPaginationModel,
@@ -26,18 +28,24 @@ import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type SaleResponse, SalesService } from '../../../../api';
+import { useDialogs } from '../hooks/useDialogs/useDialogs';
+import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
-const INITIAL_PAGE_SIZE = 25;
+const INITIAL_PAGE_SIZE = 10;
+const SHOW_ALL_SIZE = -1;
 
 export default function SaleList() {
   const navigate = useNavigate();
+  const dialogs = useDialogs();
+  const notifications = useNotifications();
 
-  const [showAll, setShowAll] = React.useState(false);
   const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
     page: 0,
     pageSize: INITIAL_PAGE_SIZE,
   });
+
+  const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
 
   // Default sort: descending by date (newest first) - requirement 3.1.1
   const [sortModel, setSortModel] = React.useState<GridSortModel>([
@@ -50,10 +58,6 @@ export default function SaleList() {
   const [error, setError] = React.useState<Error | null>(null);
   const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
   const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
-
-  // ✅ NEW: remember the user's date filter when they temporarily switch to "Show All"
-  const [prevStartDate, setPrevStartDate] = React.useState<Dayjs | null>(null);
-  const [prevEndDate, setPrevEndDate] = React.useState<Dayjs | null>(null);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -97,29 +101,6 @@ export default function SaleList() {
     if (!isLoading) loadData();
   }, [isLoading, loadData]);
 
-  // Toggle Show All, but preserve/restore prior date filter
-  const handleShowAllToggle = React.useCallback(() => {
-    setShowAll((prev) => {
-      const next = !prev;
-
-      if (next) {
-        // going INTO "Show All": remember current filters, then clear them
-        setPrevStartDate(startDate);
-        setPrevEndDate(endDate);
-        setStartDate(null);
-        setEndDate(null);
-      } else {
-        // going BACK to Paginated view: restore what user had before
-        setStartDate(prevStartDate);
-        setEndDate(prevEndDate);
-      }
-
-      setPaginationModel((p) => ({ ...p, page: 0 }));
-
-      return next;
-    });
-  }, [startDate, endDate, prevStartDate, prevEndDate]);
-
   // Requirement 3.1.3 - Navigate to detail/modify view
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }) => {
@@ -132,6 +113,49 @@ export default function SaleList() {
   const handleCreateClick = React.useCallback(() => {
     navigate('/sales/new');
   }, [navigate]);
+
+  const handleRowEdit = React.useCallback(
+    (sale: SaleResponse) => () => {
+      navigate(`/sales/${sale.id}/edit`);
+    },
+    [navigate],
+  );
+
+  const handleRowDelete = React.useCallback(
+    (sale: SaleResponse) => async () => {
+      const confirmed = await dialogs.confirm(
+        `Do you wish to delete this sale record for ${sale.bookTitle || 'this book'}?`,
+        {
+          title: 'Delete sale record?',
+          severity: 'error',
+          okText: 'Delete',
+          cancelText: 'Cancel',
+        },
+      );
+
+      if (confirmed) {
+        setIsLoading(true);
+        try {
+          await SalesService.deleteSale(Number(sale.id));
+          notifications.show('Sale record deleted successfully.', {
+            severity: 'success',
+            autoHideDuration: 3000,
+          });
+          loadData();
+        } catch (deleteError) {
+          notifications.show(
+            `Failed to delete sale record. Reason: ${(deleteError as Error).message}`,
+            {
+              severity: 'error',
+              autoHideDuration: 3000,
+            },
+          );
+        }
+        setIsLoading(false);
+      }
+    },
+    [dialogs, notifications, loadData],
+  );
 
   const columns = React.useMemo<GridColDef<SaleResponse>[]>(
     () => [
@@ -217,8 +241,28 @@ export default function SaleList() {
           );
         },
       },
+      {
+        field: 'actions',
+        type: 'actions',
+        flex: 1,
+        align: 'right',
+        getActions: ({ row }) => [
+          <GridActionsCellItem
+            key="edit-item"
+            icon={<EditIcon />}
+            label="Edit"
+            onClick={handleRowEdit(row)}
+          />,
+          <GridActionsCellItem
+            key="delete-item"
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={handleRowDelete(row)}
+          />,
+        ],
+      },
     ],
-    [],
+    [handleRowEdit, handleRowDelete],
   );
 
   const pageTitle = 'Sales Records';
@@ -229,24 +273,6 @@ export default function SaleList() {
       breadcrumbs={[{ title: pageTitle }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Tooltip
-            title={showAll ? 'Switch to paginated view' : 'Show all records'}
-            placement="bottom"
-            enterDelay={1000}
-          >
-            <span>
-              <ToggleButton
-                value="showAll"
-                selected={showAll}
-                onChange={handleShowAllToggle}
-                size="small"
-              >
-                <ViewListIcon sx={{ mr: 0.5 }} />
-                Show All
-              </ToggleButton>
-            </span>
-          </Tooltip>
-
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <span>
               <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
@@ -261,14 +287,20 @@ export default function SaleList() {
               value={startDate}
               onChange={(v) => setStartDate(v)}
               views={['year', 'month']}
-              format="MMM YYYY"
+              format="MM/YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
-              maxDate={dayjs('2026-02-28')}
-              disabled={showAll}
+              maxDate={dayjs()}
               slotProps={{
-                textField: { size: 'small' },
+                textField: {
+                  size: 'small',
+                  placeholder: 'MM/YYYY',
+                  InputLabelProps: { shrink: true },
+                },
                 toolbar: { hidden: true },
+                field: {
+                  clearable: true,
+                },
               }}
             />
             <DatePicker
@@ -276,14 +308,20 @@ export default function SaleList() {
               value={endDate}
               onChange={(v) => setEndDate(v)}
               views={['year', 'month']}
-              format="MMM YYYY"
+              format="MM/YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
-              maxDate={dayjs('2026-02-28')}
-              disabled={showAll}
+              maxDate={dayjs()}
               slotProps={{
-                textField: { size: 'small' },
+                textField: {
+                  size: 'small',
+                  placeholder: 'MM/YYYY',
+                  InputLabelProps: { shrink: true },
+                },
                 toolbar: { hidden: true },
+                field: {
+                  clearable: true,
+                },
               }}
             />
           </LocalizationProvider>
@@ -306,7 +344,7 @@ export default function SaleList() {
             columns={columns}
             sortingMode="server"
             paginationMode="server"
-            hideFooter={showAll}
+            hideFooter={false}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
@@ -314,8 +352,16 @@ export default function SaleList() {
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
             loading={isLoading}
-            pageSizeOptions={[10, INITIAL_PAGE_SIZE, 50, 100]}
+            pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}
             sx={{
+              '--DataGrid-rowBorderColor': (theme) => theme.palette.divider,
+              '--DataGrid-containerBackground': (theme) => theme.palette.background.paper,
+              borderColor: 'divider',
+              borderRadius: 2,
+              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
+              '& .MuiDataGrid-footerContainer': {
+                borderColor: 'divider',
+              },
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },

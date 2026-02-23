@@ -1,10 +1,9 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { BookLookupResponse } from '../../../../api/generated';
+import { ApiError, BooksService, type BookLookupResponse } from '../../../../api/generated';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import { createOne as createBook, validate as validateBook, type Book } from '../data/books';
 import BookForm, { type FormFieldValue, type BookFormState } from './BookForm';
-import IsbnLookup from './IsbnLookup';
 import PageContainer from './PageContainer';
 
 const INITIAL_FORM_VALUES: Partial<BookFormState['values']> = {
@@ -60,7 +59,9 @@ export default function BookCreate() {
     [formValues, formErrors, setFormErrors, setFormValues],
   );
 
-  const handleLookupSuccess = React.useCallback(
+  const [isbnLookupLoading, setIsbnLookupLoading] = React.useState(false);
+
+  const applyLookupData = React.useCallback(
     (data: BookLookupResponse) => {
       const newValues: Partial<BookFormState['values']> = {
         ...formValues,
@@ -81,6 +82,66 @@ export default function BookCreate() {
       }
     },
     [formValues, setFormValues, setFormErrors],
+  );
+
+  const handleIsbnLookup = React.useCallback(
+    async (isbn: string) => {
+      if (!isbn) return;
+      setIsbnLookupLoading(true);
+      try {
+        const data = await BooksService.lookupBookByIsbn(isbn);
+        applyLookupData(data);
+        notifications.show('Book details prefilled from ISBN lookup.', {
+          severity: 'success',
+          autoHideDuration: 3000,
+        });
+      } catch (err) {
+        if (err instanceof ApiError) {
+          switch (err.status) {
+            case 400:
+              setFormErrors({ ...formErrors, isbn13: err.body?.message ?? 'Invalid ISBN format' });
+              break;
+            case 404:
+              notifications.show('No book found for this ISBN.', {
+                severity: 'info',
+                autoHideDuration: 4000,
+              });
+              break;
+            case 409: {
+              const existingId = err.body?.id;
+              notifications.show('A book with this ISBN already exists.', {
+                severity: 'warning',
+                autoHideDuration: 6000,
+                actionText: 'View Book',
+                onAction: () => {
+                  if (existingId) navigate(`/books/${existingId}`);
+                },
+              });
+              break;
+            }
+            case 502:
+              notifications.show(
+                'ISBN lookup service is unavailable. You can fill out the form manually.',
+                { severity: 'error', autoHideDuration: 5000 },
+              );
+              break;
+            default:
+              notifications.show('An unexpected error occurred during ISBN lookup.', {
+                severity: 'error',
+                autoHideDuration: 4000,
+              });
+          }
+        } else {
+          notifications.show('An unexpected error occurred during ISBN lookup.', {
+            severity: 'error',
+            autoHideDuration: 4000,
+          });
+        }
+      } finally {
+        setIsbnLookupLoading(false);
+      }
+    },
+    [applyLookupData, formErrors, setFormErrors, navigate, notifications],
   );
 
   const handleFormReset = React.useCallback(() => {
@@ -117,13 +178,14 @@ export default function BookCreate() {
       title="New Book"
       breadcrumbs={[{ title: 'Books', path: '/books' }, { title: 'New' }]}
     >
-      <IsbnLookup onLookupSuccess={handleLookupSuccess} />
       <BookForm
         formState={formState}
         onFieldChange={handleFormFieldChange}
         onSubmit={handleFormSubmit}
         onReset={handleFormReset}
         submitButtonLabel="Create"
+        onIsbnLookup={handleIsbnLookup}
+        isbnLookupLoading={isbnLookupLoading}
       />
     </PageContainer>
   );

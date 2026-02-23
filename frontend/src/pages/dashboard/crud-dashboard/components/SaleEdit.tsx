@@ -24,6 +24,7 @@ import {
   type BookResponse,
   type SaleResponse,
 } from '../../../../api';
+import { isValidMonetaryInput } from '../../../../utils/monetary';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 import { MONTH_NAMES } from '../../../../constants/months';
@@ -170,7 +171,6 @@ export default function SaleEdit() {
       saleId,
       notifications,
       navigate,
-      authorRoyalty,
       saleSource,
       comment,
     ],
@@ -294,13 +294,15 @@ export default function SaleEdit() {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              type="number"
+              type="text"
               value={publisherRevenue}
-              onChange={(e) => setPublisherRevenue(e.target.value)}
+              onChange={(e) => {
+                if (isValidMonetaryInput(e.target.value)) setPublisherRevenue(e.target.value);
+              }}
               label="Publisher Revenue"
               fullWidth
               disabled={saleSource === SaleRequest.saleSource.HAND_SOLD}
-              inputProps={{ min: 0, step: 0.01 }}
+              inputProps={{ inputMode: 'decimal' }}
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
@@ -309,11 +311,11 @@ export default function SaleEdit() {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              type="number"
+              type="text"
               value={authorRoyalty}
               label="Author Royalty"
               fullWidth
-              inputProps={{ min: 0, step: 0.01, readOnly: true }}
+              inputProps={{ inputMode: 'decimal', readOnly: true }}
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
@@ -368,7 +370,6 @@ export default function SaleEdit() {
     hasAuthorBeenPaid,
     comment,
     isSubmitting,
-    computedRoyalty,
     handleSubmit,
     handleBack,
   ]);
