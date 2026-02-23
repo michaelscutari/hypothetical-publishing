@@ -5,8 +5,10 @@ import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.sales.Sale;
 import edu.duke.bookpublishing.sales.SaleRepository;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
@@ -51,7 +53,13 @@ public class DataSeeder implements CommandLineRunner {
         String isbn13 = line[2];
         String isbn10 = line[3];
         String publicationDate = line[4];
-        String royaltyPercent = line[5];
+        BigDecimal distributorRoyaltyRate =
+            parseBigDecimal(getValue(line, 5), new BigDecimal("0.5"));
+        BigDecimal handsoldRoyaltyRate = parseBigDecimal(getValue(line, 6), new BigDecimal("0.2"));
+        String seriesName = emptyToNull(getValue(line, 7));
+        Integer seriesPosition = parseInteger(getValue(line, 8));
+        BigDecimal coverPrice = parseBigDecimal(getValue(line, 9), BigDecimal.ZERO);
+        BigDecimal printCost = parseBigDecimal(getValue(line, 10), BigDecimal.ZERO);
 
         String[] dateParts = publicationDate.split("/");
         int month = Integer.parseInt(dateParts[0]);
@@ -64,7 +72,12 @@ public class DataSeeder implements CommandLineRunner {
                 .isbn10(isbn10)
                 .publicationMonth(month)
                 .publicationYear(year)
-                .royaltyRate(new BigDecimal(royaltyPercent))
+                .distributorAuthorRoyaltyRate(distributorRoyaltyRate)
+                .handsoldAuthorRoyaltyRate(handsoldRoyaltyRate)
+                .seriesName(seriesName)
+                .seriesPosition(seriesPosition)
+                .coverPrice(coverPrice)
+                .printCost(printCost)
                 .build();
 
         book = bookRepository.save(book);
@@ -87,8 +100,8 @@ public class DataSeeder implements CommandLineRunner {
         String recordDate = line[1];
         int unitsSold = Integer.parseInt(line[2]);
         BigDecimal totalRevenue = new BigDecimal(line[3]);
-        BigDecimal royaltyTotal = new BigDecimal(line[4]);
         boolean royaltyPaid = "y".equalsIgnoreCase(line[5]);
+        SaleSource saleSource = parseSaleSource(getValue(line, 6));
 
         Book book = isbnToBook.get(isbn13);
         if (book == null) {
@@ -99,14 +112,29 @@ public class DataSeeder implements CommandLineRunner {
         String[] dateParts = recordDate.split("/");
         int month = Integer.parseInt(dateParts[0]);
         int year = Integer.parseInt(dateParts[1]);
+        BigDecimal publisherRevenue = totalRevenue;
+        if (saleSource == SaleSource.HAND_SOLD) {
+          publisherRevenue =
+              book.getCoverPrice()
+                  .subtract(book.getPrintCost())
+                  .multiply(BigDecimal.valueOf(unitsSold));
+        }
+        BigDecimal authorRate =
+            saleSource == SaleSource.HAND_SOLD
+                ? book.getHandsoldAuthorRoyaltyRate()
+                : book.getDistributorAuthorRoyaltyRate();
+        BigDecimal authorRoyalty =
+            publisherRevenue.multiply(authorRate).setScale(2, RoundingMode.HALF_UP);
+
         Sale sale =
             Sale.builder()
                 .book(book)
+                .saleSource(saleSource != null ? saleSource : SaleSource.DISTRIBUTOR)
                 .saleMonth(month)
                 .saleYear(year)
                 .quantitySold(unitsSold)
-                .publisherRevenue(totalRevenue)
-                .authorRoyalty(royaltyTotal)
+                .publisherRevenue(publisherRevenue)
+                .authorRoyalty(authorRoyalty)
                 .hasAuthorBeenPaid(royaltyPaid)
                 .build();
 
@@ -116,5 +144,34 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     return count;
+  }
+
+  private static String getValue(String[] row, int index) {
+    return index < row.length ? row[index] : null;
+  }
+
+  private static String emptyToNull(String raw) {
+    return raw == null || raw.isBlank() ? null : raw;
+  }
+
+  private static BigDecimal parseBigDecimal(String raw, BigDecimal fallback) {
+    String value = emptyToNull(raw);
+    return value == null ? fallback : new BigDecimal(value);
+  }
+
+  private static Integer parseInteger(String raw) {
+    String value = emptyToNull(raw);
+    return value == null ? null : Integer.valueOf(value);
+  }
+
+  private static SaleSource parseSaleSource(String raw) {
+    String value = emptyToNull(raw);
+    if (value == null) {
+      return null;
+    }
+    if ("handsold".equalsIgnoreCase(value) || "hand_sold".equalsIgnoreCase(value)) {
+      return SaleSource.HAND_SOLD;
+    }
+    return SaleSource.DISTRIBUTOR;
   }
 }

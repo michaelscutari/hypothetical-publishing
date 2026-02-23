@@ -1,5 +1,4 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import WarningIcon from '@mui/icons-material/Warning';
 import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
@@ -18,7 +17,14 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { BooksService, SalesService, type BookResponse, type SaleResponse } from '../../../../api';
+import {
+  BooksService,
+  SalesService,
+  SaleRequest,
+  type BookResponse,
+  type SaleResponse,
+} from '../../../../api';
+import { isValidMonetaryInput } from '../../../../utils/monetary';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 import { MONTH_NAMES } from '../../../../constants/months';
@@ -41,25 +47,28 @@ export default function SaleEdit() {
   const [quantitySold, setQuantitySold] = React.useState<number>(0);
   const [publisherRevenue, setPublisherRevenue] = React.useState<string>('0.00');
   const [authorRoyalty, setAuthorRoyalty] = React.useState<string>('0.00');
+  const [saleSource, setSaleSource] = React.useState<SaleRequest.saleSource>(
+    SaleRequest.saleSource.DISTRIBUTOR,
+  );
   const [hasAuthorBeenPaid, setHasAuthorBeenPaid] = React.useState<boolean>(false);
-  const [isRoyaltyOverridden, setIsRoyaltyOverridden] = React.useState<boolean>(false);
+  const [comment, setComment] = React.useState<string>('');
 
-  // Track original computed royalty
-  const computedRoyalty = React.useMemo(() => {
-    const revenue = parseFloat(publisherRevenue) || 0;
-    const rate = selectedBook?.royaltyRate ?? 0;
-    return (revenue * rate).toFixed(2);
-  }, [publisherRevenue, selectedBook]);
-
-  // Validation error for royalty
-  const royaltyError = React.useMemo(() => {
-    const royalty = parseFloat(authorRoyalty) || 0;
-    const revenue = parseFloat(publisherRevenue) || 0;
-    if (royalty > revenue) {
-      return 'Author royalty cannot exceed publisher revenue';
+  const computedRevenue = React.useMemo(() => {
+    if (saleSource === SaleRequest.saleSource.DISTRIBUTOR) {
+      return parseFloat(publisherRevenue) || 0;
     }
-    return null;
-  }, [authorRoyalty, publisherRevenue]);
+    const coverPrice = Number(selectedBook?.coverPrice ?? 0);
+    const printCost = Number(selectedBook?.printCost ?? 0);
+    return Number(((coverPrice - printCost) * quantitySold).toFixed(2));
+  }, [publisherRevenue, saleSource, selectedBook, quantitySold]);
+
+  const computedRoyalty = React.useMemo(() => {
+    const rate =
+      saleSource === SaleRequest.saleSource.HAND_SOLD
+        ? (selectedBook?.handsoldAuthorRoyaltyRate ?? 0)
+        : (selectedBook?.distributorAuthorRoyaltyRate ?? 0);
+    return Number((computedRevenue * rate).toFixed(2));
+  }, [computedRevenue, saleSource, selectedBook]);
 
   // Load sale and books
   const loadData = React.useCallback(async () => {
@@ -77,7 +86,9 @@ export default function SaleEdit() {
       setQuantitySold(saleData.quantitySold ?? 0);
       setPublisherRevenue(String(saleData.publisherRevenue ?? 0));
       setAuthorRoyalty(String(saleData.authorRoyalty ?? 0));
+      setSaleSource(saleData.saleSource ?? SaleRequest.saleSource.DISTRIBUTOR);
       setHasAuthorBeenPaid(saleData.hasAuthorBeenPaid ?? false);
+      setComment(saleData.comment ?? '');
 
       // Load all books for dropdown
       const booksResponse = await BooksService.getAllBooks(undefined, 100, false);
@@ -86,12 +97,6 @@ export default function SaleEdit() {
       // Find and set selected book
       const book = (booksResponse.content ?? []).find((b) => b.id === saleData.bookId);
       setSelectedBook(book ?? null);
-
-      // Detect if the saved royalty was overridden from the computed default
-      const savedRoyalty = saleData.authorRoyalty ?? 0;
-      const expectedRoyalty = (saleData.publisherRevenue ?? 0) * (book?.royaltyRate ?? 0);
-      const wasOverridden = Math.abs(savedRoyalty - parseFloat(expectedRoyalty.toFixed(2))) > 0.001;
-      setIsRoyaltyOverridden(wasOverridden);
     } catch (loadError) {
       setError(loadError as Error);
     } finally {
@@ -103,25 +108,12 @@ export default function SaleEdit() {
     loadData();
   }, [loadData]);
 
-  // Auto-update royalty when publisher revenue or book changes (unless manually overridden)
   React.useEffect(() => {
-    if (!isRoyaltyOverridden && selectedBook) {
-      setAuthorRoyalty(computedRoyalty);
+    setAuthorRoyalty(computedRoyalty.toFixed(2));
+    if (saleSource === SaleRequest.saleSource.HAND_SOLD) {
+      setPublisherRevenue(computedRevenue.toFixed(2));
     }
-  }, [computedRoyalty, isRoyaltyOverridden, selectedBook]);
-
-  const handleRoyaltyChange = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-      setAuthorRoyalty(value);
-      const valueNum = parseFloat(value);
-      const computedNum = parseFloat(computedRoyalty);
-      setIsRoyaltyOverridden(
-        value.trim() !== '' && !isNaN(valueNum) && Math.abs(valueNum - computedNum) > 0.001,
-      );
-    },
-    [computedRoyalty],
-  );
+  }, [computedRevenue, computedRoyalty, saleSource]);
 
   const handleSubmit = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
@@ -135,24 +127,20 @@ export default function SaleEdit() {
         return;
       }
 
-      if (royaltyError) {
-        notifications.show(royaltyError, {
-          severity: 'error',
-          autoHideDuration: 3000,
-        });
-        return;
-      }
-
       setIsSubmitting(true);
       try {
         await SalesService.updateSale(Number(saleId), {
           bookId: selectedBook.id,
+          saleSource,
           saleMonth,
           saleYear,
           quantitySold,
-          publisherRevenue: parseFloat(publisherRevenue),
-          authorRoyalty: isRoyaltyOverridden ? parseFloat(authorRoyalty) : undefined,
+          publisherRevenue:
+            saleSource === SaleRequest.saleSource.DISTRIBUTOR
+              ? parseFloat(publisherRevenue)
+              : undefined,
           hasAuthorBeenPaid,
+          comment: comment || undefined,
         });
 
         notifications.show('Sale record updated successfully.', {
@@ -181,11 +169,10 @@ export default function SaleEdit() {
       publisherRevenue,
       hasAuthorBeenPaid,
       saleId,
-      royaltyError,
       notifications,
       navigate,
-      authorRoyalty,
-      isRoyaltyOverridden,
+      saleSource,
+      comment,
     ],
   );
 
@@ -257,7 +244,6 @@ export default function SaleEdit() {
               value={selectedBook}
               onChange={(_, value) => {
                 setSelectedBook(value);
-                setIsRoyaltyOverridden(false); // Reset override when book changes
               }}
               getOptionLabel={(option) => `${option.title} - ${option.author} (${option.isbn13})`}
               renderInput={(params) => (
@@ -281,6 +267,21 @@ export default function SaleEdit() {
           </Grid>
 
           <Grid size={{ xs: 12, sm: 6 }}>
+            <FormControl fullWidth>
+              <InputLabel id="sale-source-label">Sale Source</InputLabel>
+              <Select
+                labelId="sale-source-label"
+                label="Sale Source"
+                value={saleSource}
+                onChange={(e) => setSaleSource(e.target.value as SaleRequest.saleSource)}
+              >
+                <MenuItem value={SaleRequest.saleSource.DISTRIBUTOR}>Distributor</MenuItem>
+                <MenuItem value={SaleRequest.saleSource.HAND_SOLD}>Handsold</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               type="number"
               value={quantitySold}
@@ -293,12 +294,15 @@ export default function SaleEdit() {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              type="number"
+              type="text"
               value={publisherRevenue}
-              onChange={(e) => setPublisherRevenue(e.target.value)}
+              onChange={(e) => {
+                if (isValidMonetaryInput(e.target.value)) setPublisherRevenue(e.target.value);
+              }}
               label="Publisher Revenue"
               fullWidth
-              inputProps={{ min: 0, step: 0.01 }}
+              disabled={saleSource === SaleRequest.saleSource.HAND_SOLD}
+              inputProps={{ inputMode: 'decimal' }}
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
@@ -307,33 +311,25 @@ export default function SaleEdit() {
 
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
-              type="number"
+              type="text"
               value={authorRoyalty}
-              onChange={handleRoyaltyChange}
               label="Author Royalty"
               fullWidth
-              error={!!royaltyError}
-              helperText={royaltyError || ' '}
-              inputProps={{ min: 0, step: 0.01, max: parseFloat(publisherRevenue) || undefined }}
+              inputProps={{ inputMode: 'decimal', readOnly: true }}
               InputProps={{
                 startAdornment: <InputAdornment position="start">$</InputAdornment>,
               }}
-              sx={{
-                '& .MuiInputBase-root': isRoyaltyOverridden
-                  ? {
-                      backgroundColor: 'warning.lighter',
-                    }
-                  : {},
-              }}
             />
-            {isRoyaltyOverridden && (
-              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.5 }}>
-                <WarningIcon fontSize="small" color="warning" />
-                <Typography variant="caption" color="warning.main">
-                  Overriding default calculation (${computedRoyalty})
-                </Typography>
-              </Stack>
-            )}
+          </Grid>
+
+          <Grid size={{ xs: 12 }}>
+            <TextField
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              label="Comment"
+              fullWidth
+              inputProps={{ maxLength: 256 }}
+            />
           </Grid>
 
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -353,12 +349,7 @@ export default function SaleEdit() {
           <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
             Back
           </Button>
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={isSubmitting || !!royaltyError}
-          >
+          <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Save'}
           </Button>
         </Stack>
@@ -375,12 +366,10 @@ export default function SaleEdit() {
     quantitySold,
     publisherRevenue,
     authorRoyalty,
+    saleSource,
     hasAuthorBeenPaid,
+    comment,
     isSubmitting,
-    isRoyaltyOverridden,
-    computedRoyalty,
-    royaltyError,
-    handleRoyaltyChange,
     handleSubmit,
     handleBack,
   ]);

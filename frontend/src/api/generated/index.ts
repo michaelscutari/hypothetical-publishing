@@ -21,11 +21,12 @@ export type { PagedResponseAuthorPaymentGroupResponse } from './models/PagedResp
 export type { PagedResponseBookResponse } from './models/PagedResponseBookResponse';
 export type { PagedResponseSaleResponse } from './models/PagedResponseSaleResponse';
 export type { PagedResponseString } from './models/PagedResponseString';
-export type { SaleRequest } from './models/SaleRequest';
-export type { SaleResponse } from './models/SaleResponse';
+export { SaleRequest } from './models/SaleRequest';
+export { SaleResponse } from './models/SaleResponse';
 export type { UserResponse } from './models/UserResponse';
 
 export { AuthService } from './services/AuthService';
+export { BookCoversService } from './services/BookCoversService';
 export { BooksService } from './services/BooksService';
 export { SalesService } from './services/SalesService';
 export { SystemService } from './services/SystemService';

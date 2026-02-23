@@ -7,6 +7,7 @@ import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -129,24 +130,23 @@ public class SaleService {
   public Sale createSale(SaleRequest request) {
     Book book = getOrThrowBookFromRepoById(request.bookId());
 
-    // want to use override if provided, otherwise compute --> so depends on if
-    // request got
-    BigDecimal authorRoyalty =
-        request.authorRoyalty() != null
-            ? request.authorRoyalty().setScale(2, RoundingMode.HALF_UP)
-            : computeAuthorRoyalty(request.publisherRevenue(), book.getRoyaltyRate());
+    BigDecimal publisherRevenue = resolvePublisherRevenue(request, book);
+    BigDecimal authorRoyaltyRate = resolveAuthorRoyaltyRate(request, book);
+    BigDecimal authorRoyalty = computeAuthorRoyalty(publisherRevenue, authorRoyaltyRate);
 
     boolean hasAuthorBeenPaid = Boolean.TRUE.equals(request.hasAuthorBeenPaid());
 
     Sale sale =
         Sale.builder()
             .book(book)
+            .saleSource(request.saleSource())
             .saleMonth(request.saleMonth())
             .saleYear(request.saleYear())
             .quantitySold(request.quantitySold())
-            .publisherRevenue(request.publisherRevenue())
+            .publisherRevenue(publisherRevenue)
             .authorRoyalty(authorRoyalty)
             .hasAuthorBeenPaid(hasAuthorBeenPaid)
+            .comment(request.comment())
             .build();
 
     return saleRepository.save(sale);
@@ -157,19 +157,18 @@ public class SaleService {
     Sale sale = getOrThrowSaleFromRepoById(id);
     Book newBook = getOrThrowBookFromRepoById(request.bookId());
 
-    // if the client doesnt get an input then default, if client does use the
-    // clients
-    BigDecimal authorRoyalty =
-        request.authorRoyalty() != null
-            ? request.authorRoyalty().setScale(2, RoundingMode.HALF_UP)
-            : computeAuthorRoyalty(request.publisherRevenue(), newBook.getRoyaltyRate());
+    BigDecimal publisherRevenue = resolvePublisherRevenue(request, newBook);
+    BigDecimal authorRoyaltyRate = resolveAuthorRoyaltyRate(request, newBook);
+    BigDecimal authorRoyalty = computeAuthorRoyalty(publisherRevenue, authorRoyaltyRate);
 
     sale.setBook(newBook);
+    sale.setSaleSource(request.saleSource());
     sale.setSaleMonth(request.saleMonth());
     sale.setSaleYear(request.saleYear());
     sale.setQuantitySold(request.quantitySold());
-    sale.setPublisherRevenue(request.publisherRevenue());
+    sale.setPublisherRevenue(publisherRevenue);
     sale.setAuthorRoyalty(authorRoyalty);
+    sale.setComment(request.comment());
 
     if (request.hasAuthorBeenPaid() != null) {
       sale.setHasAuthorBeenPaid(request.hasAuthorBeenPaid());
@@ -219,11 +218,30 @@ public class SaleService {
     return bookRepository.findById(id).orElseThrow(() -> new NotFoundException("Book not found"));
   }
 
-  private BigDecimal computeAuthorRoyalty(BigDecimal publisherRevenue, BigDecimal bookRoyaltyRate) {
-    if (publisherRevenue == null || bookRoyaltyRate == null) {
-      throw new DataIntegrityViolationException(
-          "publisherRevenue and bookRoyaltyRate must be non-null");
+  private BigDecimal resolvePublisherRevenue(SaleRequest request, Book book) {
+    if (request.saleSource() == SaleSource.DISTRIBUTOR) {
+      if (request.publisherRevenue() == null) {
+        throw new DataIntegrityViolationException(
+            "publisherRevenue is required for distributor sales");
+      }
+      return request.publisherRevenue();
     }
-    return publisherRevenue.multiply(bookRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
+
+    return book.getCoverPrice()
+        .subtract(book.getPrintCost())
+        .multiply(BigDecimal.valueOf(request.quantitySold()));
+  }
+
+  private BigDecimal resolveAuthorRoyaltyRate(SaleRequest request, Book book) {
+    return request.saleSource().getRoyaltyRate(book);
+  }
+
+  private BigDecimal computeAuthorRoyalty(
+      BigDecimal publisherRevenue, BigDecimal authorRoyaltyRate) {
+    if (publisherRevenue == null || authorRoyaltyRate == null) {
+      throw new DataIntegrityViolationException(
+          "publisherRevenue and authorRoyaltyRate must be non-null");
+    }
+    return publisherRevenue.multiply(authorRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
   }
 }

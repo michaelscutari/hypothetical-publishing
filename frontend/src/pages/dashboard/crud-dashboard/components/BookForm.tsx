@@ -1,12 +1,17 @@
 import * as React from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import CircularProgress from '@mui/material/CircularProgress';
 import FormGroup from '@mui/material/FormGroup';
 import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
 import type { Book } from '../data/books';
 import { MONTH_NAMES } from '../../../../constants/months';
@@ -25,10 +30,21 @@ export interface BookFormProps {
   onReset?: (formValues: Partial<BookFormState['values']>) => void;
   submitButtonLabel: string;
   backButtonPath?: string;
+  onIsbnLookup?: (isbn: string) => Promise<void>;
+  isbnLookupLoading?: boolean;
 }
 
 export default function BookForm(props: BookFormProps) {
-  const { formState, onFieldChange, onSubmit, onReset, submitButtonLabel, backButtonPath } = props;
+  const {
+    formState,
+    onFieldChange,
+    onSubmit,
+    onReset,
+    submitButtonLabel,
+    backButtonPath,
+    onIsbnLookup,
+    isbnLookupLoading,
+  } = props;
 
   const formValues = formState.values;
   const formErrors = formState.errors;
@@ -127,11 +143,47 @@ export default function BookForm(props: BookFormProps) {
             <TextField
               value={formValues.isbn13 ?? ''}
               onChange={handleTextFieldChange}
+              onKeyDown={
+                onIsbnLookup
+                  ? (e) => {
+                      if (e.key === 'Enter' && (formValues.isbn13 ?? '').trim()) {
+                        e.preventDefault();
+                        onIsbnLookup((formValues.isbn13 ?? '').trim());
+                      }
+                    }
+                  : undefined
+              }
               name="isbn13"
               label="ISBN-13"
               error={!!formErrors.isbn13}
               helperText={formErrors.isbn13 ?? ' '}
               fullWidth
+              InputProps={
+                onIsbnLookup
+                  ? {
+                      endAdornment: (
+                        <InputAdornment position="end">
+                          <Tooltip title="Look up book details by ISBN">
+                            <span>
+                              <IconButton
+                                size="small"
+                                onClick={() => onIsbnLookup((formValues.isbn13 ?? '').trim())}
+                                disabled={!(formValues.isbn13 ?? '').trim() || isbnLookupLoading}
+                                edge="end"
+                              >
+                                {isbnLookupLoading ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <SearchIcon />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </InputAdornment>
+                      ),
+                    }
+                  : undefined
+              }
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
@@ -179,14 +231,88 @@ export default function BookForm(props: BookFormProps) {
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
               type="number"
-              value={formValues.royaltyRate ?? ''}
+              value={formValues.distributorAuthorRoyaltyRate ?? ''}
               onChange={handleNumberFieldChange}
-              name="royaltyRate"
-              label="Royalty Rate"
-              error={!!formErrors.royaltyRate}
-              helperText={formErrors.royaltyRate ?? ' '}
+              name="distributorAuthorRoyaltyRate"
+              label="Distributor Royalty Rate"
+              error={!!formErrors.distributorAuthorRoyaltyRate}
+              helperText={formErrors.distributorAuthorRoyaltyRate ?? ' '}
               fullWidth
               inputProps={{ step: '0.01', min: 0, max: 1 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              type="number"
+              value={formValues.handsoldAuthorRoyaltyRate ?? ''}
+              onChange={handleNumberFieldChange}
+              name="handsoldAuthorRoyaltyRate"
+              label="Handsold Royalty Rate"
+              error={!!formErrors.handsoldAuthorRoyaltyRate}
+              helperText={formErrors.handsoldAuthorRoyaltyRate ?? ' '}
+              fullWidth
+              inputProps={{ step: '0.01', min: 0, max: 1 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              value={formValues.seriesName ?? ''}
+              onChange={handleTextFieldChange}
+              name="seriesName"
+              label="Series Name"
+              error={!!formErrors.seriesName}
+              helperText={formErrors.seriesName ?? ' '}
+              fullWidth
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              type="number"
+              value={formValues.seriesPosition ?? ''}
+              onChange={handleNumberFieldChange}
+              name="seriesPosition"
+              label="Series Position"
+              error={!!formErrors.seriesPosition}
+              helperText={formErrors.seriesPosition ?? ' '}
+              fullWidth
+              inputProps={{ min: 1, step: 1 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              type="number"
+              value={formValues.coverPrice ?? ''}
+              onChange={handleNumberFieldChange}
+              name="coverPrice"
+              label="Cover Price"
+              error={!!formErrors.coverPrice}
+              helperText={formErrors.coverPrice ?? ' '}
+              fullWidth
+              inputProps={{ step: '0.01', min: 0 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              type="number"
+              value={formValues.printCost ?? ''}
+              onChange={handleNumberFieldChange}
+              name="printCost"
+              label="Print Cost"
+              error={!!formErrors.printCost}
+              helperText={formErrors.printCost ?? ' '}
+              fullWidth
+              inputProps={{ step: '0.01', min: 0 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              value={formValues.coverImage ?? ''}
+              onChange={handleTextFieldChange}
+              name="coverImage"
+              label="Cover Image URL"
+              error={!!formErrors.coverImage}
+              helperText={formErrors.coverImage ?? ' '}
+              fullWidth
             />
           </Grid>
         </Grid>

@@ -13,8 +13,15 @@ public record BookResponse(
     @Schema(description = "ISBN-10 identifier") String isbn10,
     @Schema(description = "Publication year") Integer publicationYear,
     @Schema(description = "Publication month (1-12)") Integer publicationMonth,
-    @Schema(description = "Author royalty rate") BigDecimal royaltyRate,
-    @Schema(description = "Total sales quantity to date") Long totalSalesToDate) {
+    @Schema(description = "Distributor author royalty rate")
+        BigDecimal distributorAuthorRoyaltyRate,
+    @Schema(description = "Handsold author royalty rate") BigDecimal handsoldAuthorRoyaltyRate,
+    @Schema(description = "Series name") String seriesName,
+    @Schema(description = "Series position") Integer seriesPosition,
+    @Schema(description = "Cover price (USD)") BigDecimal coverPrice,
+    @Schema(description = "Print cost (USD)") BigDecimal printCost,
+    @Schema(description = "Total sales quantity to date") Long totalSalesToDate,
+    @Schema(description = "Whether this book has a cover image") Boolean hasCover) {
 
   public static BookResponse from(Book book) {
     return from(book, 0L);
@@ -29,7 +36,13 @@ public record BookResponse(
         book.getIsbn10(),
         book.getPublicationYear(),
         book.getPublicationMonth(),
-        book.getRoyaltyRate(),
-        totalSaleToDate);
+        book.getDistributorAuthorRoyaltyRate(),
+        book.getHandsoldAuthorRoyaltyRate(),
+        book.getSeriesName(),
+        book.getSeriesPosition(),
+        book.getCoverPrice(),
+        book.getPrintCost(),
+        totalSaleToDate,
+        book.getCoverImage() != null);
   }
 }

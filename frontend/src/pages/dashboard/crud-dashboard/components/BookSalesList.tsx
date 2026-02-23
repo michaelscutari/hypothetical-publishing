@@ -246,7 +246,7 @@ export default function BookSalesList({
               format="MMM YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
-              maxDate={dayjs('2026-02-28')}
+              maxDate={dayjs()}
               slotProps={{
                 textField: { size: 'small' },
                 toolbar: { hidden: true },
@@ -260,7 +260,7 @@ export default function BookSalesList({
               format="MMM YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
-              maxDate={dayjs('2026-02-28')}
+              maxDate={dayjs()}
               slotProps={{
                 textField: { size: 'small' },
                 toolbar: { hidden: true },

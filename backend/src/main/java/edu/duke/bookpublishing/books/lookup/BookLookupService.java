@@ -70,9 +70,21 @@ public class BookLookupService {
 
     PublishedDate publishedDate = parsePublishedDate(textOrNull(record.path("publish_date")));
 
+    String coverIsbn = isbn13 != null ? isbn13 : isbn10;
+    String coverImageUrl =
+        coverIsbn != null
+            ? "https://covers.openlibrary.org/b/isbn/" + coverIsbn + "-L.jpg?default=false"
+            : null;
+
     BookLookupResponse response =
         new BookLookupResponse(
-            title, author, isbn13, isbn10, publishedDate.year(), publishedDate.month());
+            title,
+            author,
+            isbn13,
+            isbn10,
+            publishedDate.year(),
+            publishedDate.month(),
+            coverImageUrl);
 
     return BookLookupResult.lookup(response);
   }

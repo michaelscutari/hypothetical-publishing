@@ -43,6 +43,9 @@ import org.springframework.web.server.ResponseStatusException;
 @Tag(name = "Books", description = "Book management endpoints")
 public class BookController {
 
+  private static final BigDecimal DEFAULT_HAND_SOLD_ROYALTY_RATE = new BigDecimal("0.2");
+  private static final BigDecimal DEFAULT_DISTRIBUTOR_ROYALTY_RATE = new BigDecimal("0.5");
+
   private final BookService bookService;
   private final SaleService saleService;
   private final BookLookupService bookLookupService;
@@ -161,8 +164,18 @@ public class BookController {
             .isbn10(request.isbn10())
             .publicationYear(request.publicationYear())
             .publicationMonth(request.publicationMonth())
-            .royaltyRate(
-                request.royaltyRate() != null ? request.royaltyRate() : new BigDecimal("0.5"))
+            .distributorAuthorRoyaltyRate(
+                request.distributorAuthorRoyaltyRate() != null
+                    ? request.distributorAuthorRoyaltyRate()
+                    : DEFAULT_DISTRIBUTOR_ROYALTY_RATE)
+            .handsoldAuthorRoyaltyRate(
+                request.handsoldAuthorRoyaltyRate() != null
+                    ? request.handsoldAuthorRoyaltyRate()
+                    : DEFAULT_HAND_SOLD_ROYALTY_RATE)
+            .seriesName(request.seriesName())
+            .seriesPosition(request.seriesPosition())
+            .coverPrice(request.coverPrice())
+            .printCost(request.printCost())
             .build();
     return BookResponse.from(bookService.save(book));
   }
@@ -183,8 +196,18 @@ public class BookController {
     book.setIsbn10(request.isbn10());
     book.setPublicationYear(request.publicationYear());
     book.setPublicationMonth(request.publicationMonth());
-    book.setRoyaltyRate(
-        request.royaltyRate() != null ? request.royaltyRate() : new BigDecimal("0.5"));
+    book.setDistributorAuthorRoyaltyRate(
+        request.distributorAuthorRoyaltyRate() != null
+            ? request.distributorAuthorRoyaltyRate()
+            : DEFAULT_DISTRIBUTOR_ROYALTY_RATE);
+    book.setHandsoldAuthorRoyaltyRate(
+        request.handsoldAuthorRoyaltyRate() != null
+            ? request.handsoldAuthorRoyaltyRate()
+            : DEFAULT_HAND_SOLD_ROYALTY_RATE);
+    book.setSeriesName(request.seriesName());
+    book.setSeriesPosition(request.seriesPosition());
+    book.setCoverPrice(request.coverPrice());
+    book.setPrintCost(request.printCost());
 
     return BookResponse.from(bookService.save(book));
   }

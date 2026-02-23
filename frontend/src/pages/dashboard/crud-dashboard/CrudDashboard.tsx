@@ -6,7 +6,6 @@ import BookShow from './components/BookShow';
 import ChangePassword from './components/ChangePassword';
 import DashboardLayout from './components/DashboardLayout';
 import DialogsProvider from './hooks/useDialogs/DialogsProvider';
-import NotificationsProvider from './hooks/useNotifications/NotificationsProvider';
 import SaleList from './components/SaleList';
 import SaleCreate from './components/SaleCreate';
 import SaleShow from './components/SaleShow';
@@ -15,26 +14,24 @@ import AuthorPaymentsView from './components/AuthorPayments';
 
 export default function CrudDashboard() {
   return (
-    <NotificationsProvider>
-      <DialogsProvider>
-        <Routes>
-          <Route element={<DashboardLayout />}>
-            <Route index element={<BookList />} />
-            <Route path="books" element={<BookList />} />
-            <Route path="books/new" element={<BookCreate />} />
-            <Route path="books/:bookId" element={<BookShow />} />
-            <Route path="books/:bookId/edit" element={<BookEdit />} />
-            <Route path="change-password" element={<ChangePassword />} />
+    <DialogsProvider>
+      <Routes>
+        <Route element={<DashboardLayout />}>
+          <Route index element={<BookList />} />
+          <Route path="books" element={<BookList />} />
+          <Route path="books/new" element={<BookCreate />} />
+          <Route path="books/:bookId" element={<BookShow />} />
+          <Route path="books/:bookId/edit" element={<BookEdit />} />
+          <Route path="change-password" element={<ChangePassword />} />
 
-            <Route path="*" element={<Navigate to="/books" replace />} />
-            <Route path="sales" element={<SaleList />} />
-            <Route path="sales/new" element={<SaleCreate />} />
-            <Route path="sales/:saleId" element={<SaleShow />} />
-            <Route path="sales/:saleId/edit" element={<SaleEdit />} />
-            <Route path="author-payments" element={<AuthorPaymentsView />} />
-          </Route>
-        </Routes>
-      </DialogsProvider>
-    </NotificationsProvider>
+          <Route path="*" element={<Navigate to="/books" replace />} />
+          <Route path="sales" element={<SaleList />} />
+          <Route path="sales/new" element={<SaleCreate />} />
+          <Route path="sales/:saleId" element={<SaleShow />} />
+          <Route path="sales/:saleId/edit" element={<SaleEdit />} />
+          <Route path="author-payments" element={<AuthorPaymentsView />} />
+        </Route>
+      </Routes>
+    </DialogsProvider>
   );
 }
