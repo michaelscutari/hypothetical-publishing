@@ -9,9 +9,10 @@ import NotificationsProvider from './pages/dashboard/crud-dashboard/hooks/useNot
 function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Auth />} />
+      <NotificationsProvider>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/login" element={<Auth />} />
 
           {/* Protected routes */}
           <Route

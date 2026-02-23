@@ -54,6 +54,7 @@ interface SaleRecordInput {
   publisherRevenueInput: string; //Added to fix decimal bug
   // Requirement: auto-compute unless overridden; delete => revert
   authorRoyalty: number | null;
+  authorRoyaltyInput: string; // Raw string to preserve decimal input
   isRoyaltyOverridden: boolean;
   // Requirement: defaults to false
   hasAuthorBeenPaid: boolean;
@@ -90,7 +91,6 @@ export default function SaleCreate() {
   const [books, setBooks] = React.useState<BookResponse[]>([]);
   const [bookSearchInput, setBookSearchInput] = React.useState('');
   const [isLoadingBooks, setIsLoadingBooks] = React.useState(false);
-  const [preselectedBook, setPreselectedBook] = React.useState<BookResponse | null>(null);
 
   function createEmptyRecord(
     defaults?: Partial<SaleRecordInput>,
@@ -104,6 +104,7 @@ export default function SaleCreate() {
       publisherRevenue: null,
       publisherRevenueInput: '', //Added to fix decimal bug
       authorRoyalty: null,
+      authorRoyaltyInput: '',
       isRoyaltyOverridden: false,
       hasAuthorBeenPaid: defaults?.hasAuthorBeenPaid ?? false,
       isPlaceholder,
@@ -140,29 +141,6 @@ export default function SaleCreate() {
       mounted = false;
     };
   }, [bookIdParam]);
-
-  // ✅ Load the preselected book from URL parameter
-  React.useEffect(() => {
-    const bookIdParam = searchParams.get('bookId');
-    if (bookIdParam) {
-      const bookId = parseInt(bookIdParam, 10);
-      if (!isNaN(bookId)) {
-        BooksService.getBookById(bookId)
-          .then((book) => {
-            setPreselectedBook(book);
-            // Pre-populate the first record with the book
-            setRecords([createEmptyRecord({ book }, false)]);
-          })
-          .catch((error) => {
-            console.error('Failed to load preselected book:', error);
-            notifications.show('Failed to load book details', {
-              severity: 'warning',
-              autoHideDuration: 3000,
-            });
-          });
-      }
-    }
-  }, [searchParams, notifications]);
 
   const activateRow = React.useCallback((index: number) => {
     setRecords((prev) => {
@@ -207,41 +185,40 @@ export default function SaleCreate() {
     loadBooks('');
   }, [loadBooks]);
 
-  const updateRecord = React.useCallback(
-    (index: number, updates: Partial<SaleRecordInput>) => {
-      setRecords((prev) => {
-        const newRecords = [...prev];
-        const next = { ...newRecords[index], ...updates };
+  const updateRecord = React.useCallback((index: number, updates: Partial<SaleRecordInput>) => {
+    setRecords((prev) => {
+      const newRecords = [...prev];
+      const next = { ...newRecords[index], ...updates };
 
-        // ✅ If user updates anything (other than errors), activate placeholder row
-        if (next.isPlaceholder) {
-          const keys = Object.keys(updates).filter((k) => k !== 'errors' && k !== 'dateError');
-          if (keys.length > 0) next.isPlaceholder = false;
+      // ✅ If user updates anything (other than errors), activate placeholder row
+      if (next.isPlaceholder) {
+        const keys = Object.keys(updates).filter((k) => k !== 'errors' && k !== 'dateError');
+        if (keys.length > 0) next.isPlaceholder = false;
+      }
+
+      // Auto-calc royalty if NOT overridden and we have book+revenue.
+      const revenueChanged = updates.publisherRevenue !== undefined;
+      const bookChanged = updates.book !== undefined;
+
+      if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
+        const computed = computeRoyalty(next.book, next.publisherRevenue);
+        next.authorRoyalty = computed;
+        next.authorRoyaltyInput = computed != null ? String(computed) : '';
+      }
+
+      newRecords[index] = next;
+
+      // If this is the last row and it just became active, add a ghost row
+      if (index === newRecords.length - 1 && !next.isPlaceholder) {
+        const hasGhostAlready = prev.length > index + 1 && prev[index + 1]?.isPlaceholder;
+        if (!hasGhostAlready) {
+          newRecords.push(createEmptyRecord({ saleDate: next.saleDate }, true));
         }
+      }
 
-        // Auto-calc royalty if NOT overridden and we have book+revenue.
-        const revenueChanged = updates.publisherRevenue !== undefined;
-        const bookChanged = updates.book !== undefined;
-
-        if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
-          next.authorRoyalty = computeRoyalty(next.book, next.publisherRevenue);
-        }
-
-        newRecords[index] = next;
-
-        // If this is the last row and it just became active, add a ghost row
-        if (index === newRecords.length - 1 && !next.isPlaceholder) {
-          const hasGhostAlready = prev.length > index + 1 && prev[index + 1]?.isPlaceholder;
-          if (!hasGhostAlready) {
-            newRecords.push(createEmptyRecord({ saleDate: next.saleDate }, true));
-          }
-        }
-
-        return newRecords;
-      });
-    },
-    [preselectedBook],
-  );
+      return newRecords;
+    });
+  }, []);
 
   const handleDateChange = React.useCallback(
     (index: number) => (value: Dayjs | null) => {
@@ -324,6 +301,8 @@ export default function SaleCreate() {
 
         if (record.isPlaceholder) record.isPlaceholder = false;
 
+        record.authorRoyaltyInput = value;
+
         if (value === '') {
           // Allow empty while typing — revert happens on blur
           record.authorRoyalty = null;
@@ -352,9 +331,11 @@ export default function SaleCreate() {
         if (record.authorRoyalty !== null) return prev;
         // Field is empty on blur — revert to computed
         const next = [...prev];
+        const computed = computeRoyalty(record.book, record.publisherRevenue);
         next[index] = {
           ...record,
-          authorRoyalty: computeRoyalty(record.book, record.publisherRevenue),
+          authorRoyalty: computed,
+          authorRoyaltyInput: computed != null ? String(computed) : '',
           isRoyaltyOverridden: false,
         };
         return next;
@@ -653,7 +634,8 @@ export default function SaleCreate() {
                       size="small"
                       type="text"
                       placeholder="0.00"
-                      value={record.authorRoyalty ?? ''}
+                      label={record.isRoyaltyOverridden ? 'Override' : undefined}
+                      value={record.authorRoyaltyInput}
                       onFocus={() => activateRow(index)}
                       onChange={handleRoyaltyChange(index)}
                       onBlur={handleRoyaltyBlur(index)}
@@ -665,7 +647,10 @@ export default function SaleCreate() {
                       }}
                       sx={
                         record.isRoyaltyOverridden
-                          ? { '& .MuiInputBase-root': { bgcolor: 'warning.lighter' } }
+                          ? {
+                              '& .MuiInputBase-root': { bgcolor: 'rgba(255, 167, 38, 0.12)' },
+                              '& .MuiInputLabel-root': { color: 'warning.main' },
+                            }
                           : undefined
                       }
                     />

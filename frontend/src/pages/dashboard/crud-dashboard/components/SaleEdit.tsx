@@ -325,7 +325,7 @@ export default function SaleEdit() {
               sx={{
                 '& .MuiInputBase-root': isRoyaltyOverridden
                   ? {
-                      backgroundColor: 'warning.lighter',
+                      backgroundColor: 'rgba(255, 167, 38, 0.12)',
                     }
                   : {},
               }}
