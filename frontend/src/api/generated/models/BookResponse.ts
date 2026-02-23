@@ -59,12 +59,12 @@ export type BookResponse = {
      */
     printCost?: number;
     /**
-     * Cover image URL
-     */
-    coverImage?: string;
-    /**
      * Total sales quantity to date
      */
     totalSalesToDate?: number;
+    /**
+     * Whether this book has a cover image
+     */
+    hasCover?: boolean;
 };
 

@@ -60,7 +60,6 @@ public class DataSeeder implements CommandLineRunner {
         Integer seriesPosition = parseInteger(getValue(line, 8));
         BigDecimal coverPrice = parseBigDecimal(getValue(line, 9), BigDecimal.ZERO);
         BigDecimal printCost = parseBigDecimal(getValue(line, 10), BigDecimal.ZERO);
-        String coverImage = emptyToNull(getValue(line, 11));
 
         String[] dateParts = publicationDate.split("/");
         int month = Integer.parseInt(dateParts[0]);
@@ -79,7 +78,6 @@ public class DataSeeder implements CommandLineRunner {
                 .seriesPosition(seriesPosition)
                 .coverPrice(coverPrice)
                 .printCost(printCost)
-                .coverImage(coverImage)
                 .build();
 
         book = bookRepository.save(book);

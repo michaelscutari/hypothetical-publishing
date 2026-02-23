@@ -82,8 +82,7 @@ class BookControllerTest {
         null,
         null,
         new BigDecimal("20.00"),
-        new BigDecimal("5.00"),
-        null);
+        new BigDecimal("5.00"));
   }
 
   @Test

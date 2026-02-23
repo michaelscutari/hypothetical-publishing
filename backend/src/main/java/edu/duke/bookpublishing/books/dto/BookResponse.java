@@ -20,8 +20,8 @@ public record BookResponse(
     @Schema(description = "Series position") Integer seriesPosition,
     @Schema(description = "Cover price (USD)") BigDecimal coverPrice,
     @Schema(description = "Print cost (USD)") BigDecimal printCost,
-    @Schema(description = "Cover image URL") String coverImage,
-    @Schema(description = "Total sales quantity to date") Long totalSalesToDate) {
+    @Schema(description = "Total sales quantity to date") Long totalSalesToDate,
+    @Schema(description = "Whether this book has a cover image") Boolean hasCover) {
 
   public static BookResponse from(Book book) {
     return from(book, 0L);
@@ -42,7 +42,7 @@ public record BookResponse(
         book.getSeriesPosition(),
         book.getCoverPrice(),
         book.getPrintCost(),
-        book.getCoverImage(),
-        totalSaleToDate);
+        totalSaleToDate,
+        book.getCoverImage() != null);
   }
 }

@@ -1,11 +1,14 @@
 package edu.duke.bookpublishing.books;
 
 import edu.duke.bookpublishing.common.StringUtils;
+import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -81,8 +84,18 @@ public class Book {
   @Column(name = "print_cost", nullable = false, precision = 19, scale = 2)
   private BigDecimal printCost;
 
-  @Column(name = "cover_image", nullable = true)
-  private String coverImage;
+  @Lob
+  @Column(name = "cover_image")
+  @Basic(fetch = FetchType.LAZY)
+  private byte[] coverImage;
+
+  @Lob
+  @Column(name = "cover_thumbnail")
+  @Basic(fetch = FetchType.LAZY)
+  private byte[] coverThumbnail;
+
+  @Column(name = "cover_content_type")
+  private String coverContentType;
 
   @Formula("(SELECT COALESCE(SUM(s.quantity_sold), 0) FROM sales s WHERE s.book_id = id)")
   private Long totalSalesToDate;
