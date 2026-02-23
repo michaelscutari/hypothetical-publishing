@@ -679,7 +679,7 @@ class BookControllerTest {
     Cookie token = login();
     createBook(
         token,
-        new BookRequest(
+        buildBookRequest(
             "The Hobbit",
             "Tolkien, J.R.R.",
             "9780547928227",
@@ -689,7 +689,7 @@ class BookControllerTest {
             new BigDecimal("0.5")));
     createBook(
         token,
-        new BookRequest(
+        buildBookRequest(
             "Some Book", "Murray, Bill", "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
 
     // "R.R." contains punctuation → literal match → only Tolkien
@@ -711,7 +711,7 @@ class BookControllerTest {
     Cookie token = login();
     createBook(
         token,
-        new BookRequest(
+        buildBookRequest(
             "At Swim", "O'Brien, Flann", "9780141182681", null, 1939, 3, new BigDecimal("0.5")));
 
     // "O'Brien" contains punctuation → literal → matches
@@ -734,7 +734,7 @@ class BookControllerTest {
     Cookie token = login();
     createBook(
         token,
-        new BookRequest(
+        buildBookRequest(
             "Nausea", "Sartre, Jean-Paul", "9780811220309", null, 1938, 1, new BigDecimal("0.5")));
 
     // "Jean-Paul" contains punctuation → literal → matches
@@ -757,7 +757,7 @@ class BookControllerTest {
     Cookie token = login();
     createBook(
         token,
-        new BookRequest(
+        buildBookRequest(
             "The Hobbit",
             "Tolkien, J.R.R.",
             "9780547928227",
@@ -767,7 +767,7 @@ class BookControllerTest {
             new BigDecimal("0.5")));
     createBook(
         token,
-        new BookRequest(
+        buildBookRequest(
             "Some Book", "Murray, Bill", "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
 
     // "R.R." literal → only Tolkien
