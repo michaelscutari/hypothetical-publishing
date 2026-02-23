@@ -35,9 +35,33 @@ export type BookResponse = {
      */
     publicationMonth?: number;
     /**
-     * Author royalty rate
+     * Distributor author royalty rate
      */
-    royaltyRate?: number;
+    distributorAuthorRoyaltyRate?: number;
+    /**
+     * Handsold author royalty rate
+     */
+    handsoldAuthorRoyaltyRate?: number;
+    /**
+     * Series name
+     */
+    seriesName?: string;
+    /**
+     * Series position
+     */
+    seriesPosition?: number;
+    /**
+     * Cover price (USD)
+     */
+    coverPrice?: number;
+    /**
+     * Print cost (USD)
+     */
+    printCost?: number;
+    /**
+     * Cover image URL
+     */
+    coverImage?: string;
     /**
      * Total sales quantity to date
      */
