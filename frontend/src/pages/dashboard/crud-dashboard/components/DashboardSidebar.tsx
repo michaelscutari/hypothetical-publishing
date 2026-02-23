@@ -14,6 +14,7 @@ import * as React from 'react';
 
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
+import PeopleIcon from '@mui/icons-material/People';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
@@ -122,6 +123,13 @@ export default function DashboardSidebar({ container }: DashboardSidebarProps) {
                 icon={<MenuBookIcon />}
                 href="/books"
                 selected={!!matchPath('/books/*', pathname) || pathname === '/' || pathname === ''}
+              />
+              <DashboardSidebarPageItem
+                id="authors"
+                title="Authors"
+                icon={<PeopleIcon />}
+                href="/authors"
+                selected={!!matchPath('/authors/*', pathname)}
               />
               <DashboardSidebarPageItem
                 id="sales"
