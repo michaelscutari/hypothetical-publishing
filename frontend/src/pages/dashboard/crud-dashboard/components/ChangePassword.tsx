@@ -7,6 +7,7 @@ import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
+import Typography from '@mui/material/Typography';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PageContainer from './PageContainer';
 import useNotifications from '../hooks/useNotifications/useNotifications';
@@ -130,6 +131,10 @@ export default function ChangePassword() {
             />
           </FormControl>
         </Stack>
+
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Changing your password will sign you out of all other devices.
+        </Typography>
 
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>

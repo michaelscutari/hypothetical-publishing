@@ -39,20 +39,43 @@ public final class BookSpecifications {
     String lowerTerm = term.toLowerCase();
     // Normalize term for ISBN search by removing dashes (def 12)
     String normalizedTerm = lowerTerm.replaceAll("-", "");
-    // Normalize term for author search by removing periods (e.g. "JRR" matches "J.R.R.")
-    String authorTerm = lowerTerm.replaceAll("\\.", "");
+
+    // Author matching: if the user typed punctuation (. ' -), match literally;
+    // otherwise strip those characters from the DB value for lenient matching.
+    boolean hasAuthorPunctuation = containsAuthorPunctuation(lowerTerm);
+    Predicate authorPredicate;
+    if (hasAuthorPunctuation) {
+      authorPredicate = cb.like(cb.lower(bookPath.get("author")), "%" + lowerTerm + "%");
+    } else {
+      authorPredicate =
+          cb.like(
+              cb.function(
+                  "REPLACE",
+                  String.class,
+                  cb.function(
+                      "REPLACE",
+                      String.class,
+                      cb.function(
+                          "REPLACE",
+                          String.class,
+                          cb.lower(bookPath.get("author")),
+                          cb.literal("."),
+                          cb.literal("")),
+                      cb.literal("'"),
+                      cb.literal("")),
+                  cb.literal("-"),
+                  cb.literal("")),
+              "%" + lowerTerm + "%");
+    }
 
     return cb.or(
         cb.like(cb.lower(bookPath.get("title")), "%" + lowerTerm + "%"),
-        cb.like(
-            cb.function(
-                "REPLACE",
-                String.class,
-                cb.lower(bookPath.get("author")),
-                cb.literal("."),
-                cb.literal("")),
-            "%" + authorTerm + "%"),
+        authorPredicate,
         cb.like(cb.lower(bookPath.get("isbn13")), "%" + normalizedTerm + "%"),
         cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"));
+  }
+
+  static boolean containsAuthorPunctuation(String s) {
+    return s.chars().anyMatch(c -> c == '.' || c == '\'' || c == '-');
   }
 }

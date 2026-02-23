@@ -14,7 +14,7 @@ public class JwtUtil {
   @Value("${app.jwt-secret:default-secret-change-in-production}")
   private String secret;
 
-  @Value("${app.jwt-expiration-hours:24}")
+  @Value("${app.jwt-expiration-hours:8}")
   private long expirationHours;
 
   public String generateToken(String username, int passwordVersion) {
