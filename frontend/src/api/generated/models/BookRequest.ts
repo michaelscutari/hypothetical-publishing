@@ -54,10 +54,6 @@ export type BookRequest = {
      * Print cost (USD)
      */
     printCost: number;
-    /**
-     * Cover image file destination
-     */
-    coverImage?: string;
     coverPriceGreaterThanPrintCost?: boolean;
 };
 

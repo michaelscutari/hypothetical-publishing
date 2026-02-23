@@ -58,9 +58,7 @@ public record BookRequest(
     @Schema(description = "Print cost (USD)", example = "4.50")
         @NotNull(message = "Print cost is required")
         @DecimalMin("0.00")
-        BigDecimal printCost,
-    @Schema(description = "Cover image file destination", example = "home/images/img1.png")
-        String coverImage) {
+        BigDecimal printCost) {
 
   @AssertTrue(message = "Cover price must be greater than print cost")
   public boolean isCoverPriceGreaterThanPrintCost() {

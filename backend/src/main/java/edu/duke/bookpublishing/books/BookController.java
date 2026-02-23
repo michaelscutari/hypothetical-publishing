@@ -176,7 +176,6 @@ public class BookController {
             .seriesPosition(request.seriesPosition())
             .coverPrice(request.coverPrice())
             .printCost(request.printCost())
-            .coverImage(request.coverImage())
             .build();
     return BookResponse.from(bookService.save(book));
   }
@@ -209,7 +208,6 @@ public class BookController {
     book.setSeriesPosition(request.seriesPosition());
     book.setCoverPrice(request.coverPrice());
     book.setPrintCost(request.printCost());
-    book.setCoverImage(request.coverImage());
 
     return BookResponse.from(bookService.save(book));
   }

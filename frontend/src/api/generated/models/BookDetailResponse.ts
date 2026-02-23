@@ -59,10 +59,6 @@ export type BookDetailResponse = {
      */
     printCost?: number;
     /**
-     * Cover image URL
-     */
-    coverImage?: string;
-    /**
      * Total sales quantity to date
      */
     totalSalesToDate?: number;
@@ -82,5 +78,9 @@ export type BookDetailResponse = {
      * Total royalty earned by the author (both paid and unpaid)
      */
     totalRoyalty?: number;
+    /**
+     * Whether this book has a cover image
+     */
+    hasCover?: boolean;
 };
 

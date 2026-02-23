@@ -26,6 +26,7 @@ export { SaleResponse } from './models/SaleResponse';
 export type { UserResponse } from './models/UserResponse';
 
 export { AuthService } from './services/AuthService';
+export { BookCoversService } from './services/BookCoversService';
 export { BooksService } from './services/BooksService';
 export { SalesService } from './services/SalesService';
 export { SystemService } from './services/SystemService';
