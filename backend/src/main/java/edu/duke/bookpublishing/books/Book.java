@@ -18,6 +18,8 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import edu.duke.bookpublishing.author.Author;
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,6 +45,9 @@ public class Book {
   // TODO: Map as foreign key to author table once it is available
   @Column(nullable = false)
   private String author;
+  @ManyToOne(fetch = FetchType.EAGER, optional = false)
+  @JoinColumn(name = "author_id", nullable = false)
+  private Author author;
 
   @Column(name = "isbn_13", nullable = false, unique = true, length = 13)
   private String isbn13;
@@ -106,7 +111,6 @@ public class Book {
     if (title != null) {
       title = title.trim();
     }
-    author = StringUtils.normalizeWhitespace(author);
     if (isbn13 != null) {
       isbn13 = isbn13.replaceAll("-", "");
     }

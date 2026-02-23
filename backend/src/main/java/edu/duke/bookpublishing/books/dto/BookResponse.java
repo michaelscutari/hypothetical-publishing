@@ -8,7 +8,8 @@ import java.math.BigDecimal;
 public record BookResponse(
     @Schema(description = "Unique book identifier") Long id,
     @Schema(description = "Book title") String title,
-    @Schema(description = "Author name(s)") String author,
+    @Schema(description = "Author name") String author,
+    @Schema(description = "Author Id") Long authorId,
     @Schema(description = "ISBN-13 identifier") String isbn13,
     @Schema(description = "ISBN-10 identifier") String isbn10,
     @Schema(description = "Publication year") Integer publicationYear,
@@ -31,7 +32,8 @@ public record BookResponse(
     return new BookResponse(
         book.getId(),
         book.getTitle(),
-        book.getAuthor(),
+        book.getAuthor().getName(),
+        book.getAuthor().getId(),
         book.getIsbn13(),
         book.getIsbn10(),
         book.getPublicationYear(),

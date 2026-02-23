@@ -7,6 +7,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.duke.bookpublishing.auth.User;
 import edu.duke.bookpublishing.auth.UserRepository;
+import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
 import edu.duke.bookpublishing.sales.SaleRepository;
@@ -34,6 +36,8 @@ class BookControllerTest {
 
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired private AuthorRepository authorRepository;
+
   @Autowired private BookRepository bookRepository;
 
   @Autowired private SaleRepository saleRepository;
@@ -42,13 +46,19 @@ class BookControllerTest {
 
   @Autowired private PasswordEncoder passwordEncoder;
 
+  private Author defaultAuthor;
+
   @BeforeEach
   void setUp() {
     saleRepository.deleteAll();
     bookRepository.deleteAll();
+    authorRepository.deleteAll();
     userRepository.deleteAll();
     userRepository.save(
         User.builder().username("admin").password(passwordEncoder.encode("admin")).build());
+    defaultAuthor =
+        authorRepository.save(
+            Author.builder().name("Test Author").email("test@example.com").build());
   }
 
   private Cookie login() throws Exception {
@@ -83,6 +93,12 @@ class BookControllerTest {
         null,
         new BigDecimal("20.00"),
         new BigDecimal("5.00"));
+  private Author createAuthor(String name) {
+    return authorRepository.save(
+        Author.builder()
+            .name(name)
+            .email(name.toLowerCase().replaceAll("[^a-z]", "") + "@test.com")
+            .build());
   }
 
   @Test
@@ -100,6 +116,14 @@ class BookControllerTest {
     BookRequest request =
         buildBookRequest(
             "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
+        new BookRequest(
+            "Test Book",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"));
 
     mockMvc.perform(
         post("/api/books")
@@ -118,7 +142,6 @@ class BookControllerTest {
   @Test
   void getAllBooksReturnsPaginatedResults() throws Exception {
     Cookie token = login();
-    // Create multiple books
     for (int i = 1; i <= 30; i++) {
       String isbn13 = String.format("978074327%04d", i);
       mockMvc.perform(
@@ -129,7 +152,7 @@ class BookControllerTest {
                   objectMapper.writeValueAsString(
                       buildBookRequest(
                           "Book " + i,
-                          "Author " + i,
+                          defaultAuthor.getId(),
                           isbn13,
                           null,
                           2020,
@@ -137,7 +160,6 @@ class BookControllerTest {
                           new BigDecimal("0.5")))));
     }
 
-    // Test default pagination (page 0, size 25)
     mockMvc
         .perform(get("/api/books").cookie(token))
         .andExpect(status().isOk())
@@ -147,7 +169,6 @@ class BookControllerTest {
         .andExpect(jsonPath("$.totalElements").value(30))
         .andExpect(jsonPath("$.totalPages").value(2));
 
-    // Test second page
     mockMvc
         .perform(get("/api/books").cookie(token).param("page", "1"))
         .andExpect(status().isOk())
@@ -158,7 +179,6 @@ class BookControllerTest {
   @Test
   void getAllBooksShowAllReturnsAllRecords() throws Exception {
     Cookie token = login();
-    // Create multiple books
     for (int i = 1; i <= 30; i++) {
       String isbn13 = String.format("978074327%04d", i);
       mockMvc.perform(
@@ -169,7 +189,7 @@ class BookControllerTest {
                   objectMapper.writeValueAsString(
                       buildBookRequest(
                           "Book " + i,
-                          "Author " + i,
+                          defaultAuthor.getId(),
                           isbn13,
                           null,
                           2020,
@@ -177,7 +197,6 @@ class BookControllerTest {
                           new BigDecimal("0.5")))));
     }
 
-    // Test showAll parameter
     mockMvc
         .perform(get("/api/books").cookie(token).param("showAll", "true"))
         .andExpect(status().isOk())
@@ -191,6 +210,14 @@ class BookControllerTest {
     BookRequest request =
         buildBookRequest(
             "Test Book", "Test Author", "9780743273565", null, 2024, 6, new BigDecimal("0.5"));
+        new BookRequest(
+            "Test Book",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2024,
+            6,
+            new BigDecimal("0.5"));
 
     mockMvc.perform(
         post("/api/books")
@@ -208,7 +235,9 @@ class BookControllerTest {
   @Test
   void searchBooksReturnsFilteredResults() throws Exception {
     Cookie token = login();
-    // Create multiple books
+    Author rowling = createAuthor("Rowling, J.K.");
+    Author fitzgerald = createAuthor("Fitzgerald, F. Scott");
+
     mockMvc.perform(
         post("/api/books")
             .cookie(token)
@@ -217,7 +246,7 @@ class BookControllerTest {
                 objectMapper.writeValueAsString(
                     buildBookRequest(
                         "Harry Potter and the Sorcerer's Stone",
-                        "Rowling, J.K.",
+                        rowling.getId(),
                         "9780590353427",
                         null,
                         1997,
@@ -232,7 +261,7 @@ class BookControllerTest {
                 objectMapper.writeValueAsString(
                     buildBookRequest(
                         "The Great Gatsby",
-                        "Fitzgerald, F. Scott",
+                        fitzgerald.getId(),
                         "9780743273565",
                         null,
                         1925,
@@ -247,27 +276,24 @@ class BookControllerTest {
                 objectMapper.writeValueAsString(
                     buildBookRequest(
                         "Harry Potter and the Chamber of Secrets",
-                        "Rowling, J.K.",
+                        rowling.getId(),
                         "9780439064873",
                         null,
                         1998,
                         7,
                         new BigDecimal("0.15")))));
 
-    // Search with reversed word order - should still find Harry Potter books
     mockMvc
         .perform(get("/api/books").cookie(token).param("query", "Stone Harry"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
         .andExpect(jsonPath("$.content[0].title").value("Harry Potter and the Sorcerer's Stone"));
 
-    // Search by author - should find both Harry Potter books
     mockMvc
         .perform(get("/api/books").cookie(token).param("query", "Rowling"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(2)));
 
-    // Search with no matches
     mockMvc
         .perform(get("/api/books").cookie(token).param("query", "Tolkien"))
         .andExpect(status().isOk())
@@ -285,20 +311,18 @@ class BookControllerTest {
                 objectMapper.writeValueAsString(
                     buildBookRequest(
                         "Test Book",
-                        "Test Author",
+                        defaultAuthor.getId(),
                         "9780743273565",
                         null,
                         2020,
                         1,
                         new BigDecimal("0.5")))));
 
-    // Search with dashes in ISBN - should find the book
     mockMvc
         .perform(get("/api/books").cookie(token).param("query", "978-0-7432-7356-5"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)));
 
-    // Search without dashes - should also find the book
     mockMvc
         .perform(get("/api/books").cookie(token).param("query", "9780743273565"))
         .andExpect(status().isOk())
@@ -306,7 +330,7 @@ class BookControllerTest {
   }
 
   @Test
-  void searchAuthorsReturnsDistinctSortedResults() throws Exception {
+  void searchAuthorsReturnsSortedAuthorResults() throws Exception {
     Cookie token = login();
     mockMvc.perform(
         post("/api/books")
@@ -352,26 +376,38 @@ class BookControllerTest {
                         2020,
                         3,
                         new BigDecimal("0.5")))));
+    createAuthor("Zara Writer");
+    createAuthor("Amy Novelist");
 
     mockMvc
         .perform(
             get("/api/books/authors")
                 .cookie(token)
-                .param("query", "Author")
+                .param("query", "Novelist")
                 .param("showAll", "true"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content", hasSize(2)))
-        .andExpect(jsonPath("$.content[0]").value("Author One"))
-        .andExpect(jsonPath("$.content[1]").value("Author Two"))
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].name").value("Amy Novelist"))
+        .andExpect(jsonPath("$.content[0].id").isNumber())
+        .andExpect(jsonPath("$.paged").value(false));
+
+    mockMvc
+        .perform(get("/api/books/authors").cookie(token).param("showAll", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(3)))
+        .andExpect(jsonPath("$.content[0].name").value("Amy Novelist"))
+        .andExpect(jsonPath("$.content[1].name").value("Test Author"))
+        .andExpect(jsonPath("$.content[2].name").value("Zara Writer"))
         .andExpect(jsonPath("$.paged").value(false));
   }
 
   @Test
   void createBookReturnsCreatedBook() throws Exception {
+    Author fitzgerald = createAuthor("Fitzgerald, F. Scott");
     BookRequest request =
         buildBookRequest(
             "The Great Gatsby",
-            "Fitzgerald, F. Scott",
+            fitzgerald.getId(),
             "978-0-7432-7356-5",
             "0-7432-7356-7",
             1925,
@@ -388,6 +424,7 @@ class BookControllerTest {
         .andExpect(jsonPath("$.id").isNumber())
         .andExpect(jsonPath("$.title").value("The Great Gatsby"))
         .andExpect(jsonPath("$.author").value("Fitzgerald, F. Scott"))
+        .andExpect(jsonPath("$.authorId").value(fitzgerald.getId()))
         .andExpect(jsonPath("$.isbn13").value("9780743273565"))
         .andExpect(jsonPath("$.isbn10").value("0743273567"))
         .andExpect(jsonPath("$.publicationYear").value(1925))
@@ -422,6 +459,9 @@ class BookControllerTest {
   void createBookUsesDefaultRoyaltyRate() throws Exception {
     BookRequest request =
         buildBookRequest("Test Book", "Test Author", "9780743273565", null, 2020, 1, null);
+  void createBookUsesDefaultRoyaltyRate() throws Exception {
+    BookRequest request =
+        new BookRequest("Test Book", defaultAuthor.getId(), "9780743273565", null, 2020, 1, null);
 
     mockMvc
         .perform(
@@ -439,6 +479,8 @@ class BookControllerTest {
     BookRequest request =
         buildBookRequest(
             null, "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
+        new BookRequest(
+            null, defaultAuthor.getId(), "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
 
     mockMvc
         .perform(
@@ -455,6 +497,14 @@ class BookControllerTest {
     BookRequest request =
         buildBookRequest(
             "Test Book", "Test Author", "978074327356X", null, 2020, 1, new BigDecimal("0.5"));
+        new BookRequest(
+            "Test Book",
+            defaultAuthor.getId(),
+            "978074327356X",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"));
 
     mockMvc
         .perform(
@@ -471,6 +521,14 @@ class BookControllerTest {
     BookRequest request =
         buildBookRequest(
             "Test Book", "Test Author", "9780743273565", null, 2020, 13, new BigDecimal("0.5"));
+        new BookRequest(
+            "Test Book",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            13,
+            new BigDecimal("0.5"));
 
     mockMvc
         .perform(
@@ -488,6 +546,14 @@ class BookControllerTest {
     BookRequest request =
         buildBookRequest(
             "Book One", "Author One", "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
+        new BookRequest(
+            "Book One",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"));
 
     mockMvc
         .perform(
@@ -500,6 +566,14 @@ class BookControllerTest {
     BookRequest duplicateRequest =
         buildBookRequest(
             "Book Two", "Author Two", "9780743273565", null, 2021, 5, new BigDecimal("0.3"));
+        new BookRequest(
+            "Book Two",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2021,
+            5,
+            new BigDecimal("0.3"));
 
     mockMvc
         .perform(
@@ -519,6 +593,14 @@ class BookControllerTest {
             token,
             buildBookRequest(
                 "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
+            new BookRequest(
+                "Test Book",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5")));
 
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
@@ -535,6 +617,14 @@ class BookControllerTest {
             token,
             buildBookRequest(
                 "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
+            new BookRequest(
+                "Test Book",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5")));
 
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
@@ -549,16 +639,25 @@ class BookControllerTest {
   @Test
   void updateBookUpdatesFields() throws Exception {
     Cookie token = login();
+    Author newAuthor = createAuthor("New Author");
     Long bookId =
         createBook(
             token,
             buildBookRequest(
                 "Old Title", "Old Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
+            new BookRequest(
+                "Old Title",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5")));
 
     BookRequest updateRequest =
         buildBookRequest(
             "New Title",
-            "New Author",
+            newAuthor.getId(),
             "9780743273565",
             "0743273567",
             2021,
@@ -574,6 +673,7 @@ class BookControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.title").value("New Title"))
         .andExpect(jsonPath("$.author").value("New Author"))
+        .andExpect(jsonPath("$.authorId").value(newAuthor.getId()))
         .andExpect(jsonPath("$.isbn10").value("0743273567"))
         .andExpect(jsonPath("$.publicationYear").value(2021))
         .andExpect(jsonPath("$.publicationMonth").value(5))
@@ -589,6 +689,14 @@ class BookControllerTest {
             token,
             buildBookRequest(
                 "Test Book", "Test Author", "9780743273565", null, 2020, 1, new BigDecimal("0.5")));
+            new BookRequest(
+                "Test Book",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5")));
 
     mockMvc
         .perform(delete("/api/books/{id}", bookId).cookie(token))
@@ -605,12 +713,13 @@ class BookControllerTest {
   @Test
   void getBookDetailByIdReturnsBookAndFinancials() throws Exception {
     Cookie token = login();
+    Author detailAuthor = createAuthor("Detail Author");
     Long bookId =
         createBook(
             token,
             buildBookRequest(
                 "Detail Book",
-                "Detail Author",
+                detailAuthor.getId(),
                 "9780743279999",
                 null,
                 2020,
@@ -643,7 +752,7 @@ class BookControllerTest {
   @Test
   void searchBooksFindsIsbn10WithUppercaseXUsingLowercaseQuery() throws Exception {
     Cookie token = login();
-    // ISBN-10 080442957X has check digit X (valid ISBN for "The Elements of Style")
+    Author strunk = createAuthor("Strunk, William");
     mockMvc.perform(
         post("/api/books")
             .cookie(token)
@@ -652,21 +761,19 @@ class BookControllerTest {
                 objectMapper.writeValueAsString(
                     buildBookRequest(
                         "The Elements of Style",
-                        "Strunk, William",
+                        strunk.getId(),
                         "9780205309023",
                         "080442957X",
                         1999,
                         1,
                         new BigDecimal("0.10")))));
 
-    // Search with lowercase x - should find the book
     mockMvc
         .perform(get("/api/books").cookie(token).param("query", "080442957x"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
         .andExpect(jsonPath("$.content[0].isbn10").value("080442957X"));
 
-    // Search with uppercase X - should also find the book
     mockMvc
         .perform(get("/api/books").cookie(token).param("query", "080442957X"))
         .andExpect(status().isOk())
@@ -676,6 +783,8 @@ class BookControllerTest {
   @Test
   void searchBooksWithPeriodMatchesLiterally() throws Exception {
     Cookie token = login();
+    Author tolkien = createAuthor("Tolkien, J.R.R.");
+    Author murray = createAuthor("Murray, Bill");
     createBook(
         token,
         buildBookRequest(
@@ -690,6 +799,12 @@ class BookControllerTest {
         token,
         buildBookRequest(
             "Some Book", "Murray, Bill", "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
+        new BookRequest(
+            "The Hobbit", tolkien.getId(), "9780547928227", null, 1937, 9, new BigDecimal("0.5")));
+    createBook(
+        token,
+        new BookRequest(
+            "Some Book", murray.getId(), "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
 
     // "R.R." contains punctuation → literal match → only Tolkien
     mockMvc
@@ -708,10 +823,13 @@ class BookControllerTest {
   @Test
   void searchBooksWithApostropheMatchesLiterally() throws Exception {
     Cookie token = login();
+    Author obrien = createAuthor("O'Brien, Flann");
     createBook(
         token,
         buildBookRequest(
             "At Swim", "O'Brien, Flann", "9780141182681", null, 1939, 3, new BigDecimal("0.5")));
+        new BookRequest(
+            "At Swim", obrien.getId(), "9780141182681", null, 1939, 3, new BigDecimal("0.5")));
 
     // "O'Brien" contains punctuation → literal → matches
     mockMvc
@@ -731,10 +849,13 @@ class BookControllerTest {
   @Test
   void searchBooksWithHyphenMatchesLiterally() throws Exception {
     Cookie token = login();
+    Author sartre = createAuthor("Sartre, Jean-Paul");
     createBook(
         token,
         buildBookRequest(
             "Nausea", "Sartre, Jean-Paul", "9780811220309", null, 1938, 1, new BigDecimal("0.5")));
+        new BookRequest(
+            "Nausea", sartre.getId(), "9780811220309", null, 1938, 1, new BigDecimal("0.5")));
 
     // "Jean-Paul" contains punctuation → literal → matches
     mockMvc
@@ -768,21 +889,37 @@ class BookControllerTest {
         token,
         buildBookRequest(
             "Some Book", "Murray, Bill", "9780547928234", null, 2000, 1, new BigDecimal("0.5")));
+    createAuthor("Tolkien, J.R.R.");
+    createAuthor("Murray, Bill");
 
-    // "R.R." literal → only Tolkien
+    // "R.R." contains punctuation → literal match → only Tolkien
     mockMvc
         .perform(
             get("/api/books/authors").cookie(token).param("query", "R.R.").param("showAll", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(1)))
-        .andExpect(jsonPath("$.content[0]").value("Tolkien, J.R.R."));
+        .andExpect(jsonPath("$.content[0].name").value("Tolkien, J.R.R."));
 
-    // "rr" lenient → both
+    // "rr" no punctuation → lenient match → both Tolkien (jrr) and Murray (murray)
     mockMvc
         .perform(
             get("/api/books/authors").cookie(token).param("query", "rr").param("showAll", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(2)));
+  }
+
+  @Test
+  void createBookWithNonExistentAuthorReturns400() throws Exception {
+    BookRequest request =
+        new BookRequest("Test Book", 99999L, "9780743273565", null, 2020, 1, new BigDecimal("0.5"));
+
+    mockMvc
+        .perform(
+            post("/api/books")
+                .cookie(login())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
   }
 
   private Long createBook(Cookie token, BookRequest request) throws Exception {

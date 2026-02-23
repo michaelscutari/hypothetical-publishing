@@ -15,6 +15,11 @@ public final class BookSpecifications {
     return (root, cq, cb) -> buildQueryPredicate(root, cb, query);
   }
 
+  /** Filters books by author ID. */
+  public static Specification<Book> hasAuthorId(Long authorId) {
+    return (root, cq, cb) -> cb.equal(root.get("author").get("id"), authorId);
+  }
+
   /**
    * Builds a predicate for book fields given a path to a Book entity. This allows reuse from other
    * entities that have a book relationship (e.g., Sale.book).
@@ -45,7 +50,8 @@ public final class BookSpecifications {
     boolean hasAuthorPunctuation = containsAuthorPunctuation(lowerTerm);
     Predicate authorPredicate;
     if (hasAuthorPunctuation) {
-      authorPredicate = cb.like(cb.lower(bookPath.get("author")), "%" + lowerTerm + "%");
+      authorPredicate =
+          cb.like(cb.lower(bookPath.get("author").get("name")), "%" + lowerTerm + "%");
     } else {
       authorPredicate =
           cb.like(
@@ -58,7 +64,7 @@ public final class BookSpecifications {
                       cb.function(
                           "REPLACE",
                           String.class,
-                          cb.lower(bookPath.get("author")),
+                          cb.lower(bookPath.get("author").get("name")),
                           cb.literal("."),
                           cb.literal("")),
                       cb.literal("'"),
@@ -75,7 +81,7 @@ public final class BookSpecifications {
         cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"));
   }
 
-  static boolean containsAuthorPunctuation(String s) {
+  public static boolean containsAuthorPunctuation(String s) {
     return s.chars().anyMatch(c -> c == '.' || c == '\'' || c == '-');
   }
 }
