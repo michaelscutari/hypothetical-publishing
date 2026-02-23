@@ -16,7 +16,10 @@ class BookTest {
             .isbn13("9780441172719")
             .publicationYear(1965)
             .publicationMonth(8)
-            .royaltyRate(new BigDecimal("0.15"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.15"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
             .build();
 
     book.normalizeFields();
@@ -34,7 +37,10 @@ class BookTest {
             .isbn13("9780441172719")
             .publicationYear(2020)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.15"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.15"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
             .build();
 
     book.normalizeFields();
@@ -51,7 +57,10 @@ class BookTest {
             .isbn13("978-0-7432-7356-5")
             .publicationYear(2020)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.5"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.5"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.2"))
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
             .build();
 
     book.normalizeFields();
@@ -69,7 +78,10 @@ class BookTest {
             .isbn10("0-7432-7356-7")
             .publicationYear(2020)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.5"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.5"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.2"))
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
             .build();
 
     book.normalizeFields();
@@ -87,7 +99,10 @@ class BookTest {
             .isbn10(null)
             .publicationYear(2024)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.15"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.15"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
             .build();
 
     assertDoesNotThrow(book::normalizeFields);

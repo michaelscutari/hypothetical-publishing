@@ -231,14 +231,88 @@ export default function BookForm(props: BookFormProps) {
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
               type="number"
-              value={formValues.royaltyRate ?? ''}
+              value={formValues.distributorAuthorRoyaltyRate ?? ''}
               onChange={handleNumberFieldChange}
-              name="royaltyRate"
-              label="Royalty Rate"
-              error={!!formErrors.royaltyRate}
-              helperText={formErrors.royaltyRate ?? ' '}
+              name="distributorAuthorRoyaltyRate"
+              label="Distributor Royalty Rate"
+              error={!!formErrors.distributorAuthorRoyaltyRate}
+              helperText={formErrors.distributorAuthorRoyaltyRate ?? ' '}
               fullWidth
               inputProps={{ step: '0.01', min: 0, max: 1 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              type="number"
+              value={formValues.handsoldAuthorRoyaltyRate ?? ''}
+              onChange={handleNumberFieldChange}
+              name="handsoldAuthorRoyaltyRate"
+              label="Handsold Royalty Rate"
+              error={!!formErrors.handsoldAuthorRoyaltyRate}
+              helperText={formErrors.handsoldAuthorRoyaltyRate ?? ' '}
+              fullWidth
+              inputProps={{ step: '0.01', min: 0, max: 1 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              value={formValues.seriesName ?? ''}
+              onChange={handleTextFieldChange}
+              name="seriesName"
+              label="Series Name"
+              error={!!formErrors.seriesName}
+              helperText={formErrors.seriesName ?? ' '}
+              fullWidth
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              type="number"
+              value={formValues.seriesPosition ?? ''}
+              onChange={handleNumberFieldChange}
+              name="seriesPosition"
+              label="Series Position"
+              error={!!formErrors.seriesPosition}
+              helperText={formErrors.seriesPosition ?? ' '}
+              fullWidth
+              inputProps={{ min: 1, step: 1 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              type="number"
+              value={formValues.coverPrice ?? ''}
+              onChange={handleNumberFieldChange}
+              name="coverPrice"
+              label="Cover Price"
+              error={!!formErrors.coverPrice}
+              helperText={formErrors.coverPrice ?? ' '}
+              fullWidth
+              inputProps={{ step: '0.01', min: 0 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              type="number"
+              value={formValues.printCost ?? ''}
+              onChange={handleNumberFieldChange}
+              name="printCost"
+              label="Print Cost"
+              error={!!formErrors.printCost}
+              helperText={formErrors.printCost ?? ' '}
+              fullWidth
+              inputProps={{ step: '0.01', min: 0 }}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              value={formValues.coverImage ?? ''}
+              onChange={handleTextFieldChange}
+              name="coverImage"
+              label="Cover Image URL"
+              error={!!formErrors.coverImage}
+              helperText={formErrors.coverImage ?? ' '}
+              fullWidth
             />
           </Grid>
         </Grid>

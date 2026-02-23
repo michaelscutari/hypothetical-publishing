@@ -1,7 +1,7 @@
 import {
   SalesService,
+  SaleRequest,
   type PagedResponseSaleResponse,
-  type SaleRequest,
   type SaleResponse,
 } from '../../../../api';
 import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
@@ -53,22 +53,26 @@ export async function getOne(saleId: number): Promise<Sale> {
 export async function createOne(data: SaleRequest): Promise<Sale> {
   return SalesService.createSale({
     bookId: data.bookId,
+    saleSource: data.saleSource,
     saleMonth: data.saleMonth,
     saleYear: data.saleYear,
     quantitySold: data.quantitySold,
     publisherRevenue: data.publisherRevenue,
     hasAuthorBeenPaid: data.hasAuthorBeenPaid ?? false,
+    comment: data.comment,
   });
 }
 
 export async function updateOne(saleId: number, data: Partial<SaleRequest>): Promise<Sale> {
   const request: SaleRequest = {
     bookId: data.bookId ?? 0,
+    saleSource: data.saleSource ?? SaleRequest.saleSource.DISTRIBUTOR,
     saleMonth: data.saleMonth ?? 1,
     saleYear: data.saleYear ?? new Date().getFullYear(),
     quantitySold: data.quantitySold ?? 0,
-    publisherRevenue: data.publisherRevenue ?? 0,
+    publisherRevenue: data.publisherRevenue ?? undefined,
     hasAuthorBeenPaid: data.hasAuthorBeenPaid ?? false,
+    comment: data.comment ?? undefined,
   };
 
   return SalesService.updateSale(saleId, request);

@@ -12,6 +12,7 @@ import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
@@ -56,7 +57,10 @@ class SaleServiceTest {
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.20"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.20"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
+            .coverPrice(new BigDecimal("20.00"))
+            .printCost(new BigDecimal("5.00"))
             .build();
   }
 
@@ -132,7 +136,9 @@ class SaleServiceTest {
     when(saleRepository.save(any(Sale.class)))
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
-    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, new BigDecimal("100.00"), null, false);
+    SaleRequest request =
+        new SaleRequest(
+            1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, new BigDecimal("100.00"), false, null);
 
     Sale result = saleService.createSale(request);
 
@@ -145,14 +151,34 @@ class SaleServiceTest {
     assertThat(saved.getPublisherRevenue()).isEqualByComparingTo("100.00");
     assertThat(saved.getAuthorRoyalty()).isEqualByComparingTo("20.00");
     assertThat(saved.getHasAuthorBeenPaid()).isFalse();
+    assertThat(saved.getSaleSource()).isEqualTo(SaleSource.DISTRIBUTOR);
     assertThat(result.getAuthorRoyalty()).isEqualByComparingTo("20.00");
+  }
+
+  @Test
+  void createSaleComputesHandsoldRevenueAndRoyalty() {
+    when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+    when(saleRepository.save(any(Sale.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
+
+    SaleRequest request = new SaleRequest(1L, SaleSource.HAND_SOLD, 2, 2024, 10, null, false, null);
+
+    Sale result = saleService.createSale(request);
+
+    verify(saleRepository).save(saleCaptor.capture());
+    Sale saved = saleCaptor.getValue();
+    assertThat(saved.getPublisherRevenue()).isEqualByComparingTo("150.00");
+    assertThat(saved.getAuthorRoyalty()).isEqualByComparingTo("15.00");
+    assertThat(result.getAuthorRoyalty()).isEqualByComparingTo("15.00");
   }
 
   @Test
   void createSaleThrowsWhenBookMissing() {
     when(bookRepository.findById(1L)).thenReturn(Optional.empty());
 
-    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, new BigDecimal("100.00"), null, false);
+    SaleRequest request =
+        new SaleRequest(
+            1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, new BigDecimal("100.00"), false, null);
 
     assertThrows(NotFoundException.class, () -> saleService.createSale(request));
   }
@@ -160,7 +186,8 @@ class SaleServiceTest {
   @Test
   void createSaleThrowsWhenPublisherRevenueNull() {
     when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
-    SaleRequest request = new SaleRequest(1L, 1, 2024, 50, null, null, false);
+    SaleRequest request =
+        new SaleRequest(1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, null, false, null);
     assertThrows(DataIntegrityViolationException.class, () -> saleService.createSale(request));
   }
 
@@ -174,13 +201,17 @@ class SaleServiceTest {
             .isbn13("9780743273566")
             .publicationYear(2021)
             .publicationMonth(2)
-            .royaltyRate(new BigDecimal("0.25"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.25"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
+            .coverPrice(new BigDecimal("30.00"))
+            .printCost(new BigDecimal("8.00"))
             .build();
 
     Sale existing =
         Sale.builder()
             .id(10L)
             .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
             .saleMonth(1)
             .saleYear(2024)
             .quantitySold(10)
@@ -194,7 +225,9 @@ class SaleServiceTest {
     when(saleRepository.save(any(Sale.class)))
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
-    SaleRequest request = new SaleRequest(2L, 3, 2024, 25, new BigDecimal("200.00"), null, true);
+    SaleRequest request =
+        new SaleRequest(
+            2L, SaleSource.DISTRIBUTOR, 3, 2024, 25, new BigDecimal("200.00"), true, null);
 
     Sale result = saleService.updateSale(10L, request);
 

@@ -200,6 +200,14 @@ export default function SaleShow() {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Sale Source</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {sale.saleSource ?? '—'}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Quantity Sold</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
                 {sale.quantitySold ?? 0}
@@ -219,6 +227,14 @@ export default function SaleShow() {
               <Typography variant="overline">Author Royalty</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
                 ${Number(sale.authorRoyalty || 0).toFixed(2)}
+              </Typography>
+            </Paper>
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Comment</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {sale.comment ?? '—'}
               </Typography>
             </Paper>
           </Grid>
