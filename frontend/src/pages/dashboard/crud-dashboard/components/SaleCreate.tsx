@@ -2,9 +2,9 @@ import {
   Autocomplete,
   Box,
   Button,
-  Chip,
   FormControlLabel,
   IconButton,
+  MenuItem,
   Paper,
   Stack,
   Switch,
@@ -26,7 +26,7 @@ import * as React from 'react';
 import DeleteIcon from '@mui/icons-material/Delete';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BooksService, SalesService, type BookResponse } from '../../../../api';
+import { BooksService, SalesService, SaleRequest, type BookResponse } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 
@@ -38,9 +38,31 @@ class CustomAdapterDayjs extends AdapterDayjs {
   };
 }
 
-function computeRoyalty(book: BookResponse | null, revenue: number | null): number | null {
+function computePublisherRevenue(
+  book: BookResponse | null,
+  quantity: number | null,
+  saleSource: SaleRequest.saleSource,
+  publisherRevenue: number | null,
+): number | null {
+  if (saleSource === SaleRequest.saleSource.DISTRIBUTOR) {
+    return publisherRevenue;
+  }
+  if (!book || quantity == null) return null;
+  const coverPrice = Number(book.coverPrice ?? 0);
+  const printCost = Number(book.printCost ?? 0);
+  return Number(((coverPrice - printCost) * quantity).toFixed(2));
+}
+
+function computeRoyalty(
+  book: BookResponse | null,
+  saleSource: SaleRequest.saleSource,
+  revenue: number | null,
+): number | null {
   if (!book || revenue == null) return null;
-  const rate = book.royaltyRate ?? 0;
+  const rate =
+    saleSource === SaleRequest.saleSource.HAND_SOLD
+      ? (book.handsoldAuthorRoyaltyRate ?? 0)
+      : (book.distributorAuthorRoyaltyRate ?? 0);
   return Number((revenue * rate).toFixed(2));
 }
 
@@ -48,13 +70,13 @@ interface SaleRecordInput {
   id: string; // Temporary ID for UI tracking
   saleDate: Dayjs | null; // Combined month/year as Dayjs
   book: BookResponse | null;
+  saleSource: SaleRequest.saleSource;
   quantitySold: number | null;
   publisherRevenue: number | null;
-  // Requirement: auto-compute unless overridden; delete => revert
   authorRoyalty: number | null;
-  isRoyaltyOverridden: boolean;
   // Requirement: defaults to false
   hasAuthorBeenPaid: boolean;
+  comment: string;
 
   // Placeholder row: visually greyed out; becomes active when user focuses/edits
   isPlaceholder: boolean;
@@ -62,9 +84,11 @@ interface SaleRecordInput {
   errors: {
     saleDate?: string;
     book?: string;
+    saleSource?: string;
     quantitySold?: string;
     publisherRevenue?: string;
     authorRoyalty?: string;
+    comment?: string;
   };
 }
 
@@ -94,11 +118,12 @@ export default function SaleCreate() {
       id: Math.random().toString(36).substr(2, 9),
       saleDate: defaults?.saleDate ?? null,
       book: defaults?.book ?? null,
+      saleSource: defaults?.saleSource ?? SaleRequest.saleSource.DISTRIBUTOR,
       quantitySold: null,
       publisherRevenue: null,
       authorRoyalty: null,
-      isRoyaltyOverridden: false,
       hasAuthorBeenPaid: defaults?.hasAuthorBeenPaid ?? false,
+      comment: defaults?.comment ?? '',
       isPlaceholder,
       errors: {},
     };
@@ -208,12 +233,20 @@ export default function SaleCreate() {
           if (keys.length > 0) next.isPlaceholder = false;
         }
 
-        // Auto-calc royalty if NOT overridden and we have book+revenue.
         const revenueChanged = updates.publisherRevenue !== undefined;
         const bookChanged = updates.book !== undefined;
+        const saleSourceChanged = updates.saleSource !== undefined;
+        const quantityChanged = updates.quantitySold !== undefined;
 
-        if ((revenueChanged || bookChanged) && !next.isRoyaltyOverridden) {
-          next.authorRoyalty = computeRoyalty(next.book, next.publisherRevenue);
+        if (revenueChanged || bookChanged || saleSourceChanged || quantityChanged) {
+          const computedRevenue = computePublisherRevenue(
+            next.book,
+            next.quantitySold,
+            next.saleSource,
+            next.publisherRevenue,
+          );
+          next.publisherRevenue = computedRevenue;
+          next.authorRoyalty = computeRoyalty(next.book, next.saleSource, computedRevenue);
         }
 
         newRecords[index] = next;
@@ -251,7 +284,6 @@ export default function SaleCreate() {
     (index: number) => (_event: React.SyntheticEvent, value: BookResponse | null) => {
       updateRecord(index, {
         book: value,
-        isRoyaltyOverridden: false,
         errors: {},
       });
     },
@@ -263,6 +295,16 @@ export default function SaleCreate() {
       const value = event.target.value;
       updateRecord(index, {
         quantitySold: value ? parseInt(value, 10) : null,
+        errors: {},
+      });
+    },
+    [updateRecord],
+  );
+
+  const handleSaleSourceChange = React.useCallback(
+    (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
+      updateRecord(index, {
+        saleSource: event.target.value as SaleRequest.saleSource,
         errors: {},
       });
     },
@@ -283,54 +325,11 @@ export default function SaleCreate() {
     [updateRecord],
   );
 
-  // Requirement: editable royalty, override indicator, delete => revert to computed on blur
-  const handleRoyaltyChange = React.useCallback(
+  const handleCommentChange = React.useCallback(
     (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
-
-      setRecords((prev) => {
-        const next = [...prev];
-        const record = { ...next[index] };
-
-        if (record.isPlaceholder) record.isPlaceholder = false;
-
-        if (value === '') {
-          // Allow empty while typing — revert happens on blur
-          record.authorRoyalty = null;
-          record.isRoyaltyOverridden = false;
-        } else {
-          const parsed = parseFloat(value);
-          record.authorRoyalty = Number.isNaN(parsed) ? null : parsed;
-          // Only mark as override if value actually differs from computed
-          const computed = computeRoyalty(record.book, record.publisherRevenue);
-          record.isRoyaltyOverridden =
-            !Number.isNaN(parsed) && computed !== null && Math.abs(parsed - computed) > 0.001;
-        }
-
-        record.errors = { ...(record.errors ?? {}) };
-        next[index] = record;
-        return next;
-      });
+      updateRecord(index, { comment: event.target.value, errors: {} });
     },
-    [],
-  );
-
-  const handleRoyaltyBlur = React.useCallback(
-    (index: number) => () => {
-      setRecords((prev) => {
-        const record = prev[index];
-        if (record.authorRoyalty !== null) return prev;
-        // Field is empty on blur — revert to computed
-        const next = [...prev];
-        next[index] = {
-          ...record,
-          authorRoyalty: computeRoyalty(record.book, record.publisherRevenue),
-          isRoyaltyOverridden: false,
-        };
-        return next;
-      });
-    },
-    [],
+    [updateRecord],
   );
 
   const handlePaidChange = React.useCallback(
@@ -376,6 +375,11 @@ export default function SaleCreate() {
       isValid = false;
     }
 
+    if (!record.saleSource) {
+      errors.saleSource = 'Sale source is required';
+      isValid = false;
+    }
+
     if (record.quantitySold == null) {
       errors.quantitySold = 'Quantity is required';
       isValid = false;
@@ -384,16 +388,16 @@ export default function SaleCreate() {
       isValid = false;
     }
 
-    if (record.publisherRevenue == null) {
-      errors.publisherRevenue = 'Revenue is required';
-      isValid = false;
-    } else if (record.publisherRevenue < 0) {
+    if (record.saleSource === SaleRequest.saleSource.DISTRIBUTOR) {
+      if (record.publisherRevenue == null) {
+        errors.publisherRevenue = 'Revenue is required for distributor sales';
+        isValid = false;
+      } else if (record.publisherRevenue < 0) {
+        errors.publisherRevenue = 'Revenue must be non-negative';
+        isValid = false;
+      }
+    } else if (record.publisherRevenue != null && record.publisherRevenue < 0) {
       errors.publisherRevenue = 'Revenue must be non-negative';
-      isValid = false;
-    }
-
-    if (record.authorRoyalty != null && record.authorRoyalty < 0) {
-      errors.authorRoyalty = 'Royalty must be non-negative';
       isValid = false;
     }
 
@@ -433,14 +437,16 @@ export default function SaleCreate() {
       const promises = filledRecords.map((record) => {
         const req = {
           bookId: record.book!.id!,
+          saleSource: record.saleSource,
           saleMonth: record.saleDate!.month() + 1,
           saleYear: record.saleDate!.year(),
           quantitySold: record.quantitySold!,
-          publisherRevenue: record.publisherRevenue!,
+          publisherRevenue:
+            record.saleSource === SaleRequest.saleSource.DISTRIBUTOR
+              ? record.publisherRevenue!
+              : undefined,
           hasAuthorBeenPaid: record.hasAuthorBeenPaid,
-          authorRoyalty: record.isRoyaltyOverridden
-            ? (record.authorRoyalty ?? undefined)
-            : undefined,
+          comment: record.comment || undefined,
         };
         return SalesService.createSale(req);
       });
@@ -500,9 +506,11 @@ export default function SaleCreate() {
               <TableRow>
                 <TableCell width="20">Sale Date (Month/Year)</TableCell>
                 <TableCell width="250">Book</TableCell>
+                <TableCell width="140">Sale Source</TableCell>
                 <TableCell width="130">Quantity</TableCell>
                 <TableCell width="160">Publisher Revenue</TableCell>
-                <TableCell width="350">Author Royalty</TableCell>
+                <TableCell width="200">Author Royalty</TableCell>
+                <TableCell width="220">Comment</TableCell>
                 <TableCell width="170">Payment Status</TableCell>
                 <TableCell width="60"></TableCell>
               </TableRow>
@@ -583,6 +591,22 @@ export default function SaleCreate() {
 
                   <TableCell>
                     <TextField
+                      select
+                      size="small"
+                      value={record.saleSource}
+                      onFocus={() => activateRow(index)}
+                      onChange={handleSaleSourceChange(index)}
+                      error={!!record.errors.saleSource}
+                      helperText={record.errors.saleSource}
+                      fullWidth
+                    >
+                      <MenuItem value={SaleRequest.saleSource.DISTRIBUTOR}>Distributor</MenuItem>
+                      <MenuItem value={SaleRequest.saleSource.HAND_SOLD}>Handsold</MenuItem>
+                    </TextField>
+                  </TableCell>
+
+                  <TableCell>
+                    <TextField
                       size="small"
                       type="text"
                       placeholder="0"
@@ -604,6 +628,7 @@ export default function SaleCreate() {
                       value={record.publisherRevenue ?? ''}
                       onFocus={() => activateRow(index)}
                       onChange={handleRevenueChange(index)}
+                      disabled={record.saleSource === SaleRequest.saleSource.HAND_SOLD}
                       error={!!record.errors.publisherRevenue}
                       helperText={record.errors.publisherRevenue}
                       inputProps={{ inputMode: 'decimal' }}
@@ -615,38 +640,33 @@ export default function SaleCreate() {
                   </TableCell>
 
                   <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <TextField
-                        size="small"
-                        type="text"
-                        placeholder="0.00"
-                        value={record.authorRoyalty ?? ''}
-                        onFocus={() => activateRow(index)}
-                        onChange={handleRoyaltyChange(index)}
-                        onBlur={handleRoyaltyBlur(index)}
-                        error={!!record.errors.authorRoyalty}
-                        helperText={record.errors.authorRoyalty}
-                        inputProps={{ inputMode: 'decimal' }}
-                        fullWidth
-                        InputProps={{
-                          startAdornment: <Typography>$</Typography>,
-                        }}
-                        sx={
-                          record.isRoyaltyOverridden
-                            ? { '& .MuiInputBase-root': { bgcolor: 'warning.lighter' } }
-                            : undefined
-                        }
-                      />
+                    <TextField
+                      size="small"
+                      type="text"
+                      placeholder="0.00"
+                      value={record.authorRoyalty ?? ''}
+                      onFocus={() => activateRow(index)}
+                      error={!!record.errors.authorRoyalty}
+                      helperText={record.errors.authorRoyalty}
+                      inputProps={{ inputMode: 'decimal', readOnly: true }}
+                      fullWidth
+                      InputProps={{
+                        startAdornment: <Typography>$</Typography>,
+                      }}
+                    />
+                  </TableCell>
 
-                      {record.isRoyaltyOverridden && (
-                        <Chip
-                          label="Override"
-                          size="small"
-                          color="warning"
-                          sx={{ ml: 'auto', height: 20, fontSize: '0.7rem' }}
-                        />
-                      )}
-                    </Box>
+                  <TableCell>
+                    <TextField
+                      size="small"
+                      value={record.comment ?? ''}
+                      onFocus={() => activateRow(index)}
+                      onChange={handleCommentChange(index)}
+                      error={!!record.errors.comment}
+                      helperText={record.errors.comment}
+                      inputProps={{ maxLength: 256 }}
+                      fullWidth
+                    />
                   </TableCell>
 
                   <TableCell>

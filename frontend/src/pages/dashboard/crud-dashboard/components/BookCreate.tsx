@@ -8,9 +8,12 @@ import IsbnLookup from './IsbnLookup';
 import PageContainer from './PageContainer';
 
 const INITIAL_FORM_VALUES: Partial<BookFormState['values']> = {
-  royaltyRate: 0.5,
+  distributorAuthorRoyaltyRate: 0.5,
+  handsoldAuthorRoyaltyRate: 0.2,
   publicationYear: new Date().getFullYear(),
   publicationMonth: 1,
+  coverPrice: 0,
+  printCost: 0,
 };
 
 export default function BookCreate() {
@@ -67,6 +70,7 @@ export default function BookCreate() {
         isbn10: data.isbn10 ?? formValues.isbn10,
         publicationYear: data.publicationYear ?? formValues.publicationYear,
         publicationMonth: data.publicationMonth ?? formValues.publicationMonth,
+        coverImage: data.coverImage ?? formValues.coverImage,
       };
       setFormValues(newValues);
       const { issues } = validateBook(newValues);

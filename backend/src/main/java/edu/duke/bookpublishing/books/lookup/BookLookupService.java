@@ -72,7 +72,7 @@ public class BookLookupService {
 
     BookLookupResponse response =
         new BookLookupResponse(
-            title, author, isbn13, isbn10, publishedDate.year(), publishedDate.month());
+            title, author, isbn13, isbn10, publishedDate.year(), publishedDate.month(), null);
 
     return BookLookupResult.lookup(response);
   }

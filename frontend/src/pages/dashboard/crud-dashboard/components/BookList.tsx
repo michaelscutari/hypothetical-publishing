@@ -198,10 +198,17 @@ export default function BookList() {
         },
       },
       {
-        field: 'royaltyRate',
-        headerName: 'Royalty',
+        field: 'distributorAuthorRoyaltyRate',
+        headerName: 'Distributor Royalty',
         type: 'number',
-        width: 100,
+        width: 150,
+        valueFormatter: (value) => (value != null ? `${(value * 100).toFixed(0)}%` : ''),
+      },
+      {
+        field: 'handsoldAuthorRoyaltyRate',
+        headerName: 'Handsold Royalty',
+        type: 'number',
+        width: 140,
         valueFormatter: (value) => (value != null ? `${(value * 100).toFixed(0)}%` : ''),
       },
       {

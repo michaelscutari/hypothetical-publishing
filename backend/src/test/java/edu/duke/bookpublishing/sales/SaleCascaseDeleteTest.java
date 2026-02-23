@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.DisplayName;
@@ -32,7 +33,10 @@ class SaleCascadeDeleteTest {
             .isbn10("1234567890")
             .publicationYear(2024)
             .publicationMonth(1)
-            .royaltyRate(new BigDecimal("0.1000"))
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.1000"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.0500"))
+            .coverPrice(new BigDecimal("20.00"))
+            .printCost(new BigDecimal("5.00"))
             .build();
 
     book = bookRepository.saveAndFlush(book);
@@ -41,6 +45,7 @@ class SaleCascadeDeleteTest {
     Sale sale1 =
         Sale.builder()
             .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
             .saleMonth(1)
             .saleYear(2024)
             .quantitySold(10)
@@ -52,6 +57,7 @@ class SaleCascadeDeleteTest {
     Sale sale2 =
         Sale.builder()
             .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
             .saleMonth(2)
             .saleYear(2024)
             .quantitySold(5)

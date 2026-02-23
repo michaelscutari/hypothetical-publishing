@@ -31,8 +31,33 @@ export type BookRequest = {
      */
     publicationMonth: number;
     /**
-     * Author royalty rate (0.0 to 1.0)
+     * Distributor author royalty rate (0.0 to 1.0)
      */
-    royaltyRate?: number;
+    distributorAuthorRoyaltyRate?: number;
+    /**
+     * Handsold author royalty rate (0.0 to 1.0)
+     */
+    handsoldAuthorRoyaltyRate?: number;
+    /**
+     * Series name
+     */
+    seriesName?: string;
+    /**
+     * Series position (positive integer). Required if series is set.
+     */
+    seriesPosition?: number;
+    /**
+     * Cover price (USD)
+     */
+    coverPrice: number;
+    /**
+     * Print cost (USD)
+     */
+    printCost: number;
+    /**
+     * Cover image file destination
+     */
+    coverImage?: string;
+    coverPriceGreaterThanPrintCost?: boolean;
 };
 
