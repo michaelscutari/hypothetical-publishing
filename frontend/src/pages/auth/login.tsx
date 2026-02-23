@@ -40,7 +40,7 @@ export default function Login() {
   const [error, setError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoading, sessionExpired } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 

@@ -135,6 +135,10 @@ export default function ChangePassword() {
           </FormControl>
         </Stack>
 
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Changing your password will sign you out of all other devices.
+        </Typography>
+
         <Stack direction="row" spacing={2} justifyContent="space-between">
           <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
             Back

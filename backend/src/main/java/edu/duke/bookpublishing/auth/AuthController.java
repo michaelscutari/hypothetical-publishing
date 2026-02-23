@@ -35,7 +35,7 @@ public class AuthController {
   private final PasswordEncoder passwordEncoder;
   private final JwtUtil jwtUtil;
 
-  @Value("${app.jwt-expiration-hours:24}")
+  @Value("${app.jwt-expiration-hours:8}")
   private long expirationHours;
 
   @Value("${app.cookie-secure:false}")
@@ -82,7 +82,9 @@ public class AuthController {
   @Operation(operationId = "changePassword", summary = "Change current user password")
   @PutMapping("/password")
   public ResponseEntity<Void> changePassword(
-      @Valid @RequestBody ChangePasswordRequest request, Principal principal) {
+      @Valid @RequestBody ChangePasswordRequest request,
+      Principal principal,
+      jakarta.servlet.http.HttpServletResponse response) {
 
     if (principal == null) {
       return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -104,6 +106,12 @@ public class AuthController {
     user.setPassword(passwordEncoder.encode(request.newPassword()));
     user.setPasswordVersion(user.getPasswordVersion() + 1);
     userRepository.save(user);
+
+    String token = jwtUtil.generateToken(user.getUsername(), user.getPasswordVersion());
+    response.addHeader(
+        HttpHeaders.SET_COOKIE,
+        buildAuthCookie(token, Duration.ofHours(expirationHours)).toString());
+
     return ResponseEntity.ok().build();
   }
 
