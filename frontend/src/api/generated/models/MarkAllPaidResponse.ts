@@ -7,9 +7,9 @@
  */
 export type MarkAllPaidResponse = {
     /**
-     * Author id
+     * Author name
      */
-    authorId?: number;
+    author?: string;
     /**
      * Number of sales marked as paid
      */

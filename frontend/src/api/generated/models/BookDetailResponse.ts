@@ -15,13 +15,9 @@ export type BookDetailResponse = {
      */
     title?: string;
     /**
-     * Author name
+     * Author name(s)
      */
     author?: string;
-    /**
-     * Author Id
-     */
-    authorId?: number;
     /**
      * ISBN-13 identifier
      */
@@ -39,9 +35,33 @@ export type BookDetailResponse = {
      */
     publicationMonth?: number;
     /**
-     * Author royalty rate
+     * Distributor author royalty rate
      */
-    royaltyRate?: number;
+    distributorAuthorRoyaltyRate?: number;
+    /**
+     * Handsold author royalty rate
+     */
+    handsoldAuthorRoyaltyRate?: number;
+    /**
+     * Series name
+     */
+    seriesName?: string;
+    /**
+     * Series position
+     */
+    seriesPosition?: number;
+    /**
+     * Cover price (USD)
+     */
+    coverPrice?: number;
+    /**
+     * Print cost (USD)
+     */
+    printCost?: number;
+    /**
+     * Cover image URL
+     */
+    coverImage?: string;
     /**
      * Total sales quantity to date
      */
