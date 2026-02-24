@@ -25,6 +25,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "books")
@@ -43,6 +45,7 @@ public class Book {
 
   @ManyToOne(fetch = FetchType.EAGER, optional = false)
   @JoinColumn(name = "author_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
   private Author author;
 
   @Column(name = "isbn_13", nullable = false, unique = true, length = 13)
