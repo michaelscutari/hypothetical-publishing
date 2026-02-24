@@ -11,10 +11,6 @@ export type SaleRequest = {
      */
     bookId: number;
     /**
-     * Sale source (distributor or handsold)
-     */
-    saleSource: SaleRequest.saleSource;
-    /**
      * The month the sale was made
      */
     saleMonth: number;
@@ -27,25 +23,16 @@ export type SaleRequest = {
      */
     quantitySold: number;
     /**
-     * Publisher revenue in USD. Required for distributor sales; computed for handsold sales.
+     * The amount of money the publisher made
      */
-    publisherRevenue?: number;
+    publisherRevenue: number;
+    /**
+     * Optional overridden author royalty in USD. If omitted, royalty is computed automatically.
+     */
+    authorRoyalty?: number;
     /**
      * Indicates whether the author has been paid
      */
     hasAuthorBeenPaid?: boolean;
-    /**
-     * Optional comment
-     */
-    comment?: string;
 };
-export namespace SaleRequest {
-    /**
-     * Sale source (distributor or handsold)
-     */
-    export enum saleSource {
-        DISTRIBUTOR = 'DISTRIBUTOR',
-        HAND_SOLD = 'HAND_SOLD',
-    }
-}
 

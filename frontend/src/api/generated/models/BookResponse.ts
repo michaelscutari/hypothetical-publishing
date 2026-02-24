@@ -15,9 +15,13 @@ export type BookResponse = {
      */
     title?: string;
     /**
-     * Author name(s)
+     * Author name
      */
     author?: string;
+    /**
+     * Author Id
+     */
+    authorId?: number;
     /**
      * ISBN-13 identifier
      */
@@ -35,40 +39,12 @@ export type BookResponse = {
      */
     publicationMonth?: number;
     /**
-     * Distributor author royalty rate
+     * Author royalty rate
      */
-    distributorAuthorRoyaltyRate?: number;
-    /**
-     * Handsold author royalty rate
-     */
-    handsoldAuthorRoyaltyRate?: number;
-    /**
-     * Series name
-     */
-    seriesName?: string;
-    /**
-     * Series position
-     */
-    seriesPosition?: number;
-    /**
-     * Cover price (USD)
-     */
-    coverPrice?: number;
-    /**
-     * Print cost (USD)
-     */
-    printCost?: number;
-    /**
-     * Cover image URL
-     */
-    coverImage?: string;
+    royaltyRate?: number;
     /**
      * Total sales quantity to date
      */
     totalSalesToDate?: number;
-    /**
-     * Whether this book has a cover image
-     */
-    hasCover?: boolean;
 };
 

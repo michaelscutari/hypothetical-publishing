@@ -1,6 +1,7 @@
 package edu.duke.bookpublishing.books;
 
-import edu.duke.bookpublishing.common.StringUtils;
+import edu.duke.bookpublishing.author.Author;
+import jakarta.persistence.*;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -18,8 +19,6 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
-import edu.duke.bookpublishing.author.Author;
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -42,9 +41,6 @@ public class Book {
   @Column(nullable = false)
   private String title;
 
-  // TODO: Map as foreign key to author table once it is available
-  @Column(nullable = false)
-  private String author;
   @ManyToOne(fetch = FetchType.EAGER, optional = false)
   @JoinColumn(name = "author_id", nullable = false)
   private Author author;

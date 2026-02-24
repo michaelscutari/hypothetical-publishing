@@ -1,8 +1,12 @@
 package edu.duke.bookpublishing.author;
 
-import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.duke.bookpublishing.auth.User;
@@ -373,12 +377,16 @@ class AuthorControllerTest {
                 .isbn13("9780000000001")
                 .publicationYear(2024)
                 .publicationMonth(1)
-                .royaltyRate(new BigDecimal("0.50"))
+                .distributorAuthorRoyaltyRate(new BigDecimal("0.50"))
+                .handsoldAuthorRoyaltyRate(new BigDecimal("0.20"))
+                .coverPrice(new BigDecimal("20.00"))
+                .printCost(new BigDecimal("5.00"))
                 .build());
 
     saleRepository.save(
         Sale.builder()
             .book(book)
+            .saleSource(edu.duke.bookpublishing.sales.enums.SaleSource.DISTRIBUTOR)
             .saleMonth(1)
             .saleYear(2024)
             .quantitySold(10)
@@ -390,6 +398,7 @@ class AuthorControllerTest {
     saleRepository.save(
         Sale.builder()
             .book(book)
+            .saleSource(edu.duke.bookpublishing.sales.enums.SaleSource.DISTRIBUTOR)
             .saleMonth(2)
             .saleYear(2024)
             .quantitySold(5)

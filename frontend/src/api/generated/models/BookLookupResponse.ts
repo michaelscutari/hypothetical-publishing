@@ -30,9 +30,5 @@ export type BookLookupResponse = {
      * Publication month (1-12)
      */
     publicationMonth?: number;
-    /**
-     * Cover image URL
-     */
-    coverImage?: string;
 };
 

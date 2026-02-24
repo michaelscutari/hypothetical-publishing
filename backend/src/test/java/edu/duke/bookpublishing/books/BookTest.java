@@ -1,6 +1,8 @@
 package edu.duke.bookpublishing.books;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 import edu.duke.bookpublishing.author.Author;
 import java.math.BigDecimal;
@@ -30,27 +32,7 @@ class BookTest {
     book.normalizeFields();
 
     assertEquals("Dune", book.getTitle());
-    assertEquals("Herbert, Frank", book.getAuthor());
-  }
-
-  @Test
-  void normalizeFieldsNormalizesAuthorWhitespace() {
-    Book book =
-        Book.builder()
-            .title("Test Book")
-            .author("  Author   with   multiple   spaces  ")
-            .isbn13("9780441172719")
-            .publicationYear(2020)
-            .publicationMonth(1)
-            .distributorAuthorRoyaltyRate(new BigDecimal("0.15"))
-            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
-            .coverPrice(new BigDecimal("15.00"))
-            .printCost(new BigDecimal("4.00"))
-            .build();
-
-    book.normalizeFields();
-
-    assertEquals("Author with multiple spaces", book.getAuthor());
+    assertEquals("Herbert, Frank", book.getAuthor().getName());
   }
 
   @Test
