@@ -5,8 +5,6 @@ import jakarta.validation.ConstraintValidatorContext;
 
 public class ISBN10Validator implements ConstraintValidator<ISBN10, String> {
 
-  private static final String ISBN10_PATTERN = "^\\d{9}[\\dXx]$";
-
   @Override
   public boolean isValid(String value, ConstraintValidatorContext context) {
     if (value == null || value.isBlank()) {
@@ -14,6 +12,6 @@ public class ISBN10Validator implements ConstraintValidator<ISBN10, String> {
     }
 
     String normalized = value.replaceAll("-", "");
-    return normalized.matches(ISBN10_PATTERN);
+    return ValidationPatterns.ISBN10.matcher(normalized).matches();
   }
 }

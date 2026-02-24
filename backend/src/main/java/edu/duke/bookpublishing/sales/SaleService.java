@@ -1,14 +1,5 @@
 package edu.duke.bookpublishing.sales;
 
-import edu.duke.bookpublishing.books.Book;
-import edu.duke.bookpublishing.books.BookRepository;
-import edu.duke.bookpublishing.common.StringUtils;
-import edu.duke.bookpublishing.exception.custom.NotFoundException;
-import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
-import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
-import edu.duke.bookpublishing.sales.dto.SaleRequest;
-import edu.duke.bookpublishing.sales.enums.SaleSource;
-import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -17,13 +8,26 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+import edu.duke.bookpublishing.books.Book;
+import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.common.StringUtils;
+import edu.duke.bookpublishing.exception.custom.NotFoundException;
+import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
+import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
+import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
+import edu.duke.bookpublishing.sales.parser.IngramCsvParser;
+import edu.duke.bookpublishing.sales.parser.IngramCsvRow;
+import edu.duke.bookpublishing.sales.parser.ParsedBatch;
+import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Backend service for SaleController. All business logic is handled here.
@@ -39,6 +43,7 @@ public class SaleService {
 
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
+  private final IngramCsvParser ingramCsvParser;
 
   public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, String query, Sort sort) {
     Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
@@ -208,6 +213,12 @@ public class SaleService {
         .paidRoyalty(saleRepository.totalPaidAuthorRoyaltyByBook(bookId))
         .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId))
         .build();
+  }
+
+  // CSV Import
+  public List<Sale> importFromCsv(MultipartFile file) {
+    ParsedBatch<IngramCsvRow> parsedBatch = ingramCsvParser.parse(file);
+    
   }
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
