@@ -20,7 +20,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   BooksService,
   SalesService,
-  SaleRequest,
+  type SaleRequest,
   type BookResponse,
   type SaleResponse,
 } from '../../../../api';
