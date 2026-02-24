@@ -1,6 +1,7 @@
 package edu.duke.bookpublishing.books;
 
 import edu.duke.bookpublishing.common.StringUtils;
+import edu.duke.bookpublishing.exception.custom.FieldValidationException;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import java.util.List;
 import java.util.Optional;
@@ -76,7 +77,8 @@ public class BookService {
       int maxPosition = booksInSeries.size() + 1;
 
       if (targetPosition < 1 || targetPosition > maxPosition) {
-        throw new IllegalArgumentException("Series position must be between 1 and " + maxPosition);
+        throw new FieldValidationException(
+            "seriesPosition", "Series position must be between 1 and " + maxPosition);
       }
 
       makeRoom(normalizedName, targetPosition, null);
@@ -108,7 +110,8 @@ public class BookService {
           booksInSeries.stream().filter(b -> !b.getId().equals(book.getId())).count();
       int maxPosition = (int) othersCount + 1;
       if (newPosition < 1 || newPosition > maxPosition) {
-        throw new IllegalArgumentException("Series position must be between 1 and " + maxPosition);
+        throw new FieldValidationException(
+            "seriesPosition", "Series position must be between 1 and " + maxPosition);
       }
       closeGap(oldSeriesName, oldSeriesPosition, book.getId());
       bookRepository.flush();
@@ -126,8 +129,8 @@ public class BookService {
         int maxPosition = (int) othersCount + 1;
 
         if (newPosition < 1 || newPosition > maxPosition) {
-          throw new IllegalArgumentException(
-              "Series position must be between 1 and " + maxPosition);
+          throw new FieldValidationException(
+              "seriesPosition", "Series position must be between 1 and " + maxPosition);
         }
 
         makeRoom(newSeriesName, newPosition, book.getId());

@@ -18,7 +18,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -168,7 +167,8 @@ public class BookController {
 
   @Operation(operationId = "createBook", summary = "Create a new book")
   @PostMapping
-  public ResponseEntity<?> createBook(@Valid @RequestBody BookRequest request) {
+  @ResponseStatus(HttpStatus.CREATED)
+  public BookResponse createBook(@Valid @RequestBody BookRequest request) {
     Book book =
         Book.builder()
             .title(request.title())
@@ -191,21 +191,14 @@ public class BookController {
             .printCost(request.printCost())
             .build();
 
-    try {
-      Book saved = bookService.createBook(book);
-      return ResponseEntity.status(HttpStatus.CREATED).body(BookResponse.from(saved));
-    } catch (IllegalArgumentException ex) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-          .body(Map.of("seriesPosition", ex.getMessage()));
-    }
+    return BookResponse.from(bookService.createBook(book));
   }
 
   // ------- PUT MAPPINGS -------
 
   @Operation(operationId = "updateBook", summary = "Update an existing book")
   @PutMapping("/{id}")
-  public ResponseEntity<?> updateBook(
-      @PathVariable Long id, @Valid @RequestBody BookRequest request) {
+  public BookResponse updateBook(@PathVariable Long id, @Valid @RequestBody BookRequest request) {
     Book book =
         bookService
             .findById(id)
@@ -233,13 +226,7 @@ public class BookController {
     book.setCoverPrice(request.coverPrice());
     book.setPrintCost(request.printCost());
 
-    try {
-      Book saved = bookService.updateBook(book, oldSeriesName, oldSeriesPosition);
-      return ResponseEntity.ok(BookResponse.from(saved));
-    } catch (IllegalArgumentException ex) {
-      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-          .body(Map.of("seriesPosition", ex.getMessage()));
-    }
+    return BookResponse.from(bookService.updateBook(book, oldSeriesName, oldSeriesPosition));
   }
 
   // ------- DELETE MAPPINGS -------
