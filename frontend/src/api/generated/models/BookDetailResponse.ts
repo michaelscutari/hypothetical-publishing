@@ -39,9 +39,29 @@ export type BookDetailResponse = {
      */
     publicationMonth?: number;
     /**
-     * Author royalty rate
+     * Distributor author royalty rate
      */
-    royaltyRate?: number;
+    distributorAuthorRoyaltyRate?: number;
+    /**
+     * Handsold author royalty rate
+     */
+    handsoldAuthorRoyaltyRate?: number;
+    /**
+     * Series name
+     */
+    seriesName?: string;
+    /**
+     * Series position
+     */
+    seriesPosition?: number;
+    /**
+     * Cover price (USD)
+     */
+    coverPrice?: number;
+    /**
+     * Print cost (USD)
+     */
+    printCost?: number;
     /**
      * Total sales quantity to date
      */
@@ -62,5 +82,9 @@ export type BookDetailResponse = {
      * Total royalty earned by the author (both paid and unpaid)
      */
     totalRoyalty?: number;
+    /**
+     * Whether this book has a cover image
+     */
+    hasCover?: boolean;
 };
 

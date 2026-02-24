@@ -19,13 +19,17 @@ export type SaleResponse = {
      */
     bookTitle?: string;
     /**
+     * Author of the sold book
+     */
+    bookAuthor?: string;
+    /**
+     * Sale source (distributor or handsold)
+     */
+    saleSource?: SaleResponse.saleSource;
+    /**
      * Author ID of the sold book
      */
     authorId?: number;
-    /**
-     * Author name of the sold book
-     */
-    bookAuthor?: string;
     /**
      * Month of the sale
      */
@@ -50,5 +54,18 @@ export type SaleResponse = {
      * Indicates whether the author has been paid or not
      */
     hasAuthorBeenPaid?: boolean;
+    /**
+     * Optional comment
+     */
+    comment?: string;
 };
+export namespace SaleResponse {
+    /**
+     * Sale source (distributor or handsold)
+     */
+    export enum saleSource {
+        DISTRIBUTOR = 'DISTRIBUTOR',
+        HAND_SOLD = 'HAND_SOLD',
+    }
+}
 

@@ -1,6 +1,6 @@
 import {
   SalesService,
-  type SaleRequest,
+  SaleRequest,
   type PagedResponseSaleResponse,
   type SaleResponse,
 } from '../../../../api';

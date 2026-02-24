@@ -27,7 +27,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BooksService, SalesService, type SaleRequest, type BookResponse } from '../../../../api';
+import { BooksService, SalesService, SaleRequest, type BookResponse } from '../../../../api';
 import { isValidMonetaryInput } from '../../../../utils/monetary';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
