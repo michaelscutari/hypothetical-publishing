@@ -7,6 +7,7 @@ import {
   getOne as getBook,
   updateOne as updateBook,
   validate as validateBook,
+  parseFieldErrors,
   type Book,
 } from '../data/books';
 import useNotifications from '../hooks/useNotifications/useNotifications';
@@ -84,10 +85,15 @@ function BookEditForm({
 
       navigate('/books');
     } catch (editError) {
-      notifications.show(`Failed to edit book. Reason: ${(editError as Error).message}`, {
-        severity: 'error',
-        autoHideDuration: 3000,
-      });
+      const fieldErrors = parseFieldErrors(editError);
+      if (fieldErrors) {
+        setFormErrors(fieldErrors);
+      } else {
+        notifications.show(`Failed to edit book. Reason: ${(editError as Error).message}`, {
+          severity: 'error',
+          autoHideDuration: 3000,
+        });
+      }
       throw editError;
     }
   }, [formValues, navigate, notifications, onSubmit, setFormErrors]);

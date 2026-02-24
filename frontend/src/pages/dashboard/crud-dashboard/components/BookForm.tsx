@@ -1,4 +1,5 @@
 import * as React from 'react';
+import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
@@ -14,6 +15,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import { useNavigate } from 'react-router-dom';
 import type { Book } from '../data/books';
+import { searchSeries } from '../data/books';
 import { MONTH_NAMES } from '../../../../constants/months';
 
 export interface BookFormState {
@@ -95,6 +97,30 @@ export default function BookForm(props: BookFormProps) {
     },
     [onFieldChange],
   );
+
+  // Series autocomplete state
+  const [seriesOptions, setSeriesOptions] = React.useState<string[]>([]);
+  const [seriesInputValue, setSeriesInputValue] = React.useState(formValues.seriesName ?? '');
+  const seriesDebounceRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    setSeriesInputValue(formValues.seriesName ?? '');
+  }, [formValues.seriesName]);
+
+  React.useEffect(() => {
+    if (seriesDebounceRef.current) window.clearTimeout(seriesDebounceRef.current);
+    seriesDebounceRef.current = window.setTimeout(async () => {
+      try {
+        const results = await searchSeries(seriesInputValue || undefined);
+        setSeriesOptions(results);
+      } catch {
+        setSeriesOptions([]);
+      }
+    }, 300);
+    return () => {
+      if (seriesDebounceRef.current) window.clearTimeout(seriesDebounceRef.current);
+    };
+  }, [seriesInputValue]);
 
   const handleReset = React.useCallback(() => {
     if (onReset) {
@@ -255,14 +281,40 @@ export default function BookForm(props: BookFormProps) {
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
-            <TextField
-              value={formValues.seriesName ?? ''}
-              onChange={handleTextFieldChange}
-              name="seriesName"
-              label="Series Name"
-              error={!!formErrors.seriesName}
-              helperText={formErrors.seriesName ?? ' '}
+            <Autocomplete
+              freeSolo
+              options={seriesOptions}
+              value={formValues.seriesName ?? null}
+              inputValue={seriesInputValue}
+              onInputChange={(_event, newInputValue) => {
+                setSeriesInputValue(newInputValue);
+              }}
+              onChange={(_event, newValue) => {
+                onFieldChange('seriesName', newValue ?? null);
+                if (!newValue) {
+                  onFieldChange('seriesPosition', null);
+                }
+              }}
+              onBlur={() => {
+                // Commit typed text as the value on blur
+                const trimmed = seriesInputValue.trim();
+                if (trimmed && trimmed !== (formValues.seriesName ?? '')) {
+                  onFieldChange('seriesName', trimmed);
+                } else if (!trimmed) {
+                  onFieldChange('seriesName', null);
+                  onFieldChange('seriesPosition', null);
+                }
+              }}
               fullWidth
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  name="seriesName"
+                  label="Series Name"
+                  error={!!formErrors.seriesName}
+                  helperText={formErrors.seriesName ?? ' '}
+                />
+              )}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>

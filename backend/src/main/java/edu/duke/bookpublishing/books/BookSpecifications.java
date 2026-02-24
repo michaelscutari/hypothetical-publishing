@@ -72,7 +72,8 @@ public final class BookSpecifications {
         cb.like(cb.lower(bookPath.get("title")), "%" + lowerTerm + "%"),
         authorPredicate,
         cb.like(cb.lower(bookPath.get("isbn13")), "%" + normalizedTerm + "%"),
-        cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"));
+        cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"),
+        cb.like(cb.lower(bookPath.get("seriesName")), "%" + lowerTerm + "%"));
   }
 
   static boolean containsAuthorPunctuation(String s) {

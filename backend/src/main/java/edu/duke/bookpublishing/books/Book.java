@@ -113,5 +113,12 @@ public class Book {
     if (isbn10 != null) {
       isbn10 = isbn10.replaceAll("-", "");
     }
+    if (seriesName != null) {
+      seriesName = StringUtils.normalizeWhitespace(seriesName);
+      if (seriesName.isEmpty()) {
+        seriesName = null;
+        seriesPosition = null;
+      }
+    }
   }
 }

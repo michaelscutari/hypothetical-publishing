@@ -2,7 +2,12 @@ import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ApiError, BooksService, type BookLookupResponse } from '../../../../api/generated';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import { createOne as createBook, validate as validateBook, type Book } from '../data/books';
+import {
+  createOne as createBook,
+  validate as validateBook,
+  type Book,
+  parseFieldErrors,
+} from '../data/books';
 import BookForm, { type FormFieldValue, type BookFormState } from './BookForm';
 import PageContainer from './PageContainer';
 
@@ -165,10 +170,15 @@ export default function BookCreate() {
 
       navigate('/books');
     } catch (createError) {
-      notifications.show(`Failed to create book. Reason: ${(createError as Error).message}`, {
-        severity: 'error',
-        autoHideDuration: 3000,
-      });
+      const fieldErrors = parseFieldErrors(createError);
+      if (fieldErrors) {
+        setFormErrors(fieldErrors);
+      } else {
+        notifications.show(`Failed to create book. Reason: ${(createError as Error).message}`, {
+          severity: 'error',
+          autoHideDuration: 3000,
+        });
+      }
       throw createError;
     }
   }, [formValues, navigate, notifications, setFormErrors]);

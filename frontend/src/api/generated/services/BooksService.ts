@@ -5,7 +5,6 @@
 import type { BookDetailResponse } from '../models/BookDetailResponse';
 import type { BookLookupResponse } from '../models/BookLookupResponse';
 import type { BookRequest } from '../models/BookRequest';
-import type { BookResponse } from '../models/BookResponse';
 import type { PagedResponseBookResponse } from '../models/PagedResponseBookResponse';
 import type { PagedResponseString } from '../models/PagedResponseString';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -33,13 +32,13 @@ export class BooksService {
      * Update an existing book
      * @param id
      * @param requestBody
-     * @returns BookResponse OK
+     * @returns any OK
      * @throws ApiError
      */
     public static updateBook(
         id: number,
         requestBody: BookRequest,
-    ): CancelablePromise<BookResponse> {
+    ): CancelablePromise<Record<string, any>> {
         return __request(OpenAPI, {
             method: 'PUT',
             url: '/api/books/{id}',
@@ -102,17 +101,34 @@ export class BooksService {
     /**
      * Create a new book
      * @param requestBody
-     * @returns BookResponse Created
+     * @returns any Created
      * @throws ApiError
      */
     public static createBook(
         requestBody: BookRequest,
-    ): CancelablePromise<BookResponse> {
+    ): CancelablePromise<Record<string, any>> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/books',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * Search distinct series names
+     * @param query
+     * @returns string OK
+     * @throws ApiError
+     */
+    public static searchSeries(
+        query?: string,
+    ): CancelablePromise<Array<string>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/books/series',
+            query: {
+                'query': query,
+            },
         });
     }
     /**

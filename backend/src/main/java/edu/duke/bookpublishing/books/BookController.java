@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -45,6 +46,13 @@ public class BookController {
 
   private static final BigDecimal DEFAULT_HAND_SOLD_ROYALTY_RATE = new BigDecimal("0.2");
   private static final BigDecimal DEFAULT_DISTRIBUTOR_ROYALTY_RATE = new BigDecimal("0.5");
+
+  private static final Sort DEFAULT_SORT =
+      Sort.by(
+          Sort.Order.asc("author"),
+          Sort.Order.asc("seriesName").nullsFirst(),
+          Sort.Order.asc("seriesPosition"),
+          Sort.Order.asc("title"));
 
   private final BookService bookService;
   private final SaleService saleService;
@@ -75,7 +83,7 @@ public class BookController {
         sort = Sort.by(new Sort.Order(dir, sortField));
       }
     } else {
-      sort = Sort.unsorted();
+      sort = DEFAULT_SORT;
     }
 
     if (showAll) {
@@ -104,6 +112,12 @@ public class BookController {
 
     Pageable pageable = PageRequest.of(page, size);
     return PagedResponse.paged(bookService.findDistinctAuthors(query, pageable));
+  }
+
+  @Operation(operationId = "searchSeries", summary = "Search distinct series names")
+  @GetMapping("/series")
+  public List<String> searchSeries(@RequestParam(required = false) String query) {
+    return bookService.findDistinctSeriesNames(query);
   }
 
   @Operation(operationId = "getBookById", summary = "Get a book by ID (includes financials)")
@@ -154,8 +168,7 @@ public class BookController {
 
   @Operation(operationId = "createBook", summary = "Create a new book")
   @PostMapping
-  @ResponseStatus(HttpStatus.CREATED)
-  public BookResponse createBook(@Valid @RequestBody BookRequest request) {
+  public ResponseEntity<?> createBook(@Valid @RequestBody BookRequest request) {
     Book book =
         Book.builder()
             .title(request.title())
@@ -177,18 +190,29 @@ public class BookController {
             .coverPrice(request.coverPrice())
             .printCost(request.printCost())
             .build();
-    return BookResponse.from(bookService.save(book));
+
+    try {
+      Book saved = bookService.createBook(book);
+      return ResponseEntity.status(HttpStatus.CREATED).body(BookResponse.from(saved));
+    } catch (IllegalArgumentException ex) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(Map.of("seriesPosition", ex.getMessage()));
+    }
   }
 
   // ------- PUT MAPPINGS -------
 
   @Operation(operationId = "updateBook", summary = "Update an existing book")
   @PutMapping("/{id}")
-  public BookResponse updateBook(@PathVariable Long id, @Valid @RequestBody BookRequest request) {
+  public ResponseEntity<?> updateBook(
+      @PathVariable Long id, @Valid @RequestBody BookRequest request) {
     Book book =
         bookService
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+
+    String oldSeriesName = book.getSeriesName();
+    Integer oldSeriesPosition = book.getSeriesPosition();
 
     book.setTitle(request.title());
     book.setAuthor(request.author());
@@ -209,7 +233,13 @@ public class BookController {
     book.setCoverPrice(request.coverPrice());
     book.setPrintCost(request.printCost());
 
-    return BookResponse.from(bookService.save(book));
+    try {
+      Book saved = bookService.updateBook(book, oldSeriesName, oldSeriesPosition);
+      return ResponseEntity.ok(BookResponse.from(saved));
+    } catch (IllegalArgumentException ex) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+          .body(Map.of("seriesPosition", ex.getMessage()));
+    }
   }
 
   // ------- DELETE MAPPINGS -------
@@ -218,10 +248,6 @@ public class BookController {
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteBook(@PathVariable Long id) {
-    Book book =
-        bookService
-            .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
-    bookService.deleteById(book.getId());
+    bookService.deleteBook(id);
   }
 }

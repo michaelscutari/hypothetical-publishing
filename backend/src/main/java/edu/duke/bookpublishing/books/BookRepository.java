@@ -21,6 +21,22 @@ public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificat
 
   Optional<Book> findByIsbn10(String isbn10);
 
+  List<Book> findBySeriesNameIgnoreCaseOrderBySeriesPositionAsc(String seriesName);
+
+  @Query(
+      """
+          SELECT DISTINCT b.seriesName FROM Book b
+          WHERE b.seriesName IS NOT NULL
+            AND LOWER(b.seriesName) LIKE CONCAT('%', LOWER(:query), '%')
+          ORDER BY b.seriesName ASC
+          """)
+  List<String> findDistinctSeriesNames(@Param("query") String query);
+
+  @Query(
+      "SELECT DISTINCT b.seriesName FROM Book b WHERE b.seriesName IS NOT NULL ORDER BY"
+          + " b.seriesName ASC")
+  List<String> findAllDistinctSeriesNames();
+
   @Query(
       """
           select distinct b.author

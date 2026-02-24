@@ -68,4 +68,15 @@ public record BookRequest(
     }
     return coverPrice.compareTo(printCost) >= 0;
   }
+
+  @AssertTrue(message = "Series position is required when series name is set")
+  public boolean isSeriesConsistent() {
+    if (seriesName != null && !seriesName.isBlank() && seriesPosition == null) {
+      return false;
+    }
+    if ((seriesName == null || seriesName.isBlank()) && seriesPosition != null) {
+      return false;
+    }
+    return true;
+  }
 }
