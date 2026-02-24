@@ -55,5 +55,6 @@ export type BookRequest = {
      */
     printCost: number;
     coverPriceGreaterThanPrintCost?: boolean;
+    seriesConsistent?: boolean;
 };
 

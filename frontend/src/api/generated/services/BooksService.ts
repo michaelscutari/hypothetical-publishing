@@ -101,7 +101,7 @@ export class BooksService {
     /**
      * Create a new book
      * @param requestBody
-     * @returns any Created
+     * @returns any OK
      * @throws ApiError
      */
     public static createBook(
