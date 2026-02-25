@@ -43,9 +43,7 @@ export default function BookList() {
   });
 
   const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
-  const [sortModel, setSortModel] = React.useState<GridSortModel>([
-    { field: 'title', sort: 'asc' },
-  ]);
+  const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
 
   const [searchQuery, setSearchQuery] = React.useState('');
   const [debouncedQuery, setDebouncedQuery] = React.useState('');
@@ -210,7 +208,6 @@ export default function BookList() {
       { field: 'title', headerName: 'Title', width: 200 },
       { field: 'author', headerName: 'Author', width: 180 },
       { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
-      { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
       {
         field: 'publicationDate',
         headerName: 'Publication',
@@ -327,6 +324,7 @@ export default function BookList() {
           <DataGrid
             rows={rowsState.rows}
             rowCount={rowsState.rowCount}
+            disableMultipleColumnsSorting={false}
             columns={columns}
             sortingMode="server"
             paginationMode="server"

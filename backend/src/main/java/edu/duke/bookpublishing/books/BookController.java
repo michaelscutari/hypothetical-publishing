@@ -55,29 +55,61 @@ public class BookController {
   @Operation(
       operationId = "getAllBooks",
       summary = "Get paginated books with optional search, sort, and filter")
+  //   @GetMapping
+  //   public PagedResponse<BookResponse> getBooks(
+  //       @RequestParam(defaultValue = "0") int page,
+  //       @RequestParam(defaultValue = "25") int size,
+  //       @RequestParam(defaultValue = "false") boolean showAll,
+  //       @RequestParam(required = false) String query,
+  //       @RequestParam(required = false) String sortField,
+  //       @RequestParam(defaultValue = "asc") String sortDirection) {
+
+  //     Sort sort;
+  //     if (sortField != null) {
+  //       Sort.Direction dir = Sort.Direction.fromString(sortDirection);
+  //       if ("publicationDate".equals(sortField)) {
+  //         sort =
+  //             Sort.by(
+  //                 new Sort.Order(dir, "publicationYear"), new Sort.Order(dir,
+  // "publicationMonth"));
+  //       } else {
+  //         sort = Sort.by(new Sort.Order(dir, sortField));
+  //       }
+  //    } else {
+  //   sort = Sort.by(
+  //       Sort.Order.asc("author"),
+  //       Sort.Order.asc("title"));
+  // }
+
   @GetMapping
   public PagedResponse<BookResponse> getBooks(
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll,
       @RequestParam(required = false) String query,
-      @RequestParam(required = false) String sortField,
-      @RequestParam(defaultValue = "asc") String sortDirection) {
+      @RequestParam(required = false) List<String> sortField,
+      @RequestParam(required = false) List<String> sortDirection) {
 
     Sort sort;
-    if (sortField != null) {
-      Sort.Direction dir = Sort.Direction.fromString(sortDirection);
-      if ("publicationDate".equals(sortField)) {
-        sort =
-            Sort.by(
-                new Sort.Order(dir, "publicationYear"), new Sort.Order(dir, "publicationMonth"));
-      } else {
-        sort = Sort.by(new Sort.Order(dir, sortField));
+    if (sortField != null && !sortField.isEmpty()) {
+      List<Sort.Order> orders = new java.util.ArrayList<>();
+      for (int i = 0; i < sortField.size(); i++) {
+        String field = sortField.get(i);
+        Sort.Direction dir =
+            (sortDirection != null && i < sortDirection.size())
+                ? Sort.Direction.fromString(sortDirection.get(i))
+                : Sort.Direction.ASC;
+        if ("publicationDate".equals(field)) {
+          orders.add(new Sort.Order(dir, "publicationYear"));
+          orders.add(new Sort.Order(dir, "publicationMonth"));
+        } else {
+          orders.add(new Sort.Order(dir, field));
+        }
       }
+      sort = Sort.by(orders);
     } else {
-      sort = Sort.unsorted();
+      sort = Sort.by(Sort.Order.asc("author"), Sort.Order.asc("title"));
     }
-
     if (showAll) {
       List<Book> all = bookService.findAll(query, sort);
       return PagedResponse.unpaged(

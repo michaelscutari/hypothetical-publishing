@@ -1,11 +1,11 @@
+import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
 import {
   BooksService,
-  type BookRequest,
   type BookDetailResponse,
+  type BookRequest,
   type BookResponse,
   type PagedResponseBookResponse,
 } from '../../../../api';
-import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
 
 export type Book = BookResponse;
 export type BookDetail = BookDetailResponse;
@@ -21,16 +21,28 @@ export async function getMany({
   query?: string;
   showAll?: boolean;
 }): Promise<{ items: Book[]; itemCount: number }> {
-  const sortField = sortModel?.[0]?.field;
-  const sortDirection = sortModel?.[0]?.sort ?? 'asc';
+  // const sortField = sortModel?.[0]?.field;
+  // const sortDirection = sortModel?.[0]?.sort ?? 'asc';
+
+  // const response: PagedResponseBookResponse = await BooksService.getAllBooks(
+  //   showAll ? 0 : paginationModel.page,
+  //   showAll ? 1000 : paginationModel.pageSize,
+  //   showAll,
+  //   query || undefined,
+  //   sortField,
+  //   sortDirection,
+  // );
+  // TO:
+  const sortFields = sortModel?.map((s) => s.field);
+  const sortDirections = sortModel?.map((s) => s.sort ?? 'asc');
 
   const response: PagedResponseBookResponse = await BooksService.getAllBooks(
     showAll ? 0 : paginationModel.page,
     showAll ? 1000 : paginationModel.pageSize,
     showAll,
     query || undefined,
-    sortField,
-    sortDirection,
+    sortFields.length ? sortFields : undefined,
+    sortDirections.length ? sortDirections : undefined,
   );
 
   return {
