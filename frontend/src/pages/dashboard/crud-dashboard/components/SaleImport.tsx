@@ -95,22 +95,18 @@ export default function SaleImport() {
   const [previewSales, setPreviewSales] = React.useState<SaleResponse[]>([]);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = React.useState(false);
 
-  const hasErrors =
-    errorState.csvErrors.length > 0 || errorState.savingErrors.length > 0;
+  const hasErrors = errorState.csvErrors.length > 0 || errorState.savingErrors.length > 0;
 
   const handleBack = React.useCallback(() => {
     navigate('/sales');
   }, [navigate]);
 
-  const handleFileChange = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.currentTarget.files?.[0] ?? null;
-      setCsvFile(file);
-      setValidationError(null);
-      event.currentTarget.value = '';
-    },
-    [],
-  );
+  const handleFileChange = React.useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0] ?? null;
+    setCsvFile(file);
+    setValidationError(null);
+    event.currentTarget.value = '';
+  }, []);
 
   const buildRequest = React.useCallback(
     (isPreview: boolean) => {
@@ -223,10 +219,7 @@ export default function SaleImport() {
 
   return (
     <PageContainer
-      breadcrumbs={[
-        { title: 'Sales Records', path: '/sales' },
-        { title: 'Import CSV' },
-      ]}
+      breadcrumbs={[{ title: 'Sales Records', path: '/sales' }, { title: 'Import CSV' }]}
       actions={
         <Button variant="text" startIcon={<ArrowBackIcon />} onClick={handleBack}>
           Back to Sales

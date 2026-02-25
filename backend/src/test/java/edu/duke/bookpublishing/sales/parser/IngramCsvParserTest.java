@@ -92,7 +92,7 @@ class IngramCsvParserTest {
     assertThat(batch.parsingErrors()).hasSize(1);
 
     ParsingError error = batch.parsingErrors().get(0);
-    assertThat(error.rowNumber()).isEqualTo(2);
+    assertThat(error.rowNumber()).isEqualTo(3);
     assertThat(error.rawLine()).isNotNull();
     assertThat(String.join(",", error.rawLine())).contains("NOT_A_NUMBER");
     assertThat(error.errorMessage()).isNotBlank();
