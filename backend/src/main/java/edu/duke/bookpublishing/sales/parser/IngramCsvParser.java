@@ -99,7 +99,7 @@ public class IngramCsvParser implements ImportParser<IngramCsvEntry> {
         .getCapturedExceptions()
         .forEach(
             ex -> {
-              long lineNumber = ex.getLineNumber();
+              long lineNumber = ex.getLineNumber() - 1;
               String[] rawLine = ex.getLine();
               String message = ex.getMessage();
               errors.add(new ParsingError(lineNumber, rawLine, message));

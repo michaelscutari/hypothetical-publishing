@@ -16,7 +16,6 @@ import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
 import edu.duke.bookpublishing.sales.parser.ParsingError;
-import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -32,6 +31,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -222,16 +222,13 @@ public class SaleService {
   }
 
   // CSV Import
+  @Transactional
   public IngramImportResponse importSalesFromCsv(IngramImportRequest ingramImportRequest) {
 
     ParsedBatch<IngramCsvEntry> parsedBatch = ingramCsvParser.parse(ingramImportRequest.csvFile());
 
     List<IngramCsvEntry> rows = parsedBatch.records();
     List<ParsingError> csvErrors = parsedBatch.parsingErrors();
-
-    if (!csvErrors.isEmpty()) {
-      return new IngramImportResponse(List.of(), csvErrors, List.of());
-    }
 
     List<Sale> sales = new ArrayList<>();
     List<ParsingError> domainErrors = new ArrayList<>();
@@ -242,16 +239,21 @@ public class SaleService {
       try {
         Sale sale = mapIngramCsvRowToSale(ingramImportRequest, parsedBatch, csvEntry);
         sales.add(sale);
-
-        if (!ingramImportRequest.isPreview()) {
-          saleRepository.save(sale);
-        }
       } catch (NotFoundException e) {
         domainErrors.add(new ParsingError(rowNum, null, "book.notFound"));
       } catch (RuntimeException e) {
         domainErrors.add(new ParsingError(rowNum, null, "sale.mappingFailed"));
       }
     }
+
+    if (!csvErrors.isEmpty() || !domainErrors.isEmpty()) {
+      return new IngramImportResponse(List.of(), csvErrors, domainErrors);
+    }
+
+    // Save if not preview
+    if (!ingramImportRequest.isPreview()) {
+      saveSalesToRepo(sales);
+    } 
 
     List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
 
@@ -328,5 +330,11 @@ public class SaleService {
         ingramCsvEntry.getSalesMarket(),
         file.getOriginalFilename(),
         parsedBatch.timestamp());
+  }
+
+  private void saveSalesToRepo(List<Sale> sales) {
+    for (Sale sale : sales) {
+      saleRepository.save(sale);
+    }
   }
 }

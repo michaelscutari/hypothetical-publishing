@@ -44,7 +44,7 @@ public class IngramCsvEntry {
 
   @CsvBindByName(column = "Returned Qty")
   @PositiveOrZero
-  @NotNull(message = "grossQty.isRequired")
+  @NotNull(message = "returnedQty.isRequired")
   private Long returnedQty;
 
   @CsvBindByName(column = "Net Qty")
@@ -53,7 +53,7 @@ public class IngramCsvEntry {
   private Long netQty;
 
   @CsvBindByName(column = "Net Compensation")
-  @DecimalMin(value = "0.00", message = "netCompensation.mustBeGreaterThanZero")
+  @DecimalMin(value = "0.00", inclusive = false, message = "netCompensation.mustBeGreaterThanZero")
   @NotNull(message = "netCompensation.isRequired")
   private BigDecimal netCompensation;
 
