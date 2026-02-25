@@ -45,6 +45,38 @@ type ErrorState = {
   savingErrors: ParsingError[];
 };
 
+const ERROR_MESSAGE_MAP: Record<string, string> = {
+  'sale.mappingFailed':
+    'This row could not be converted to a sale. Check ISBN, quantities, and compensation',
+  'book.notFound': 'Book does not exist on the website catalog',
+  'isbn.isRequired': 'ISBN is required',
+  'title.isRequired': 'Title is required',
+  'author.invalidFormat': 'Author must be in "Last, First" format',
+  'format.isRequired': 'Format is required',
+  'grossQty.isRequired': 'Gross Qty is required',
+  'returnedQty.isRequired': 'Returned Qty is required',
+  'netQty.isRequired': 'Net Qty is required',
+  'netCompensation.mustBeGreaterThanZero': 'Net Compensation must be greater than 0',
+  'netCompensation.isRequired': 'Net Compensation is required',
+  'salesMarket.isRequired': 'Sales Market is required',
+  'returnedQty.mustBeZero': 'Returned Qty must be 0 for Ingram imports',
+  'grossQty.mustEqual.netQty': 'Gross Qty must equal Net Qty',
+};
+
+const getFriendlyErrorMessage = (error: ParsingError) => {
+  const rawMessage = error.errorMessage?.trim();
+  if (!rawMessage) return 'Unknown error.';
+  const mapped = ERROR_MESSAGE_MAP[rawMessage];
+  if (mapped) return mapped;
+  if (rawMessage.startsWith('Failed to read file:')) {
+    return 'Unable to read the CSV file. Please re-export it and try again.';
+  }
+  if (/numberformat|for input string/i.test(rawMessage)) {
+    return 'One of the numeric fields has an invalid value.';
+  }
+  return rawMessage;
+};
+
 export default function SaleImport() {
   const navigate = useNavigate();
   const notifications = useNotifications();
@@ -178,7 +210,7 @@ export default function SaleImport() {
               {errors.map((error, index) => (
                 <TableRow key={`${title}-${index}`}>
                   <TableCell>{error.rowNumber ?? '-'}</TableCell>
-                  <TableCell>{error.errorMessage ?? 'Unknown error'}</TableCell>
+                  <TableCell>{getFriendlyErrorMessage(error)}</TableCell>
                   <TableCell>{error.rawLine?.join(' | ') ?? '-'}</TableCell>
                 </TableRow>
               ))}
@@ -209,34 +241,14 @@ export default function SaleImport() {
               Upload a CSV and preview the sales before committing them to the repository.
             </Typography>
 
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="Sale Month/Year"
-                value={saleDate}
-                onChange={(v) => setSaleDate(v)}
-                views={['year', 'month']}
-                format="MM/YYYY"
-                openTo="year"
-                minDate={dayjs('1900-01-01')}
-                maxDate={dayjs()}
-                slotProps={{
-                  textField: {
-                    size: 'small',
-                    placeholder: 'MM/YYYY',
-                    InputLabelProps: { shrink: true },
-                  },
-                  toolbar: { hidden: true },
-                  field: { clearable: true },
-                }}
-              />
-            </LocalizationProvider>
-
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
               <Button
                 variant="outlined"
                 startIcon={<UploadFileIcon />}
                 component="label"
                 htmlFor={fileInputId}
+                size="small"
+                sx={{ height: 40, minWidth: 140 }}
               >
                 Choose CSV
               </Button>
@@ -255,6 +267,28 @@ export default function SaleImport() {
                 InputProps={{ readOnly: true }}
                 placeholder="No file selected"
               />
+
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Sale Month/Year"
+                  value={saleDate}
+                  onChange={(v) => setSaleDate(v)}
+                  views={['year', 'month']}
+                  format="MM/YYYY"
+                  openTo="year"
+                  minDate={dayjs('1900-01-01')}
+                  maxDate={dayjs()}
+                  slotProps={{
+                    textField: {
+                      size: 'small',
+                      placeholder: 'MM/YYYY',
+                      InputLabelProps: { shrink: true },
+                    },
+                    toolbar: { hidden: true },
+                    field: { clearable: true },
+                  }}
+                />
+              </LocalizationProvider>
             </Stack>
 
             {validationError && !isPreviewDialogOpen ? (
@@ -283,7 +317,7 @@ export default function SaleImport() {
               Fix the issues below and try the import again.
             </Typography>
             {renderErrorTable('CSV Parsing Errors', errorState.csvErrors)}
-            {renderErrorTable('Mapping Errors', errorState.savingErrors)}
+            {renderErrorTable('Data Integrity Errors', errorState.savingErrors)}
           </Stack>
         </DialogContent>
         <DialogActions>
