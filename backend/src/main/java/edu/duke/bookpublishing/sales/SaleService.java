@@ -1,20 +1,5 @@
 package edu.duke.bookpublishing.sales;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.common.StringUtils;
@@ -29,7 +14,22 @@ import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
 import edu.duke.bookpublishing.sales.parser.ParsingError;
 import jakarta.transaction.Transactional;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Backend service for SaleController. All business logic is handled here.
@@ -52,14 +52,14 @@ public class SaleService {
     return saleRepository.findAll(spec, sort);
   }
 
-  public Page<Sale> getPagedSales(LocalDate startDate, LocalDate endDate, String query,
-      Pageable pageable) {
+  public Page<Sale> getPagedSales(
+      LocalDate startDate, LocalDate endDate, String query, Pageable pageable) {
     Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
     return saleRepository.findAll(spec, pageable);
   }
 
-  private Specification<Sale> buildSaleSpecification(LocalDate startDate, LocalDate endDate,
-      String query) {
+  private Specification<Sale> buildSaleSpecification(
+      LocalDate startDate, LocalDate endDate, String query) {
     Specification<Sale> spec = Specification.where(null);
 
     if (startDate != null || endDate != null) {
@@ -78,14 +78,16 @@ public class SaleService {
   /**
    * Builds grouped author payments data in the required sort order.
    *
-   * <p>
-   * Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
+   * <p>Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
    */
-  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(LocalDate startDate,
-      LocalDate endDate, String query) {
+  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(
+      LocalDate startDate, LocalDate endDate, String query) {
 
-    Sort sort = Sort.by(Sort.Order.asc("book.author").ignoreCase(), Sort.Order.desc("saleYear"),
-        Sort.Order.desc("saleMonth"));
+    Sort sort =
+        Sort.by(
+            Sort.Order.asc("book.author").ignoreCase(),
+            Sort.Order.desc("saleYear"),
+            Sort.Order.desc("saleMonth"));
 
     Specification<Sale> spec = Specification.where(null);
 
@@ -142,10 +144,17 @@ public class SaleService {
     boolean hasAuthorBeenPaid = Boolean.TRUE.equals(request.hasAuthorBeenPaid());
 
     Sale sale =
-        Sale.builder().book(book).saleSource(request.saleSource()).saleMonth(request.saleMonth())
-            .saleYear(request.saleYear()).quantitySold(request.quantitySold())
-            .publisherRevenue(publisherRevenue).authorRoyalty(authorRoyalty)
-            .hasAuthorBeenPaid(hasAuthorBeenPaid).comment(request.comment()).build();
+        Sale.builder()
+            .book(book)
+            .saleSource(request.saleSource())
+            .saleMonth(request.saleMonth())
+            .saleYear(request.saleYear())
+            .quantitySold(request.quantitySold())
+            .publisherRevenue(publisherRevenue)
+            .authorRoyalty(authorRoyalty)
+            .hasAuthorBeenPaid(hasAuthorBeenPaid)
+            .comment(request.comment())
+            .build();
 
     return saleRepository.save(sale);
   }
@@ -198,12 +207,14 @@ public class SaleService {
   }
 
   public BookFinancialSummary getBookFinancialSummary(Long bookId) {
-    return BookFinancialSummary.builder().bookId(bookId)
+    return BookFinancialSummary.builder()
+        .bookId(bookId)
         .totalUnitsSold(saleRepository.totalUnitsSoldByBook(bookId))
         .revenue(saleRepository.totalPublisherRevenueByBook(bookId))
         .unpaidRoyalty(saleRepository.totalUnpaidAuthorRoyaltyByBook(bookId))
         .paidRoyalty(saleRepository.totalPaidAuthorRoyaltyByBook(bookId))
-        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId)).build();
+        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId))
+        .build();
   }
 
   // CSV Import
@@ -220,7 +231,7 @@ public class SaleService {
     if (!csvErrors.isEmpty()) {
       return new IngramImportResult(0, parsedBatch.parsingErrors(), List.of());
     }
-    
+
     int rowNum = 0;
     for (IngramCsvEntry csvEntry : rows) {
       try {
@@ -228,23 +239,14 @@ public class SaleService {
         Sale sale = mapIngramCsvRowToSale(file, parsedBatch, csvEntry);
         saleRepository.save(sale);
         savedSales.add(sale);
-        
+
       } catch (RuntimeException e) {
 
-        domainErrors.add(new ParsingError(
-          rowNum,
-          null,
-          "sale.mappingFailed"
-        ));
-
+        domainErrors.add(new ParsingError(rowNum, null, "sale.mappingFailed"));
       }
     }
 
-    return new IngramImportResult(
-      savedSales.size(),
-      parsedBatch.parsingErrors(),
-      domainErrors
-    );
+    return new IngramImportResult(savedSales.size(), parsedBatch.parsingErrors(), domainErrors);
   }
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
@@ -264,7 +266,8 @@ public class SaleService {
       return request.publisherRevenue();
     }
 
-    return book.getCoverPrice().subtract(book.getPrintCost())
+    return book.getCoverPrice()
+        .subtract(book.getPrintCost())
         .multiply(BigDecimal.valueOf(request.quantitySold()));
   }
 
@@ -272,8 +275,8 @@ public class SaleService {
     return request.saleSource().getRoyaltyRate(book);
   }
 
-  private BigDecimal computeAuthorRoyalty(BigDecimal publisherRevenue,
-      BigDecimal authorRoyaltyRate) {
+  private BigDecimal computeAuthorRoyalty(
+      BigDecimal publisherRevenue, BigDecimal authorRoyaltyRate) {
     if (publisherRevenue == null || authorRoyaltyRate == null) {
       throw new DataIntegrityViolationException(
           "publisherRevenue and authorRoyaltyRate must be non-null");
@@ -281,27 +284,28 @@ public class SaleService {
     return publisherRevenue.multiply(authorRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
   }
 
-  private Sale mapIngramCsvRowToSale(MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
+  private Sale mapIngramCsvRowToSale(
+      MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
     return Sale.builder()
-                .saleSource(SaleSource.DISTRIBUTOR)
-                .saleMonth(null)
-                .saleYear(null)
-                .book(null)
-                .quantitySold(ingramCsvEntry.getNetQty().intValue())
-                .publisherRevenue(ingramCsvEntry.getNetCompensation())
-                .authorRoyalty(null)
-                .hasAuthorBeenPaid(false)
-                .comment(getCommentFromCSV(file, parsedBatch, ingramCsvEntry)).build();
+        .saleSource(SaleSource.DISTRIBUTOR)
+        .saleMonth(null)
+        .saleYear(null)
+        .book(null)
+        .quantitySold(ingramCsvEntry.getNetQty().intValue())
+        .publisherRevenue(ingramCsvEntry.getNetCompensation())
+        .authorRoyalty(null)
+        .hasAuthorBeenPaid(false)
+        .comment(getCommentFromCSV(file, parsedBatch, ingramCsvEntry))
+        .build();
   }
 
-  private String getCommentFromCSV(MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
+  private String getCommentFromCSV(
+      MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
     return String.format(
-      "Ingram: Format='%s' Market='%s' File='%s' (%s)",
-      ingramCsvEntry.getFormat(),
-      ingramCsvEntry.getSalesMarket(),
-      file.getOriginalFilename(),
-      parsedBatch.timestamp()
-    );
+        "Ingram: Format='%s' Market='%s' File='%s' (%s)",
+        ingramCsvEntry.getFormat(),
+        ingramCsvEntry.getSalesMarket(),
+        file.getOriginalFilename(),
+        parsedBatch.timestamp());
   }
-
 }
