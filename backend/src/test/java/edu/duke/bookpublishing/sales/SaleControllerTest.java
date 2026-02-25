@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.sales;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -18,18 +19,23 @@ import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 /**
  * Test class for SaleController.
@@ -611,6 +617,48 @@ class SaleControllerTest {
         .perform(get("/api/sales/author-payments").cookie(token).param("showAll", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content[0].sales[0].hasAuthorBeenPaid").value(true));
+  }
+
+  @Test
+  void importIngramCsvAddsSales() throws Exception {
+    Cookie token = login();
+
+    List.of(
+            new String[] {
+              "The Long Way to a Small, Angry Planet", "Chambers, Becky", "9781473619814"
+            },
+            new String[] {"A Closed and Common Orbit", "Chambers, Becky", "9780062569400"},
+            new String[] {"Record of a Spaceborn Few", "Chambers, Becky", "9780062699220"},
+            new String[] {"The Galaxy, and the Ground Within", "Chambers, Becky", "9780062936042"},
+            new String[] {"All Systems Red", "Wells, Martha", "9780765397539"},
+            new String[] {"Artificial Condition", "Wells, Martha", "9781250186928"},
+            new String[] {"Ancillary Justice", "Leckie, Ann", "9781250191786"},
+            new String[] {"Ancillary Justice", "Leckie, Ann", "9780316565172"})
+        .forEach(values -> createBook(values[0], values[1], values[2]));
+
+    ClassPathResource csvResource = new ClassPathResource("testfiles/Ingram 202509.csv");
+    MockMultipartFile csvFile =
+        new MockMultipartFile(
+            "csvFile",
+            "Ingram 202509.csv",
+            "text/csv",
+            csvResource.getInputStream().readAllBytes());
+
+    mockMvc
+        .perform(
+            MockMvcRequestBuilders.multipart("/api/sales/import")
+                .file(csvFile)
+                .param("saleMonth", "9")
+                .param("saleYear", "2025")
+                .param("isPreview", "false")
+                .cookie(token)
+                .characterEncoding(StandardCharsets.UTF_8.name()))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.savedSales", hasSize(9)))
+        .andExpect(jsonPath("$.csvErrors", hasSize(0)))
+        .andExpect(jsonPath("$.savingErrors", hasSize(0)));
+
+    assertThat(saleRepository.count()).isEqualTo(9L);
   }
 
   @Test

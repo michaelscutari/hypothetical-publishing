@@ -3,6 +3,7 @@ package edu.duke.bookpublishing.sales;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -10,7 +11,9 @@ import static org.mockito.Mockito.when;
 
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.books.BookService;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
+import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
@@ -27,7 +30,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -47,11 +49,13 @@ class SaleServiceTest {
 
   @Mock private BookRepository bookRepository;
 
+  @Mock private BookService bookService;
+
   @Mock private SaleRepository saleRepository;
 
   @Mock private ImportParser<IngramCsvEntry> ingramCsvParser;
 
-  @InjectMocks private SaleService saleService;
+  private SaleService saleService;
 
   @Captor private ArgumentCaptor<Sale> saleCaptor;
 
@@ -59,6 +63,7 @@ class SaleServiceTest {
 
   @BeforeEach
   void setUp() {
+    saleService = new SaleService(bookService, bookRepository, saleRepository, ingramCsvParser);
     book =
         Book.builder()
             .id(1L)
@@ -267,11 +272,12 @@ class SaleServiceTest {
     ParsedBatch<IngramCsvEntry> parsedBatch =
         new ParsedBatch<>(LocalDateTime.of(2024, 1, 2, 3, 4), List.of(), csvErrors);
 
-    when(ingramCsvParser.parse(file)).thenReturn(parsedBatch);
+    when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
 
-    var result = saleService.importFromCsv(file);
+    IngramImportRequest request = new IngramImportRequest(1, 2024, file, true);
+    var result = saleService.importSalesFromCsv(request);
 
-    assertThat(result.savedSales()).isEqualTo(0);
+    assertThat(result.savedSales()).isEmpty();
     assertThat(result.csvErrors()).isEqualTo(csvErrors);
     assertThat(result.savingErrors()).isEmpty();
     verify(saleRepository, times(0)).save(any(Sale.class));
@@ -283,12 +289,14 @@ class SaleServiceTest {
     LocalDateTime timestamp = LocalDateTime.of(2024, 1, 2, 3, 4);
 
     IngramCsvEntry first = new IngramCsvEntry();
+    first.setIsbn("9780743273565");
     first.setNetQty(5L);
     first.setNetCompensation(new BigDecimal("25.50"));
     first.setFormat("Hardcover");
     first.setSalesMarket("US");
 
     IngramCsvEntry second = new IngramCsvEntry();
+    second.setIsbn("9780743273565");
     second.setNetQty(2L);
     second.setNetCompensation(new BigDecimal("10.00"));
     second.setFormat("Paperback");
@@ -297,13 +305,15 @@ class SaleServiceTest {
     ParsedBatch<IngramCsvEntry> parsedBatch =
         new ParsedBatch<>(timestamp, List.of(first, second), List.of());
 
-    when(ingramCsvParser.parse(file)).thenReturn(parsedBatch);
+    when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
     when(saleRepository.save(any(Sale.class)))
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
-    var result = saleService.importFromCsv(file);
+    IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
+    var result = saleService.importSalesFromCsv(request);
 
-    assertThat(result.savedSales()).isEqualTo(2);
+    assertThat(result.savedSales()).hasSize(2);
     assertThat(result.csvErrors()).isEmpty();
     assertThat(result.savingErrors()).isEmpty();
 
@@ -314,7 +324,7 @@ class SaleServiceTest {
     assertThat(firstSaved.getSaleSource()).isEqualTo(SaleSource.DISTRIBUTOR);
     assertThat(firstSaved.getQuantitySold()).isEqualTo(5);
     assertThat(firstSaved.getPublisherRevenue()).isEqualByComparingTo("25.50");
-    assertThat(firstSaved.getAuthorRoyalty()).isNull();
+    assertThat(firstSaved.getAuthorRoyalty()).isEqualByComparingTo("5.10");
     assertThat(firstSaved.getHasAuthorBeenPaid()).isFalse();
     assertThat(firstSaved.getComment())
         .contains("Ingram: Format='Hardcover' Market='US' File='ingram.csv' (" + timestamp);
@@ -322,6 +332,7 @@ class SaleServiceTest {
     Sale secondSaved = saved.get(1);
     assertThat(secondSaved.getQuantitySold()).isEqualTo(2);
     assertThat(secondSaved.getPublisherRevenue()).isEqualByComparingTo("10.00");
+    assertThat(secondSaved.getAuthorRoyalty()).isEqualByComparingTo("2.00");
   }
 
   @Test
@@ -330,12 +341,14 @@ class SaleServiceTest {
     LocalDateTime timestamp = LocalDateTime.of(2024, 1, 2, 3, 4);
 
     IngramCsvEntry badEntry = new IngramCsvEntry();
+    badEntry.setIsbn("9780743273565");
     badEntry.setNetQty(null);
     badEntry.setNetCompensation(new BigDecimal("4.00"));
     badEntry.setFormat("Hardcover");
     badEntry.setSalesMarket("US");
 
     IngramCsvEntry goodEntry = new IngramCsvEntry();
+    goodEntry.setIsbn("9780743273565");
     goodEntry.setNetQty(1L);
     goodEntry.setNetCompensation(new BigDecimal("4.00"));
     goodEntry.setFormat("Hardcover");
@@ -344,16 +357,18 @@ class SaleServiceTest {
     ParsedBatch<IngramCsvEntry> parsedBatch =
         new ParsedBatch<>(timestamp, List.of(badEntry, goodEntry), List.of());
 
-    when(ingramCsvParser.parse(file)).thenReturn(parsedBatch);
+    when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
     when(saleRepository.save(any(Sale.class)))
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
-    var result = saleService.importFromCsv(file);
+    IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
+    var result = saleService.importSalesFromCsv(request);
 
-    assertThat(result.savedSales()).isEqualTo(1);
+    assertThat(result.savedSales()).hasSize(1);
     assertThat(result.csvErrors()).isEmpty();
     assertThat(result.savingErrors()).hasSize(1);
-    assertThat(result.savingErrors().get(0).rowNumber()).isEqualTo(0);
+    assertThat(result.savingErrors().get(0).rowNumber()).isEqualTo(1);
     assertThat(result.savingErrors().get(0).errorMessage()).isEqualTo("sale.mappingFailed");
     verify(saleRepository, times(1)).save(any(Sale.class));
   }

@@ -2,6 +2,8 @@ package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
+import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
+import edu.duke.bookpublishing.sales.dto.IngramImportResponse;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
@@ -18,8 +20,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -115,6 +119,13 @@ public class SaleController {
   @PostMapping
   public SaleResponse createSale(@Valid @RequestBody SaleRequest sale) {
     return SaleResponse.from(saleService.createSale(sale));
+  }
+
+  @Operation(operationId = "previewCsv", summary = "Previews a CSV import")
+  @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+  public IngramImportResponse importIngramCsv(
+      @Valid @ModelAttribute IngramImportRequest ingramImportRequest) {
+    return saleService.importSalesFromCsv(ingramImportRequest);
   }
 
   // ------- PUT MAPPINGS -------

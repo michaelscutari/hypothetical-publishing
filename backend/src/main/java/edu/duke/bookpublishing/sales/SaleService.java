@@ -2,12 +2,15 @@ package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.books.BookService;
 import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
-import edu.duke.bookpublishing.sales.dto.IngramImportResult;
+import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
+import edu.duke.bookpublishing.sales.dto.IngramImportResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
@@ -43,6 +46,7 @@ public class SaleService {
   private static final LocalDate MIN_SALE_START_DATE = LocalDate.of(1900, 1, 1);
   private static final LocalDate MAX_SALE_END_DATE = LocalDate.of(2100, 1, 1);
 
+  private final BookService bookService;
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
   private final ImportParser<IngramCsvEntry> ingramCsvParser;
@@ -218,35 +222,40 @@ public class SaleService {
   }
 
   // CSV Import
-  public IngramImportResult importFromCsv(MultipartFile file) {
+  public IngramImportResponse importSalesFromCsv(IngramImportRequest ingramImportRequest) {
 
-    ParsedBatch<IngramCsvEntry> parsedBatch = ingramCsvParser.parse(file);
+    ParsedBatch<IngramCsvEntry> parsedBatch = ingramCsvParser.parse(ingramImportRequest.csvFile());
 
     List<IngramCsvEntry> rows = parsedBatch.records();
     List<ParsingError> csvErrors = parsedBatch.parsingErrors();
 
-    List<Sale> savedSales = new ArrayList<>();
-    List<ParsingError> domainErrors = new ArrayList<>();
-
     if (!csvErrors.isEmpty()) {
-      return new IngramImportResult(0, parsedBatch.parsingErrors(), List.of());
+      return new IngramImportResponse(List.of(), csvErrors, List.of());
     }
+
+    List<Sale> sales = new ArrayList<>();
+    List<ParsingError> domainErrors = new ArrayList<>();
 
     int rowNum = 0;
     for (IngramCsvEntry csvEntry : rows) {
+      rowNum++;
       try {
+        Sale sale = mapIngramCsvRowToSale(ingramImportRequest, parsedBatch, csvEntry);
+        sales.add(sale);
 
-        Sale sale = mapIngramCsvRowToSale(file, parsedBatch, csvEntry);
-        saleRepository.save(sale);
-        savedSales.add(sale);
-
+        if (!ingramImportRequest.isPreview()) {
+          saleRepository.save(sale);
+        }
+      } catch (NotFoundException e) {
+        domainErrors.add(new ParsingError(rowNum, null, "book.notFound"));
       } catch (RuntimeException e) {
-
         domainErrors.add(new ParsingError(rowNum, null, "sale.mappingFailed"));
       }
     }
 
-    return new IngramImportResult(savedSales.size(), parsedBatch.parsingErrors(), domainErrors);
+    List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
+
+    return new IngramImportResponse(saleResponses, parsedBatch.parsingErrors(), domainErrors);
   }
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
@@ -285,17 +294,29 @@ public class SaleService {
   }
 
   private Sale mapIngramCsvRowToSale(
-      MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
+      IngramImportRequest ingramImportRequest,
+      ParsedBatch<IngramCsvEntry> parsedBatch,
+      IngramCsvEntry ingramCsvEntry) {
+
+    Book book =
+        bookService
+            .findBookByIsbn(ingramCsvEntry.getIsbn())
+            .orElseThrow(() -> new NotFoundException("Book not found"));
+
+    BigDecimal authorRoyaltyRate = SaleSource.DISTRIBUTOR.getRoyaltyRate(book);
+    BigDecimal authorRoyalty =
+        computeAuthorRoyalty(ingramCsvEntry.getNetCompensation(), authorRoyaltyRate);
+
     return Sale.builder()
         .saleSource(SaleSource.DISTRIBUTOR)
-        .saleMonth(null)
-        .saleYear(null)
-        .book(null)
+        .saleMonth(ingramImportRequest.saleMonth())
+        .saleYear(ingramImportRequest.saleYear())
+        .book(book)
         .quantitySold(ingramCsvEntry.getNetQty().intValue())
         .publisherRevenue(ingramCsvEntry.getNetCompensation())
-        .authorRoyalty(null)
+        .authorRoyalty(authorRoyalty)
         .hasAuthorBeenPaid(false)
-        .comment(getCommentFromCSV(file, parsedBatch, ingramCsvEntry))
+        .comment(getCommentFromCSV(ingramImportRequest.csvFile(), parsedBatch, ingramCsvEntry))
         .build();
   }
 

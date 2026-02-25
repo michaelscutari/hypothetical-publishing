@@ -67,4 +67,24 @@ public class BookService {
   public void deleteById(Long id) {
     bookRepository.deleteById(id);
   }
+
+  public Optional<Book> findBookByIsbn(String isbn) {
+    if (isbn == null || isbn.isBlank()) {
+      return Optional.empty();
+    }
+
+    String normalized = isbn.replace("-", "").replaceAll("\\s+", "");
+    if (normalized.length() == 13) {
+      return bookRepository.findByIsbn13(normalized);
+    }
+    if (normalized.length() == 10) {
+      return bookRepository.findByIsbn10(normalized);
+    }
+
+    Optional<Book> byIsbn13 = bookRepository.findByIsbn13(normalized);
+    if (byIsbn13.isPresent()) {
+      return byIsbn13;
+    }
+    return bookRepository.findByIsbn10(normalized);
+  }
 }

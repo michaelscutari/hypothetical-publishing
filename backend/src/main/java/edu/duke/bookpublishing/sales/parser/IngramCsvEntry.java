@@ -21,46 +21,44 @@ import lombok.Setter;
 public class IngramCsvEntry {
 
   @CsvBindByName(column = "ISBN")
-  @NotBlank
+  @NotBlank(message = "isbn.isRequired")
   @ISBNAny
   private String isbn;
 
   @CsvBindByName(column = "Title")
-  @NotBlank
+  @NotBlank(message = "title.isRequired")
   private String title;
 
   @CsvBindByName(column = "Author")
-  @NotBlank
   @Pattern(regexp = "^.+?,\\s*.+$", message = "author.invalidFormat")
   private String author;
 
   @CsvBindByName(column = "Format")
-  @NotBlank
+  @NotBlank(message = "format.isRequired")
   private String format;
 
   @CsvBindByName(column = "Gross Qty")
   @Positive
-  @NotNull
+  @NotNull(message = "grossQty.isRequired")
   private Long grossQty;
 
   @CsvBindByName(column = "Returned Qty")
   @PositiveOrZero
-  @NotNull
+  @NotNull(message = "grossQty.isRequired")
   private Long returnedQty;
 
   @CsvBindByName(column = "Net Qty")
   @Positive
-  @NotNull
+  @NotNull(message = "netQty.isRequired")
   private Long netQty;
 
   @CsvBindByName(column = "Net Compensation")
-  @DecimalMin("0.00")
-  @NotNull
+  @DecimalMin(value = "0.00", message = "netCompensation.mustBeGreaterThanZero")
+  @NotNull(message = "netCompensation.isRequired")
   private BigDecimal netCompensation;
 
   @CsvBindByName(column = "Sales Market")
-  @NotBlank
-  @Pattern(regexp = "^[A-Z]{2}.*$", message = "salesMarket.invalidFormat")
+  @NotBlank(message = "salesMarket.isRequired")
   private String salesMarket;
 
   // --------- Cross-Field Validation ---------
