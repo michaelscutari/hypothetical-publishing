@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.opencsv.bean.CsvToBean;
 import com.opencsv.bean.CsvToBeanBuilder;
 
-public class IngramCsvParser implements ImportParser<IngramCsvRow> {
+public class IngramCsvParser implements ImportParser<IngramCsvEntry> {
 
     @Override
     public boolean supports(String contentType, String filename) {
@@ -20,15 +20,15 @@ public class IngramCsvParser implements ImportParser<IngramCsvRow> {
     }
 
     @Override
-    public ParsedBatch<IngramCsvRow> parse(MultipartFile file) {
-        List<IngramCsvRow> records = new ArrayList<>();
+    public ParsedBatch<IngramCsvEntry> parse(MultipartFile file) {
+        List<IngramCsvEntry> records = new ArrayList<>();
         List<ParsingError> errors = new ArrayList<>();
 
         try (Reader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
 
-            CsvToBean<IngramCsvRow> csvToBean =
-                new CsvToBeanBuilder<IngramCsvRow>(reader)
-                        .withType(IngramCsvRow.class)
+            CsvToBean<IngramCsvEntry> csvToBean =
+                new CsvToBeanBuilder<IngramCsvEntry>(reader)
+                        .withType(IngramCsvEntry.class)
                         .withIgnoreLeadingWhiteSpace(true)
                         .withThrowExceptions(false)
                         .build();
@@ -42,11 +42,11 @@ public class IngramCsvParser implements ImportParser<IngramCsvRow> {
                 errors.add(new ParsingError(lineNumber, rawLine, message));
             });
 
-            return new ParsedBatch<IngramCsvRow>(LocalDateTime.now(), records, errors);
+            return new ParsedBatch<IngramCsvEntry>(LocalDateTime.now(), records, errors);
 
         } catch (IOException e) {
             errors.add(new ParsingError(-1, null, "Failed to read file: " + e.getMessage()));
-            return new ParsedBatch<IngramCsvRow>(LocalDateTime.now(), List.of(), errors);
+            return new ParsedBatch<IngramCsvEntry>(LocalDateTime.now(), List.of(), errors);
         }
 
     }

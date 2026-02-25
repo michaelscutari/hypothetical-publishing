@@ -21,11 +21,13 @@ import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
+import edu.duke.bookpublishing.sales.dto.IngramImportResult;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
-import edu.duke.bookpublishing.sales.parser.IngramCsvParser;
-import edu.duke.bookpublishing.sales.parser.IngramCsvRow;
+import edu.duke.bookpublishing.sales.parser.ImportParser;
+import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
+import edu.duke.bookpublishing.sales.parser.ParsingError;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 
@@ -43,21 +45,21 @@ public class SaleService {
 
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
-  private final IngramCsvParser ingramCsvParser;
+  private final ImportParser<IngramCsvEntry> ingramCsvParser;
 
   public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, String query, Sort sort) {
     Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
     return saleRepository.findAll(spec, sort);
   }
 
-  public Page<Sale> getPagedSales(
-      LocalDate startDate, LocalDate endDate, String query, Pageable pageable) {
+  public Page<Sale> getPagedSales(LocalDate startDate, LocalDate endDate, String query,
+      Pageable pageable) {
     Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
     return saleRepository.findAll(spec, pageable);
   }
 
-  private Specification<Sale> buildSaleSpecification(
-      LocalDate startDate, LocalDate endDate, String query) {
+  private Specification<Sale> buildSaleSpecification(LocalDate startDate, LocalDate endDate,
+      String query) {
     Specification<Sale> spec = Specification.where(null);
 
     if (startDate != null || endDate != null) {
@@ -76,16 +78,14 @@ public class SaleService {
   /**
    * Builds grouped author payments data in the required sort order.
    *
-   * <p>Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
+   * <p>
+   * Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
    */
-  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(
-      LocalDate startDate, LocalDate endDate, String query) {
+  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(LocalDate startDate,
+      LocalDate endDate, String query) {
 
-    Sort sort =
-        Sort.by(
-            Sort.Order.asc("book.author").ignoreCase(),
-            Sort.Order.desc("saleYear"),
-            Sort.Order.desc("saleMonth"));
+    Sort sort = Sort.by(Sort.Order.asc("book.author").ignoreCase(), Sort.Order.desc("saleYear"),
+        Sort.Order.desc("saleMonth"));
 
     Specification<Sale> spec = Specification.where(null);
 
@@ -142,17 +142,10 @@ public class SaleService {
     boolean hasAuthorBeenPaid = Boolean.TRUE.equals(request.hasAuthorBeenPaid());
 
     Sale sale =
-        Sale.builder()
-            .book(book)
-            .saleSource(request.saleSource())
-            .saleMonth(request.saleMonth())
-            .saleYear(request.saleYear())
-            .quantitySold(request.quantitySold())
-            .publisherRevenue(publisherRevenue)
-            .authorRoyalty(authorRoyalty)
-            .hasAuthorBeenPaid(hasAuthorBeenPaid)
-            .comment(request.comment())
-            .build();
+        Sale.builder().book(book).saleSource(request.saleSource()).saleMonth(request.saleMonth())
+            .saleYear(request.saleYear()).quantitySold(request.quantitySold())
+            .publisherRevenue(publisherRevenue).authorRoyalty(authorRoyalty)
+            .hasAuthorBeenPaid(hasAuthorBeenPaid).comment(request.comment()).build();
 
     return saleRepository.save(sale);
   }
@@ -205,20 +198,53 @@ public class SaleService {
   }
 
   public BookFinancialSummary getBookFinancialSummary(Long bookId) {
-    return BookFinancialSummary.builder()
-        .bookId(bookId)
+    return BookFinancialSummary.builder().bookId(bookId)
         .totalUnitsSold(saleRepository.totalUnitsSoldByBook(bookId))
         .revenue(saleRepository.totalPublisherRevenueByBook(bookId))
         .unpaidRoyalty(saleRepository.totalUnpaidAuthorRoyaltyByBook(bookId))
         .paidRoyalty(saleRepository.totalPaidAuthorRoyaltyByBook(bookId))
-        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId))
-        .build();
+        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId)).build();
   }
 
   // CSV Import
-  public List<Sale> importFromCsv(MultipartFile file) {
-    ParsedBatch<IngramCsvRow> parsedBatch = ingramCsvParser.parse(file);
+  public IngramImportResult importFromCsv(MultipartFile file) {
+
+    ParsedBatch<IngramCsvEntry> parsedBatch = ingramCsvParser.parse(file);
+
+    List<IngramCsvEntry> rows = parsedBatch.records();
+    List<ParsingError> csvErrors = parsedBatch.parsingErrors();
+
+    List<Sale> savedSales = new ArrayList<>();
+    List<ParsingError> domainErrors = new ArrayList<>();
+
+    if (!csvErrors.isEmpty()) {
+      return new IngramImportResult(0, parsedBatch.parsingErrors(), List.of());
+    }
     
+    int rowNum = 0;
+    for (IngramCsvEntry csvEntry : rows) {
+      try {
+
+        Sale sale = mapIngramCsvRowToSale(file, parsedBatch, csvEntry);
+        saleRepository.save(sale);
+        savedSales.add(sale);
+        
+      } catch (RuntimeException e) {
+
+        domainErrors.add(new ParsingError(
+          rowNum,
+          null,
+          "sale.mappingFailed"
+        ));
+
+      }
+    }
+
+    return new IngramImportResult(
+      savedSales.size(),
+      parsedBatch.parsingErrors(),
+      domainErrors
+    );
   }
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
@@ -238,8 +264,7 @@ public class SaleService {
       return request.publisherRevenue();
     }
 
-    return book.getCoverPrice()
-        .subtract(book.getPrintCost())
+    return book.getCoverPrice().subtract(book.getPrintCost())
         .multiply(BigDecimal.valueOf(request.quantitySold()));
   }
 
@@ -247,12 +272,36 @@ public class SaleService {
     return request.saleSource().getRoyaltyRate(book);
   }
 
-  private BigDecimal computeAuthorRoyalty(
-      BigDecimal publisherRevenue, BigDecimal authorRoyaltyRate) {
+  private BigDecimal computeAuthorRoyalty(BigDecimal publisherRevenue,
+      BigDecimal authorRoyaltyRate) {
     if (publisherRevenue == null || authorRoyaltyRate == null) {
       throw new DataIntegrityViolationException(
           "publisherRevenue and authorRoyaltyRate must be non-null");
     }
     return publisherRevenue.multiply(authorRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
   }
+
+  private Sale mapIngramCsvRowToSale(MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
+    return Sale.builder()
+                .saleSource(SaleSource.DISTRIBUTOR)
+                .saleMonth(null)
+                .saleYear(null)
+                .book(null)
+                .quantitySold(ingramCsvEntry.getNetQty().intValue())
+                .publisherRevenue(ingramCsvEntry.getNetCompensation())
+                .authorRoyalty(null)
+                .hasAuthorBeenPaid(false)
+                .comment(getCommentFromCSV(file, parsedBatch, ingramCsvEntry)).build();
+  }
+
+  private String getCommentFromCSV(MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
+    return String.format(
+      "Ingram: Format='%s' Market='%s' File='%s' (%s)",
+      ingramCsvEntry.getFormat(),
+      ingramCsvEntry.getSalesMarket(),
+      file.getOriginalFilename(),
+      parsedBatch.timestamp()
+    );
+  }
+
 }

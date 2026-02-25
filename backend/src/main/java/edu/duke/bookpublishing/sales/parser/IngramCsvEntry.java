@@ -18,7 +18,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @NoArgsConstructor
-public class IngramCsvRow {
+public class IngramCsvEntry {
 
     @CsvBindByName(column = "ISBN")
     @NotBlank
