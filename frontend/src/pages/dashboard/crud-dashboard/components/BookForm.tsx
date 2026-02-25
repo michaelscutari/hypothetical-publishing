@@ -1,4 +1,5 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -123,7 +124,18 @@ export default function BookForm(props: BookFormProps) {
     },
     [onFieldChange],
   );
-
+  const handleClearImage = React.useCallback(() => {
+    if (pickedFilePreview.current) {
+      URL.revokeObjectURL(pickedFilePreview.current);
+      pickedFilePreview.current = null;
+    }
+    setPreviewUrl(null);
+    onFieldChange('coverImageFile', null);
+    // Reset the file input so the same file can be re-selected if needed.
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [onFieldChange]);
   const handleChooseFile = React.useCallback(() => {
     fileInputRef.current?.click();
   }, []);
@@ -388,20 +400,43 @@ export default function BookForm(props: BookFormProps) {
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                 {previewUrl && (
-                  <Box
-                    component="img"
-                    src={previewUrl}
-                    alt="Cover preview"
-                    sx={{
-                      width: 80,
-                      height: 120,
-                      objectFit: 'cover',
-                      borderRadius: 1,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      flexShrink: 0,
-                    }}
-                  />
+                  <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                    <Box
+                      component="img"
+                      src={previewUrl}
+                      alt="Cover preview"
+                      sx={{
+                        width: 80,
+                        height: 120,
+                        objectFit: 'contain',
+                        bgcolor: 'grey.100',
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        display: 'block',
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={handleClearImage}
+                      sx={{
+                        position: 'absolute',
+                        top: -8,
+                        right: -8,
+                        bgcolor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        padding: '2px',
+                        '&:hover': {
+                          bgcolor: 'error.light',
+                          borderColor: 'error.light',
+                          color: 'white',
+                        },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </Box>
                 )}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                   <Button variant="outlined" size="small" onClick={handleChooseFile}>

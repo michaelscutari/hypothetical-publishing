@@ -27,6 +27,16 @@ async function uploadCover(bookId: number, file: File): Promise<void> {
   }
 }
 
+async function deleteCover(bookId: number): Promise<void> {
+  const response = await fetch(`/api/books/${bookId}/cover`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+  if (!response.ok) {
+    throw new Error(`Cover delete failed: ${response.status}`);
+  }
+}
+
 function BookEditForm({
   initialValues,
   bookId,
@@ -39,6 +49,7 @@ function BookEditForm({
   const navigate = useNavigate();
 
   const notifications = useNotifications();
+  const coverRemovedRef = React.useRef(false);
 
   const [formState, setFormState] = React.useState<BookFormState>(() => ({
     values: initialValues,
@@ -62,6 +73,11 @@ function BookEditForm({
 
   const handleFormFieldChange = React.useCallback(
     (name: keyof BookFormState['values'], value: FormFieldValue) => {
+      if (name === 'coverImageFile' && value === null) {
+        coverRemovedRef.current = true;
+      } else if (name === 'coverImageFile') {
+        coverRemovedRef.current = false;
+      }
       setFormState((prev) => {
         const newValues = { ...prev.values, [name]: value };
         const { issues } = validateBook(newValues);
@@ -92,13 +108,39 @@ function BookEditForm({
     try {
       await onSubmit(formValues);
 
+      // const coverFile =
+      //   formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;
+      // if (coverFile) {
+      //   try {
+      //     await uploadCover(bookId, coverFile);
+      //   } catch {
+      //     notifications.show('Book saved, but cover upload failed. You can retry from this page.', {
+      //       severity: 'warning',
+      //       autoHideDuration: 5000,
+      //     });
+      //     navigate(`/books/${bookId}`);
+      //     return;
+      //   }
+      // }
       const coverFile =
         formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;
+
       if (coverFile) {
         try {
           await uploadCover(bookId, coverFile);
         } catch {
           notifications.show('Book saved, but cover upload failed. You can retry from this page.', {
+            severity: 'warning',
+            autoHideDuration: 5000,
+          });
+          navigate(`/books/${bookId}`);
+          return;
+        }
+      } else if (coverRemovedRef.current) {
+        try {
+          await deleteCover(bookId);
+        } catch {
+          notifications.show('Book saved, but cover removal failed.', {
             severity: 'warning',
             autoHideDuration: 5000,
           });
