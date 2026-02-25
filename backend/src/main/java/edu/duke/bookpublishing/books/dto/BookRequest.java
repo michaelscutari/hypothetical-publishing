@@ -18,7 +18,7 @@ public record BookRequest(
     @Schema(description = "Book title", example = "The Great Gatsby")
         @NotBlank(message = "Title is required")
         String title,
-    @Schema(description = "Author name(s)", example = "Fitzgerald, F. Scott")
+    @Schema(description = "Author ID", example = "12345")
         @NotNull(message = "Author ID is required")
         Long authorId,
     @Schema(description = "ISBN-13 identifier", example = "9780743273565")

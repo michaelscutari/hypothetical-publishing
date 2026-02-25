@@ -1,6 +1,8 @@
 package edu.duke.bookpublishing.author;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -358,6 +360,89 @@ class AuthorControllerTest {
     mockMvc
         .perform(delete("/api/authors/{id}", 99999).cookie(login()))
         .andExpect(status().isNotFound());
+  }
+
+  @Test
+  void deleteAuthorCascadesDeleteToBooksAndSales() throws Exception {
+    Cookie token = login();
+    AuthorResponse created = createAuthor(token, "Cascade Test", "cascade@test.com");
+
+    Author author = authorRepository.findById(created.id()).orElseThrow();
+
+    // Create two books for the author
+    Book book1 =
+        bookRepository.save(
+            Book.builder()
+                .title("Book One")
+                .author(author)
+                .isbn13("9780000000001")
+                .publicationYear(2024)
+                .publicationMonth(1)
+                .distributorAuthorRoyaltyRate(new BigDecimal("0.50"))
+                .handsoldAuthorRoyaltyRate(new BigDecimal("0.20"))
+                .coverPrice(new BigDecimal("20.00"))
+                .printCost(new BigDecimal("5.00"))
+                .build());
+
+    Book book2 =
+        bookRepository.save(
+            Book.builder()
+                .title("Book Two")
+                .author(author)
+                .isbn13("9780000000002")
+                .publicationYear(2024)
+                .publicationMonth(2)
+                .distributorAuthorRoyaltyRate(new BigDecimal("0.50"))
+                .handsoldAuthorRoyaltyRate(new BigDecimal("0.20"))
+                .coverPrice(new BigDecimal("25.00"))
+                .printCost(new BigDecimal("6.00"))
+                .build());
+
+    // Create sales for both books
+    Sale sale1 =
+        saleRepository.save(
+            Sale.builder()
+                .book(book1)
+                .saleSource(edu.duke.bookpublishing.sales.enums.SaleSource.DISTRIBUTOR)
+                .saleMonth(1)
+                .saleYear(2024)
+                .quantitySold(10)
+                .publisherRevenue(new BigDecimal("100.00"))
+                .authorRoyalty(new BigDecimal("50.00"))
+                .hasAuthorBeenPaid(false)
+                .build());
+
+    Sale sale2 =
+        saleRepository.save(
+            Sale.builder()
+                .book(book2)
+                .saleSource(edu.duke.bookpublishing.sales.enums.SaleSource.HAND_SOLD)
+                .saleMonth(2)
+                .saleYear(2024)
+                .quantitySold(5)
+                .publisherRevenue(new BigDecimal("75.00"))
+                .authorRoyalty(new BigDecimal("25.00"))
+                .hasAuthorBeenPaid(false)
+                .build());
+
+    // Verify data exists before deletion
+    assertTrue(authorRepository.existsById(author.getId()));
+    assertTrue(bookRepository.existsById(book1.getId()));
+    assertTrue(bookRepository.existsById(book2.getId()));
+    assertTrue(saleRepository.existsById(sale1.getId()));
+    assertTrue(saleRepository.existsById(sale2.getId()));
+
+    // Delete the author
+    mockMvc
+        .perform(delete("/api/authors/{id}", created.id()).cookie(token))
+        .andExpect(status().isNoContent());
+
+    // Verify cascade delete: author, all books, and all sales should be deleted
+    assertFalse(authorRepository.existsById(author.getId()));
+    assertFalse(bookRepository.existsById(book1.getId()));
+    assertFalse(bookRepository.existsById(book2.getId()));
+    assertFalse(saleRepository.existsById(sale1.getId()));
+    assertFalse(saleRepository.existsById(sale2.getId()));
   }
 
   // ---- FINANCIAL SUMMARY (via @Formula) ----

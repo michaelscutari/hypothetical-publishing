@@ -1,16 +1,15 @@
 package edu.duke.bookpublishing.author;
 
-import edu.duke.bookpublishing.author.dto.AuthorRequest;
-import edu.duke.bookpublishing.books.BookSpecifications;
-import edu.duke.bookpublishing.common.StringUtils;
-import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import java.util.List;
 import java.util.Optional;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import edu.duke.bookpublishing.author.dto.AuthorRequest;
+import edu.duke.bookpublishing.common.StringUtils;
+import edu.duke.bookpublishing.exception.custom.NotFoundException;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
@@ -52,7 +51,7 @@ public class AuthorService {
     if (q == null || q.isBlank()) {
       return authorRepository.findAll(sort);
     }
-    if (BookSpecifications.containsAuthorPunctuation(q)) {
+    if (StringUtils.containsAuthorPunctuation(q)) {
       return authorRepository.findByNameLiteral(q, sort);
     }
     return authorRepository.findByNameLenient(q, sort);
@@ -63,7 +62,7 @@ public class AuthorService {
     if (q == null || q.isBlank()) {
       return authorRepository.findAll(pageable);
     }
-    if (BookSpecifications.containsAuthorPunctuation(q)) {
+    if (StringUtils.containsAuthorPunctuation(q)) {
       return authorRepository.findByNameLiteral(q, pageable);
     }
     return authorRepository.findByNameLenient(q, pageable);
