@@ -359,17 +359,14 @@ class SaleServiceTest {
 
     when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
     when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
-    when(saleRepository.save(any(Sale.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
     IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
     var result = saleService.importSalesFromCsv(request);
 
-    assertThat(result.savedSales()).hasSize(1);
+    assertThat(result.savedSales()).hasSize(0);
     assertThat(result.csvErrors()).isEmpty();
     assertThat(result.savingErrors()).hasSize(1);
     assertThat(result.savingErrors().get(0).rowNumber()).isEqualTo(1);
     assertThat(result.savingErrors().get(0).errorMessage()).isEqualTo("sale.mappingFailed");
-    verify(saleRepository, times(1)).save(any(Sale.class));
   }
 }

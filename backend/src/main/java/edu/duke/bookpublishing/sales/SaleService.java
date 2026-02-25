@@ -253,7 +253,7 @@ public class SaleService {
     // Save if not preview
     if (!ingramImportRequest.isPreview()) {
       saveSalesToRepo(sales);
-    } 
+    }
 
     List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
 
