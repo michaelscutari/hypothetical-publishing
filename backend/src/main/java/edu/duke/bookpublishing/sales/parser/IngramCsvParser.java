@@ -1,9 +1,5 @@
 package edu.duke.bookpublishing.sales.parser;
 
-import com.opencsv.bean.CsvToBean;
-import com.opencsv.bean.CsvToBeanBuilder;
-import jakarta.validation.ConstraintViolation;
-import jakarta.validation.Validator;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -13,9 +9,13 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+import com.opencsv.bean.CsvToBean;
+import com.opencsv.bean.CsvToBeanBuilder;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validator;
+import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -38,12 +38,13 @@ public class IngramCsvParser implements ImportParser<IngramCsvEntry> {
         new BufferedReader(new InputStreamReader(file.getInputStream()))) {
       List<String> lines = readAllLines(bufferedReader);
       stripBomIfPresent(lines);
-      Reader reader = buildCsvReaderExcludingTrailingRows(lines, 2);
+      List<String> trimmedLines = trimTrailingRows(lines, 2);
+      Reader reader = buildCsvReader(trimmedLines);
 
       CsvToBean<IngramCsvEntry> csvToBean = buildCsvToBean(reader);
       records = csvToBean.parse();
 
-      collectParseErrors(csvToBean, errors);
+      collectParseErrors(csvToBean, trimmedLines, errors);
       validateRecords(records, errors);
 
       return new ParsedBatch<IngramCsvEntry>(LocalDateTime.now(), records, errors);
@@ -73,10 +74,14 @@ public class IngramCsvParser implements ImportParser<IngramCsvEntry> {
     }
   }
 
-  private static Reader buildCsvReaderExcludingTrailingRows(List<String> lines, int rowsToSkip) {
+  private static List<String> trimTrailingRows(List<String> lines, int rowsToSkip) {
     int endIndex = Math.max(0, lines.size() - Math.max(0, rowsToSkip));
+    return new ArrayList<>(lines.subList(0, endIndex));
+  }
+
+  private static Reader buildCsvReader(List<String> lines) {
     StringBuilder csvBuilder = new StringBuilder();
-    for (int i = 0; i < endIndex; i++) {
+    for (int i = 0; i < lines.size(); i++) {
       if (i > 0) {
         csvBuilder.append('\n');
       }
@@ -94,12 +99,12 @@ public class IngramCsvParser implements ImportParser<IngramCsvEntry> {
   }
 
   private static void collectParseErrors(
-      CsvToBean<IngramCsvEntry> csvToBean, List<ParsingError> errors) {
+      CsvToBean<IngramCsvEntry> csvToBean, List<String> lines, List<ParsingError> errors) {
     csvToBean
         .getCapturedExceptions()
         .forEach(
             ex -> {
-              long lineNumber = ex.getLineNumber();
+              long lineNumber = ex.getLineNumber() + 1;
               String[] rawLine = ex.getLine();
               String message = ex.getMessage();
               errors.add(new ParsingError(lineNumber, rawLine, message));

@@ -10,6 +10,7 @@ import SaleList from './components/SaleList';
 import SaleCreate from './components/SaleCreate';
 import SaleShow from './components/SaleShow';
 import SaleEdit from './components/SaleEdit';
+import SaleImport from './components/SaleImport';
 import AuthorPaymentsView from './components/AuthorPayments';
 
 export default function CrudDashboard() {
@@ -27,6 +28,7 @@ export default function CrudDashboard() {
           <Route path="*" element={<Navigate to="/books" replace />} />
           <Route path="sales" element={<SaleList />} />
           <Route path="sales/new" element={<SaleCreate />} />
+          <Route path="sales/import" element={<SaleImport />} />
           <Route path="sales/:saleId" element={<SaleShow />} />
           <Route path="sales/:saleId/edit" element={<SaleEdit />} />
           <Route path="author-payments" element={<AuthorPaymentsView />} />
