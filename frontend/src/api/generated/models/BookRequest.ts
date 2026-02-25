@@ -11,7 +11,7 @@ export type BookRequest = {
      */
     title: string;
     /**
-     * Author name(s)
+     * Author ID
      */
     authorId: number;
     /**

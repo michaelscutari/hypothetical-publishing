@@ -11,39 +11,43 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface AuthorRepository extends JpaRepository<Author, Long> {
-    Page<Author> findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(String name,
-            String email, Pageable pageable);
+  Page<Author> findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+      String name, String email, Pageable pageable);
 
-    List<Author> findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(String name,
-            String email, Sort sort);
+  List<Author> findByNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+      String name, String email, Sort sort);
 
-    @Query("""
+  @Query(
+      """
             select a from Author a
             where replace(replace(replace(lower(a.name), '.', ''), '''', ''), '-', '')
               like concat('%', replace(replace(replace(lower(:query), '.', ''), '''', ''), '-', ''), '%')
             or lower(a.email) like concat('%', lower(:query), '%')
             """)
-    List<Author> findByNameLenient(@Param("query") String query, Sort sort);
+  List<Author> findByNameLenient(@Param("query") String query, Sort sort);
 
-    @Query("""
+  @Query(
+      """
             select a from Author a
             where replace(replace(replace(lower(a.name), '.', ''), '''', ''), '-', '')
               like concat('%', replace(replace(replace(lower(:query), '.', ''), '''', ''), '-', ''), '%')
             or lower(a.email) like concat('%', lower(:query), '%')
             """)
-    Page<Author> findByNameLenient(@Param("query") String query, Pageable pageable);
+  Page<Author> findByNameLenient(@Param("query") String query, Pageable pageable);
 
-    @Query("""
+  @Query(
+      """
             select a from Author a
             where lower(a.name) like concat('%', lower(:query), '%')
             or lower(a.email) like concat('%', lower(:query), '%')
             """)
-    List<Author> findByNameLiteral(@Param("query") String query, Sort sort);
+  List<Author> findByNameLiteral(@Param("query") String query, Sort sort);
 
-    @Query("""
+  @Query(
+      """
             select a from Author a
             where lower(a.name) like concat('%', lower(:query), '%')
             or lower(a.email) like concat('%', lower(:query), '%')
             """)
-    Page<Author> findByNameLiteral(@Param("query") String query, Pageable pageable);
+  Page<Author> findByNameLiteral(@Param("query") String query, Pageable pageable);
 }
