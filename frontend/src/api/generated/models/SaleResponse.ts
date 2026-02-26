@@ -27,10 +27,6 @@ export type SaleResponse = {
      */
     saleSource?: SaleResponse.saleSource;
     /**
-     * Author ID of the sold book
-     */
-    authorId?: number;
-    /**
      * Month of the sale
      */
     saleMonth?: number;
