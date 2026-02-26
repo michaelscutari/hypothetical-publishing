@@ -48,7 +48,7 @@ import {
   type MarkAllPaidRequest,
   type MarkAllPaidResponse,
   type PagedResponseAuthorPaymentGroupResponse,
-  type PagedResponseString,
+  type AuthorResponse,
 } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
@@ -76,12 +76,6 @@ function unwrap<T>(r: unknown): T {
   return r as T;
 }
 
-function isPagedResponseString(x: unknown): x is PagedResponseString {
-  if (!x || typeof x !== 'object') return false;
-  const rec = x as Record<string, unknown>;
-  return Array.isArray(rec.content) || Array.isArray(x);
-}
-
 export default function AuthorPaymentsView() {
   const navigate = useNavigate();
   const notifications = useNotifications();
@@ -102,10 +96,12 @@ export default function AuthorPaymentsView() {
   const [debouncedQuery, setDebouncedQuery] = React.useState<string>('');
   const debounceRef = React.useRef<number | null>(null);
 
-  const [authorOptions, setAuthorOptions] = React.useState<string[]>([]);
+  const [authorOptions, setAuthorOptions] = React.useState<AuthorResponse[]>([]);
   const authorDebounceRef = React.useRef<number | null>(null);
 
-  const [confirmingAuthor, setConfirmingAuthor] = React.useState<string | null>(null);
+  const [confirmingGroup, setConfirmingGroup] = React.useState<AuthorPaymentGroupResponse | null>(
+    null,
+  );
   const [confirmingUnpaidCount, setConfirmingUnpaidCount] = React.useState<number>(0);
   const [confirmingUnpaidTotal, setConfirmingUnpaidTotal] = React.useState<number>(0);
   const [processing, setProcessing] = React.useState<boolean>(false);
@@ -131,17 +127,8 @@ export default function AuthorPaymentsView() {
 
     authorDebounceRef.current = window.setTimeout(async () => {
       try {
-        const maybe = await BooksService.searchAuthors(q, 0, 25, true);
-        const payload = unwrap<unknown>(maybe);
-
-        if (isPagedResponseString(payload)) {
-          const suggestions = payload.content ?? [];
-          setAuthorOptions(Array.isArray(suggestions) ? (suggestions as string[]) : []);
-        } else if (Array.isArray(payload)) {
-          setAuthorOptions(payload as string[]);
-        } else {
-          setAuthorOptions([]);
-        }
+        const response = await BooksService.searchAuthors(q || undefined, 0, 25, true);
+        setAuthorOptions(response.content ?? []);
       } catch {
         setAuthorOptions([]);
       }
@@ -219,24 +206,27 @@ export default function AuthorPaymentsView() {
       });
       return;
     }
-    setConfirmingAuthor(group.author ?? null);
+    setConfirmingGroup(group);
     setConfirmingUnpaidCount(unpaidCount);
     setConfirmingUnpaidTotal(group.unpaidTotal ?? 0);
   }
 
   async function confirmPayAuthor() {
-    if (!confirmingAuthor) return;
+    if (!confirmingGroup?.authorId) return;
     setProcessing(true);
 
     try {
-      const req: MarkAllPaidRequest = { author: confirmingAuthor };
+      const req: MarkAllPaidRequest = { authorId: confirmingGroup.authorId };
       const maybeResp = await SalesService.markAuthorPaymentsPaid(req);
       const resp = unwrap<MarkAllPaidResponse>(maybeResp);
       const updatedCount = resp?.updatedCount ?? 0;
-      notifications.show(`Marked ${updatedCount} record(s) for ${confirmingAuthor} as paid.`, {
-        severity: 'success',
-        autoHideDuration: 3000,
-      });
+      notifications.show(
+        `Marked ${updatedCount} record(s) for ${confirmingGroup.author} as paid.`,
+        {
+          severity: 'success',
+          autoHideDuration: 3000,
+        },
+      );
 
       await loadGroups();
     } catch (e) {
@@ -246,7 +236,7 @@ export default function AuthorPaymentsView() {
       });
     } finally {
       setProcessing(false);
-      setConfirmingAuthor(null);
+      setConfirmingGroup(null);
       setConfirmingUnpaidCount(0);
       setConfirmingUnpaidTotal(0);
     }
@@ -288,7 +278,7 @@ export default function AuthorPaymentsView() {
 
           <Autocomplete
             freeSolo
-            options={authorOptions}
+            options={authorOptions.map((a) => a.name ?? '')}
             inputValue={searchQuery}
             onInputChange={(_e, v) => setSearchQuery(typeof v === 'string' ? v : '')}
             onChange={(_e, v) => {
@@ -496,20 +486,20 @@ export default function AuthorPaymentsView() {
       </Box>
 
       <Dialog
-        open={Boolean(confirmingAuthor)}
-        onClose={() => !processing && setConfirmingAuthor(null)}
+        open={Boolean(confirmingGroup)}
+        onClose={() => !processing && setConfirmingGroup(null)}
       >
         <DialogTitle>Confirm mark paid</DialogTitle>
         <DialogContent>
           <Typography>
-            You are about to mark <strong>{confirmingAuthor}</strong>’s {confirmingUnpaidCount}{' '}
-            unpaid sale record(s) as paid. Total:{' '}
+            You are about to mark <strong>{confirmingGroup?.author}</strong>’s{' '}
+            {confirmingUnpaidCount} unpaid sale record(s) as paid. Total:{' '}
             <strong>{formatCurrency(confirmingUnpaidTotal)}</strong>.
           </Typography>
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={() => setConfirmingAuthor(null)} disabled={processing}>
+          <Button onClick={() => setConfirmingGroup(null)} disabled={processing}>
             Cancel
           </Button>
           <Button

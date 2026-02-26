@@ -29,6 +29,7 @@ const NAV_ITEMS = [
   { label: 'Books', path: '/books', pattern: '/books/*' },
   { label: 'Sales Records', path: '/sales', pattern: '/sales/*' },
   { label: 'Author Payments', path: '/author-payments', pattern: '/author-payments' },
+  { label: 'Authors', path: '/authors', pattern: '/authors/*' },
 ] as const;
 
 function useActiveTab() {

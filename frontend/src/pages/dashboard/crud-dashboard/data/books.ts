@@ -14,10 +14,12 @@ export async function getMany({
   paginationModel,
   sortModel,
   query,
+  authorId,
   showAll = false,
 }: {
   paginationModel: GridPaginationModel;
   sortModel: GridSortModel;
+  authorId?: number;
   query?: string;
   showAll?: boolean;
 }): Promise<{ items: Book[]; itemCount: number }> {
@@ -29,6 +31,7 @@ export async function getMany({
     showAll ? 1000 : paginationModel.pageSize,
     showAll,
     query || undefined,
+    authorId,
     sortField,
     sortDirection,
   );
@@ -46,7 +49,7 @@ export async function getOne(bookId: number): Promise<BookDetail> {
 export async function createOne(data: Omit<Book, 'id' | 'totalSalesToDate'>): Promise<Book> {
   const request: BookRequest = {
     title: data.title ?? '',
-    author: data.author ?? '',
+    authorId: data.authorId ?? 0,
     isbn13: data.isbn13 ?? '',
     isbn10: data.isbn10 ?? undefined,
     publicationYear: data.publicationYear ?? new Date().getFullYear(),
@@ -57,7 +60,7 @@ export async function createOne(data: Omit<Book, 'id' | 'totalSalesToDate'>): Pr
     seriesPosition: data.seriesPosition ?? undefined,
     coverPrice: data.coverPrice ?? 0,
     printCost: data.printCost ?? 0,
-    coverImage: data.coverImage ?? undefined,
+    // coverImage: data.coverImage ?? undefined,
   };
   return BooksService.createBook(request);
 }
@@ -68,7 +71,7 @@ export async function updateOne(
 ): Promise<Book> {
   const request: BookRequest = {
     title: data.title ?? '',
-    author: data.author ?? '',
+    authorId: data.authorId ?? 0,
     isbn13: data.isbn13 ?? '',
     isbn10: data.isbn10 ?? undefined,
     publicationYear: data.publicationYear ?? new Date().getFullYear(),
@@ -79,7 +82,6 @@ export async function updateOne(
     seriesPosition: data.seriesPosition ?? undefined,
     coverPrice: data.coverPrice ?? 0,
     printCost: data.printCost ?? 0,
-    coverImage: data.coverImage ?? undefined,
   };
   return BooksService.updateBook(bookId, request);
 }
@@ -97,8 +99,8 @@ export function validate(book: Partial<Book>): ValidationResult {
     issues = [...issues, { message: 'Title is required', path: ['title'] }];
   }
 
-  if (!book.author) {
-    issues = [...issues, { message: 'Author is required', path: ['author'] }];
+  if (!book.authorId) {
+    issues = [...issues, { message: 'Author is required', path: ['authorId'] }];
   }
 
   if (!book.isbn13) {
