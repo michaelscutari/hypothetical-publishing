@@ -157,7 +157,6 @@ export default function AuthorShow() {
                     <TableRow>
                       <TableCell>Title</TableCell>
                       <TableCell>ISBN-13</TableCell>
-                      <TableCell align="right">Royalty Rate</TableCell>
                       <TableCell align="right">Total Sales</TableCell>
                       <TableCell align="right">Total Royalty</TableCell>
                       <TableCell align="right">Paid Royalty</TableCell>
@@ -174,11 +173,6 @@ export default function AuthorShow() {
                       >
                         <TableCell>{book.title}</TableCell>
                         <TableCell>{book.isbn13}</TableCell>
-                        {/* <TableCell align="right">
-                          {book.royaltyRate != null
-                            ? `${(book.royaltyRate * 100).toFixed(0)}%`
-                            : '—'}
-                        </TableCell> */}
                         <TableCell align="right">{book.totalSalesToDate ?? 0}</TableCell>
                         <TableCell align="right">{formatCurrency(book.totalRoyalty)}</TableCell>
                         <TableCell align="right">{formatCurrency(book.paidRoyalty)}</TableCell>
