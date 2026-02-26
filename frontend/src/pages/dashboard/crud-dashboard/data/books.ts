@@ -60,7 +60,7 @@ export async function createOne(data: Omit<Book, 'id' | 'totalSalesToDate'>): Pr
     seriesPosition: data.seriesPosition ?? undefined,
     coverPrice: data.coverPrice ?? 0,
     printCost: data.printCost ?? 0,
-    // coverImage: data.coverImage ?? undefined,
+    coverImage: data.coverImage ?? undefined,
   };
   return BooksService.createBook(request);
 }
