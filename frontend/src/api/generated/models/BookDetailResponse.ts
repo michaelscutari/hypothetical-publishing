@@ -15,9 +15,13 @@ export type BookDetailResponse = {
      */
     title?: string;
     /**
-     * Author name(s)
+     * Author name
      */
     author?: string;
+    /**
+     * Author Id
+     */
+    authorId?: number;
     /**
      * ISBN-13 identifier
      */
