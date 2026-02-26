@@ -3,7 +3,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
-import ViewListIcon from '@mui/icons-material/ViewList';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -11,7 +10,6 @@ import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
-import ToggleButton from '@mui/material/ToggleButton';
 import Tooltip from '@mui/material/Tooltip';
 import {
   DataGrid,
@@ -30,6 +28,8 @@ import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 
 const INITIAL_PAGE_SIZE = 25;
+const SHOW_ALL_SIZE = -1;
+const SHOW_ALL_PAGE_SIZE = 1000;
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
@@ -38,11 +38,11 @@ export default function AuthorList() {
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
-  const [showAll, setShowAll] = React.useState(false);
   const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
     page: 0,
     pageSize: INITIAL_PAGE_SIZE,
   });
+  const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
   const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
 
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -81,7 +81,7 @@ export default function AuthorList() {
 
       const response = await AuthorsService.getAllAuthors(
         showAll ? 0 : paginationModel.page,
-        showAll ? 1000 : paginationModel.pageSize,
+        showAll ? SHOW_ALL_PAGE_SIZE : paginationModel.pageSize,
         showAll,
         debouncedQuery || undefined,
         sortField,
@@ -107,11 +107,12 @@ export default function AuthorList() {
     if (!isLoading) loadData();
   }, [isLoading, loadData]);
 
-  const handleShowAllToggle = React.useCallback(() => {
-    setShowAll((prev) => !prev);
-    setPaginationModel((p) => ({ ...p, page: 0 }));
-  }, []);
-
+  const initialState = React.useMemo(
+    () => ({
+      pagination: { paginationModel: { pageSize: INITIAL_PAGE_SIZE } },
+    }),
+    [],
+  );
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }) => {
       navigate(`/authors/${row.id}`);
@@ -224,23 +225,6 @@ export default function AuthorList() {
       breadcrumbs={[{ title: 'Authors' }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
-          <Tooltip
-            title={showAll ? 'Switch to paginated view' : 'Show all records'}
-            placement="bottom"
-            enterDelay={1000}
-          >
-            <div>
-              <ToggleButton
-                value="showAll"
-                selected={showAll}
-                onChange={handleShowAllToggle}
-                size="small"
-              >
-                <ViewListIcon sx={{ mr: 0.5 }} />
-                Show All
-              </ToggleButton>
-            </div>
-          </Tooltip>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <div>
               <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
@@ -288,7 +272,7 @@ export default function AuthorList() {
             columns={columns}
             sortingMode="server"
             paginationMode="server"
-            hideFooter={showAll}
+            hideFooter={false}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
             sortModel={sortModel}
@@ -296,10 +280,14 @@ export default function AuthorList() {
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
             loading={isLoading}
-            initialState={{
-              pagination: { paginationModel: { pageSize: INITIAL_PAGE_SIZE } },
-            }}
-            pageSizeOptions={[10, INITIAL_PAGE_SIZE, 50, 100]}
+            initialState={initialState}
+            pageSizeOptions={[
+              10,
+              INITIAL_PAGE_SIZE,
+              50,
+              100,
+              { value: SHOW_ALL_SIZE, label: 'All' },
+            ]}
             slotProps={{
               loadingOverlay: {
                 variant: 'circular-progress',
@@ -308,6 +296,14 @@ export default function AuthorList() {
               baseIconButton: { size: 'small' },
             }}
             sx={{
+              '--DataGrid-rowBorderColor': (theme) => theme.palette.divider,
+              '--DataGrid-containerBackground': (theme) => theme.palette.background.paper,
+              borderColor: 'divider',
+              borderRadius: 2,
+              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
+              '& .MuiDataGrid-footerContainer': {
+                borderColor: 'divider',
+              },
               [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
                 outline: 'transparent',
               },
