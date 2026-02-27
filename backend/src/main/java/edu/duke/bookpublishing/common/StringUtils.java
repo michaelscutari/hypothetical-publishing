@@ -14,4 +14,12 @@ public final class StringUtils {
     }
     return String.join(" ", value.trim().split("\\s+"));
   }
+
+  /**
+   * Checks if a string contains author-related punctuation marks (period, apostrophe, or hyphen).
+   * Used to determine whether to use literal or lenient author name matching.
+   */
+  public static boolean containsAuthorPunctuation(String s) {
+    return s.chars().anyMatch(c -> c == '.' || c == '\'' || c == '-');
+  }
 }

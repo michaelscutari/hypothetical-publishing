@@ -4,6 +4,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -28,10 +29,10 @@ import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type SaleResponse, SalesService } from '../../../../api';
+import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 const INITIAL_PAGE_SIZE = 10;
 const SHOW_ALL_SIZE = -1;
 
@@ -112,6 +113,10 @@ export default function SaleList() {
   // Requirement 3.1.4 - Navigate to sales input tool
   const handleCreateClick = React.useCallback(() => {
     navigate('/sales/new');
+  }, [navigate]);
+
+  const handleImportClick = React.useCallback(() => {
+    navigate('/sales/import');
   }, [navigate]);
 
   const handleRowEdit = React.useCallback(
@@ -329,6 +334,9 @@ export default function SaleList() {
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             New Sale
           </Button>
+          <Button variant="outlined" onClick={handleImportClick} startIcon={<UploadFileIcon />}>
+            Import CSV
+          </Button>
         </Stack>
       }
     >
@@ -371,6 +379,10 @@ export default function SaleList() {
                 },
               [`& .${gridClasses.row}:hover`]: {
                 cursor: 'pointer',
+              },
+              [`& .${gridClasses.columnHeaderTitle}`]: {
+                fontWeight: 700,
+                color: '#5C4033',
               },
             }}
             slotProps={{

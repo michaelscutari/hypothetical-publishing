@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.sales;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -11,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.fasterxml.jackson.databind.ObjectMapper;
 import edu.duke.bookpublishing.auth.User;
 import edu.duke.bookpublishing.auth.UserRepository;
+import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
@@ -18,18 +21,23 @@ import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 /**
  * Test class for SaleController.
@@ -45,6 +53,8 @@ class SaleControllerTest {
 
   @Autowired private ObjectMapper objectMapper;
 
+  @Autowired private AuthorRepository authorRepository;
+
   @Autowired private BookRepository bookRepository;
 
   @Autowired private SaleRepository saleRepository;
@@ -53,13 +63,19 @@ class SaleControllerTest {
 
   @Autowired private PasswordEncoder passwordEncoder;
 
+  private Author defaultAuthor;
+
   @BeforeEach
   void setUp() {
     saleRepository.deleteAll();
     bookRepository.deleteAll();
+    authorRepository.deleteAll();
     userRepository.deleteAll();
     userRepository.save(
         User.builder().username("admin").password(passwordEncoder.encode("admin")).build());
+    defaultAuthor =
+        authorRepository.save(
+            Author.builder().name("Test Author").email("test@example.com").build());
   }
 
   private Cookie login() throws Exception {
@@ -77,7 +93,7 @@ class SaleControllerTest {
     return bookRepository.save(
         Book.builder()
             .title("Test Book")
-            .author("Test Author")
+            .author(defaultAuthor)
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
@@ -88,7 +104,13 @@ class SaleControllerTest {
             .build());
   }
 
-  private Book createBook(String title, String author, String isbn13) {
+  private Book createBook(String title, String authorName, String isbn13) {
+    Author author =
+        authorRepository.save(
+            Author.builder()
+                .name(authorName)
+                .email(authorName.toLowerCase().replaceAll("[^a-z]", "") + "@test.com")
+                .build());
     return bookRepository.save(
         Book.builder()
             .title(title)
@@ -463,7 +485,6 @@ class SaleControllerTest {
     Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000001");
     Book beta = createBook("Beta Book", "Author Beta", "9780000000002");
 
-    // Author Alpha: one unpaid (month 1), one paid (month 3)
     createSale(
         token,
         new SaleRequest(
@@ -487,7 +508,6 @@ class SaleControllerTest {
             true,
             null));
 
-    // Author Beta: one unpaid
     createSale(
         token,
         new SaleRequest(
@@ -505,6 +525,7 @@ class SaleControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(2)))
         .andExpect(jsonPath("$.content[0].author").value("Author Alpha"))
+        .andExpect(jsonPath("$.content[0].authorId").value(alpha.getAuthor().getId()))
         .andExpect(jsonPath("$.content[0].unpaidTotal").value(20.00))
         .andExpect(jsonPath("$.content[0].sales[0].saleMonth").value(3))
         .andExpect(jsonPath("$.content[0].sales[0].bookTitle").value("Alpha Book"))
@@ -563,12 +584,14 @@ class SaleControllerTest {
             false,
             null));
 
+    Long alphaAuthorId = alpha.getAuthor().getId();
+
     mockMvc
         .perform(
             put("/api/sales/author-payments/mark-paid")
                 .cookie(token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"author\":\"Author Alpha\"}"))
+                .content("{\"authorId\":" + alphaAuthorId + "}"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.updatedCount").value(2));
 
@@ -582,7 +605,7 @@ class SaleControllerTest {
   }
 
   @Test
-  void markAuthorPaymentsPaidNormalizesWhitespace() throws Exception {
+  void markAuthorPaymentsPaidReturnsAuthorId() throws Exception {
     Cookie token = login();
     Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000005");
 
@@ -598,19 +621,59 @@ class SaleControllerTest {
             false,
             null));
 
+    Long alphaAuthorId = alpha.getAuthor().getId();
+
     mockMvc
         .perform(
             put("/api/sales/author-payments/mark-paid")
                 .cookie(token)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"author\":\"  Author   Alpha  \"}"))
+                .content("{\"authorId\":" + alphaAuthorId + "}"))
         .andExpect(status().isOk())
+        .andExpect(jsonPath("$.authorId").value(alphaAuthorId))
         .andExpect(jsonPath("$.updatedCount").value(1));
+  }
+
+  @Test
+  void importIngramCsvAddsSales() throws Exception {
+    Cookie token = login();
+
+    List.of(
+            new String[] {
+              "The Long Way to a Small, Angry Planet", "Chambers, Becky", "9781473619814"
+            },
+            new String[] {"A Closed and Common Orbit", "Chambers, Becky", "9780062569400"},
+            new String[] {"Record of a Spaceborn Few", "Chambers, Becky", "9780062699220"},
+            new String[] {"The Galaxy, and the Ground Within", "Chambers, Becky", "9780062936042"},
+            new String[] {"All Systems Red", "Wells, Martha", "9780765397539"},
+            new String[] {"Artificial Condition", "Wells, Martha", "9781250186928"},
+            new String[] {"Ancillary Justice", "Leckie, Ann", "9781250191786"},
+            new String[] {"Ancillary Justice", "Leckie, Ann", "9780316565172"})
+        .forEach(values -> createBook(values[0], values[1], values[2]));
+
+    ClassPathResource csvResource = new ClassPathResource("testfiles/Ingram 202509.csv");
+    MockMultipartFile csvFile =
+        new MockMultipartFile(
+            "csvFile",
+            "Ingram 202509.csv",
+            "text/csv",
+            csvResource.getInputStream().readAllBytes());
 
     mockMvc
-        .perform(get("/api/sales/author-payments").cookie(token).param("showAll", "true"))
+        .perform(
+            MockMvcRequestBuilders.multipart("/api/sales/import")
+                .file(csvFile)
+                .param("saleMonth", "9")
+                .param("saleYear", "2025")
+                .param("isPreview", "false")
+                .cookie(token)
+                .characterEncoding(StandardCharsets.UTF_8.name()))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.content[0].sales[0].hasAuthorBeenPaid").value(true));
+        .andExpect(jsonPath("$.savedSales", hasSize(9)))
+        .andExpect(jsonPath("$.csvErrors", hasSize(0)))
+        .andExpect(jsonPath("$.savingErrors", hasSize(0)));
+
+    assertThat(saleRepository.count()).isEqualTo(9L);
   }
 
   @Test
