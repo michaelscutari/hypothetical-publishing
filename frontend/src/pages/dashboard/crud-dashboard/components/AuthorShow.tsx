@@ -42,7 +42,7 @@ export default function AuthorShow() {
     try {
       const authorData = await AuthorsService.getAuthorById(Number(authorId));
       setAuthor(authorData);
-      const booksResponse = await BooksService.getAllBooks(0, 1000, true, undefined, authorData.id);
+      const booksResponse = await BooksService.getAllBooks(authorData.id, 0, 1000, true);
       const bookList = booksResponse.content ?? [];
       const bookDetails = await Promise.all(bookList.map((b) => BooksService.getBookById(b.id!)));
       setBooks(bookDetails);

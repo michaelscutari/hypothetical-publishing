@@ -24,7 +24,6 @@ import { AuthorsService, BooksService, type AuthorResponse } from '../../../../a
 import type { Book } from '../data/books';
 import { searchSeries } from '../data/books';
 import { MONTH_NAMES } from '../../../../constants/months';
-import type { Book } from '../data/books';
 
 const CREATE_NEW_SENTINEL: AuthorResponse = {
   id: -1,

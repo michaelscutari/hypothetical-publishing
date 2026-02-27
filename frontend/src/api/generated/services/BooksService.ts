@@ -119,6 +119,23 @@ export class BooksService {
         });
     }
     /**
+     * Search distinct series names
+     * @param query
+     * @returns string OK
+     * @throws ApiError
+     */
+    public static searchSeries(
+        query?: string,
+    ): CancelablePromise<Array<string>> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/books/series',
+            query: {
+                'query': query,
+            },
+        });
+    }
+    /**
      * Lookup a book by ISBN
      * @param isbn
      * @returns BookLookupResponse Book metadata for prefill
