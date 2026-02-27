@@ -25,7 +25,6 @@ export type { PagedResponseAuthorPaymentGroupResponse } from './models/PagedResp
 export type { PagedResponseAuthorResponse } from './models/PagedResponseAuthorResponse';
 export type { PagedResponseBookResponse } from './models/PagedResponseBookResponse';
 export type { PagedResponseSaleResponse } from './models/PagedResponseSaleResponse';
-export type { PagedResponseString } from './models/PagedResponseString';
 export type { ParsingError } from './models/ParsingError';
 export { SaleRequest } from './models/SaleRequest';
 export { SaleResponse } from './models/SaleResponse';

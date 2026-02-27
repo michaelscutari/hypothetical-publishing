@@ -57,10 +57,9 @@ class SaleServiceTest {
 
   @Mock private ImportParser<IngramCsvEntry> ingramCsvParser;
 
-  private SaleService saleService;
   @Mock private AuthorRepository authorRepository;
 
-  @InjectMocks private SaleService saleService;
+  private SaleService saleService;
 
   @Captor private ArgumentCaptor<Sale> saleCaptor;
 
@@ -69,7 +68,9 @@ class SaleServiceTest {
 
   @BeforeEach
   void setUp() {
-    saleService = new SaleService(bookService, bookRepository, saleRepository, ingramCsvParser);
+    saleService =
+        new SaleService(
+            bookService, bookRepository, saleRepository, ingramCsvParser, authorRepository);
     author = Author.builder().id(1L).name("Test Author").email("test@example.com").build();
 
     book =
@@ -380,6 +381,9 @@ class SaleServiceTest {
     assertThat(result.savingErrors()).hasSize(1);
     assertThat(result.savingErrors().get(0).rowNumber()).isEqualTo(1);
     assertThat(result.savingErrors().get(0).errorMessage()).isEqualTo("sale.mappingFailed");
+  }
+
+  @Test
   void markAllPaidByAuthorIdMarksUnpaidSales() {
     when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
     when(saleRepository.markAllPaidByAuthorId(1L)).thenReturn(3);

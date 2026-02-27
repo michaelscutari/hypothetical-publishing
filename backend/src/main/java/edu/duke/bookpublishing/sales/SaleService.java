@@ -4,7 +4,6 @@ import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.books.BookService;
-import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
