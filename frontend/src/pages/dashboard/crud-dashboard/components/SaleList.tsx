@@ -4,6 +4,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -112,6 +113,10 @@ export default function SaleList() {
   // Requirement 3.1.4 - Navigate to sales input tool
   const handleCreateClick = React.useCallback(() => {
     navigate('/sales/new');
+  }, [navigate]);
+
+  const handleImportClick = React.useCallback(() => {
+    navigate('/sales/import');
   }, [navigate]);
 
   const handleRowEdit = React.useCallback(
@@ -328,6 +333,9 @@ export default function SaleList() {
 
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             New Sale
+          </Button>
+          <Button variant="outlined" onClick={handleImportClick} startIcon={<UploadFileIcon />}>
+            Import CSV
           </Button>
         </Stack>
       }
