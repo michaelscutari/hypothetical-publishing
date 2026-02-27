@@ -1,6 +1,7 @@
 package edu.duke.bookpublishing.books;
 
 import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.common.StringUtils;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -116,6 +117,13 @@ public class Book {
     }
     if (isbn10 != null) {
       isbn10 = isbn10.replaceAll("-", "");
+    }
+    if (seriesName != null) {
+      seriesName = StringUtils.normalizeWhitespace(seriesName);
+      if (seriesName.isEmpty()) {
+        seriesName = null;
+        seriesPosition = null;
+      }
     }
   }
 }

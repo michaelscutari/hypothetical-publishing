@@ -45,9 +45,6 @@ export default function BookList() {
   });
 
   const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
-  // const [sortModel, setSortModel] = React.useState<GridSortModel>([
-  //   { field: 'title', sort: 'asc' },
-  // ]);
   const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
 
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -178,6 +175,17 @@ export default function BookList() {
       { field: 'author', headerName: 'Author', width: 180 },
       { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
       {
+        field: 'seriesPosition',
+        headerName: 'Series',
+        width: 180,
+        valueGetter: (_value, row) => {
+          if (row.seriesName) {
+            return `${row.seriesName} (#${row.seriesPosition})`;
+          }
+          return '';
+        },
+      },
+      {
         field: 'publicationDate',
         headerName: 'Publication',
         width: 120,
@@ -196,20 +204,6 @@ export default function BookList() {
           const date2 = (row2?.publicationYear ?? 0) * 12 + (row2?.publicationMonth ?? 0);
           return date1 - date2;
         },
-      },
-      {
-        field: 'distributorAuthorRoyaltyRate',
-        headerName: 'Distributor Royalty',
-        type: 'number',
-        width: 150,
-        valueFormatter: (value) => (value != null ? `${(value * 100).toFixed(0)}%` : ''),
-      },
-      {
-        field: 'handsoldAuthorRoyaltyRate',
-        headerName: 'Handsold Royalty',
-        type: 'number',
-        width: 140,
-        valueFormatter: (value) => (value != null ? `${(value * 100).toFixed(0)}%` : ''),
       },
       {
         field: 'totalSalesToDate',
@@ -259,7 +253,7 @@ export default function BookList() {
 
           <TextField
             size="small"
-            placeholder="Search title, author, ISBN..."
+            placeholder="Search title, author, series, ISBN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {

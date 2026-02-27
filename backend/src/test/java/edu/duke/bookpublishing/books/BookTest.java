@@ -77,6 +77,52 @@ class BookTest {
   }
 
   @Test
+  void normalizeFieldsNormalizesSeriesNameWhitespace() {
+    Book book =
+        Book.builder()
+            .title("Test Book")
+            .author(buildAuthor("Test Author"))
+            .isbn13("9780743273565")
+            .publicationYear(2020)
+            .publicationMonth(1)
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.5"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.2"))
+            .seriesName("  Lord   of  the   Rings  ")
+            .seriesPosition(1)
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
+            .build();
+
+    book.normalizeFields();
+
+    assertEquals("Lord of the Rings", book.getSeriesName());
+    assertEquals(1, book.getSeriesPosition());
+  }
+
+  @Test
+  void normalizeFieldsNullifiesBlankSeriesName() {
+    Book book =
+        Book.builder()
+            .title("Test Book")
+            .author(buildAuthor("Test Author"))
+            .isbn13("9780743273565")
+            .publicationYear(2020)
+            .publicationMonth(1)
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.5"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.2"))
+            .seriesName("   ")
+            .seriesPosition(1)
+            .coverPrice(new BigDecimal("15.00"))
+            .printCost(new BigDecimal("4.00"))
+            .build();
+
+    book.normalizeFields();
+
+    assertNull(book.getSeriesName());
+    assertNull(book.getSeriesPosition());
+  }
+
+  @Test
   void normalizeFieldsHandlesNullOptionalFields() {
     Book book =
         Book.builder()
