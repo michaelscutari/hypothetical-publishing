@@ -69,34 +69,34 @@ export class BooksService {
     }
     /**
      * Get paginated books with optional search, sort, and filter
+     * @param authorId
      * @param page
      * @param size
      * @param showAll
      * @param query
-     * @param authorId
      * @param sortField
      * @param sortDirection
      * @returns PagedResponseBookResponse OK
      * @throws ApiError
      */
     public static getAllBooks(
+        authorId?: number,
         page?: number,
         size: number = 25,
         showAll: boolean = false,
         query?: string,
-        authorId?: number,
-        sortField?: string,
-        sortDirection: string = 'asc',
+        sortField?: Array<string>,
+        sortDirection?: Array<string>,
     ): CancelablePromise<PagedResponseBookResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/books',
             query: {
+                'authorId': authorId,
                 'page': page,
                 'size': size,
                 'showAll': showAll,
                 'query': query,
-                'authorId': authorId,
                 'sortField': sortField,
                 'sortDirection': sortDirection,
             },
