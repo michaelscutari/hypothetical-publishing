@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,7 +36,7 @@ public class IngramCsvParser implements ImportParser<IngramCsvEntry> {
     List<ParsingError> errors = new ArrayList<>();
 
     try (BufferedReader bufferedReader =
-        new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+        new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
       List<String> lines = readAllLines(bufferedReader);
       stripBomIfPresent(lines);
       Reader reader = buildCsvReaderExcludingTrailingRows(lines, 2);
@@ -44,7 +45,7 @@ public class IngramCsvParser implements ImportParser<IngramCsvEntry> {
       records = csvToBean.parse();
 
       collectParseErrors(csvToBean, errors);
-      validateRecords(records, errors);
+      validateRecords(records, errors, 1);
 
       return new ParsedBatch<IngramCsvEntry>(LocalDateTime.now(), records, errors);
 
@@ -106,11 +107,12 @@ public class IngramCsvParser implements ImportParser<IngramCsvEntry> {
             });
   }
 
-  private void validateRecords(List<IngramCsvEntry> records, List<ParsingError> errors) {
+  private void validateRecords(
+      List<IngramCsvEntry> records, List<ParsingError> errors, int headerLines) {
     if (records.isEmpty()) {
       return;
     }
-    int rowNum = 0;
+    int rowNum = headerLines;
     for (IngramCsvEntry record : records) {
       rowNum++;
       Set<ConstraintViolation<IngramCsvEntry>> violations = validator.validate(record);

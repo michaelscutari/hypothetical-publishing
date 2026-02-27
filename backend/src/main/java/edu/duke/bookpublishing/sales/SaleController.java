@@ -21,7 +21,6 @@ import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -124,7 +123,6 @@ public class SaleController {
 
   @Operation(operationId = "previewCsv", summary = "Previews a CSV import")
   @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  @Transactional
   public IngramImportResponse importIngramCsv(
       @Valid @ModelAttribute IngramImportRequest ingramImportRequest) {
     return saleService.importSalesFromCsv(ingramImportRequest);

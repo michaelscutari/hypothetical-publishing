@@ -126,7 +126,7 @@ class IngramCsvParserTest {
         .contains("author.invalidFormat", "returnedQty.mustBeZero", "grossQty.mustEqual.netQty");
 
     assertThat(batch.parsingErrors())
-        .allSatisfy(error -> assertThat(error.rowNumber()).isEqualTo(1));
+        .allSatisfy(error -> assertThat(error.rowNumber()).isEqualTo(2));
   }
 
   @Test

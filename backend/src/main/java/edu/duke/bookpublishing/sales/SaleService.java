@@ -230,6 +230,10 @@ public class SaleService {
     List<IngramCsvEntry> rows = parsedBatch.records();
     List<ParsingError> csvErrors = parsedBatch.parsingErrors();
 
+    if (!csvErrors.isEmpty()) {
+      return new IngramImportResponse(List.of(), csvErrors, List.of());
+    }
+
     List<Sale> sales = new ArrayList<>();
     List<ParsingError> domainErrors = new ArrayList<>();
 
@@ -246,8 +250,8 @@ public class SaleService {
       }
     }
 
-    if (!csvErrors.isEmpty() || !domainErrors.isEmpty()) {
-      return new IngramImportResponse(List.of(), csvErrors, domainErrors);
+    if (!domainErrors.isEmpty()) {
+      return new IngramImportResponse(List.of(), List.of(), domainErrors);
     }
 
     // Save if not preview
@@ -257,7 +261,7 @@ public class SaleService {
 
     List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
 
-    return new IngramImportResponse(saleResponses, parsedBatch.parsingErrors(), domainErrors);
+    return new IngramImportResponse(saleResponses, List.of(), List.of());
   }
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
@@ -314,7 +318,7 @@ public class SaleService {
         .saleMonth(ingramImportRequest.saleMonth())
         .saleYear(ingramImportRequest.saleYear())
         .book(book)
-        .quantitySold(ingramCsvEntry.getNetQty().intValue())
+        .quantitySold(Math.toIntExact(ingramCsvEntry.getNetQty()))
         .publisherRevenue(ingramCsvEntry.getNetCompensation())
         .authorRoyalty(authorRoyalty)
         .hasAuthorBeenPaid(false)
@@ -328,13 +332,11 @@ public class SaleService {
         "Ingram: Format='%s' Market='%s' File='%s' (%s)",
         ingramCsvEntry.getFormat(),
         ingramCsvEntry.getSalesMarket(),
-        file.getOriginalFilename(),
+        file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown",
         parsedBatch.timestamp());
   }
 
   private void saveSalesToRepo(List<Sale> sales) {
-    for (Sale sale : sales) {
-      saleRepository.save(sale);
-    }
+    saleRepository.saveAll(sales);
   }
 }

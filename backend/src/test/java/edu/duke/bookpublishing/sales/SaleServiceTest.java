@@ -307,8 +307,8 @@ class SaleServiceTest {
 
     when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
     when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
-    when(saleRepository.save(any(Sale.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
+    when(saleRepository.saveAll(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0, List.class));
 
     IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
     var result = saleService.importSalesFromCsv(request);
@@ -317,8 +317,10 @@ class SaleServiceTest {
     assertThat(result.csvErrors()).isEmpty();
     assertThat(result.savingErrors()).isEmpty();
 
-    verify(saleRepository, times(2)).save(saleCaptor.capture());
-    List<Sale> saved = saleCaptor.getAllValues();
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Sale>> salesCaptor = ArgumentCaptor.forClass(List.class);
+    verify(saleRepository).saveAll(salesCaptor.capture());
+    List<Sale> saved = salesCaptor.getValue();
 
     Sale firstSaved = saved.get(0);
     assertThat(firstSaved.getSaleSource()).isEqualTo(SaleSource.DISTRIBUTOR);
