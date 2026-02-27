@@ -27,7 +27,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { BooksService, SalesService, SaleRequest, type BookResponse } from '../../../../api';
+import { BooksService, SaleRequest, SalesService, type BookResponse } from '../../../../api';
 import { isValidMonetaryInput } from '../../../../utils/monetary';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
@@ -185,6 +185,7 @@ export default function SaleCreate() {
     try {
       const response = await BooksService.getAllBooks(
         undefined,
+        0,
         100,
         false,
         searchQuery || undefined,

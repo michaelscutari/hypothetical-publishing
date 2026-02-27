@@ -1,17 +1,17 @@
-import * as React from 'react';
-import { styled } from '@mui/material/styles';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import MuiAppBar from '@mui/material/AppBar';
-import Toolbar from '@mui/material/Toolbar';
-import Tabs from '@mui/material/Tabs';
-import Tab from '@mui/material/Tab';
 import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import { styled } from '@mui/material/styles';
+import Tab from '@mui/material/Tab';
+import Tabs from '@mui/material/Tabs';
+import Toolbar from '@mui/material/Toolbar';
+import * as React from 'react';
 import { Link, matchPath, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../../../context/AuthContext';
 import ColorModeIconDropdown from '../../../../components/ColorModeIconDropdown';
+import { useAuth } from '../../../../context/AuthContext';
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
   borderWidth: 0,
@@ -30,6 +30,7 @@ const NAV_ITEMS = [
   { label: 'Sales Records', path: '/sales', pattern: '/sales/*' },
   { label: 'Authors', path: '/authors', pattern: '/authors/*' },
   { label: 'Author Payments', path: '/author-payments', pattern: '/author-payments' },
+  { label: 'Reports', path: '/reports/author-royalty', pattern: '/reports/*' },
 ] as const;
 
 function useActiveTab() {

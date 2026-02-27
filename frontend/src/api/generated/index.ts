@@ -11,8 +11,11 @@ export type { AuthorPaymentGroupResponse } from './models/AuthorPaymentGroupResp
 export type { AuthorPaymentSaleResponse } from './models/AuthorPaymentSaleResponse';
 export type { AuthorRequest } from './models/AuthorRequest';
 export type { AuthorResponse } from './models/AuthorResponse';
+export type { AuthorRoyaltyReportRequest } from './models/AuthorRoyaltyReportRequest';
+export type { AuthorRoyaltyReportResponse } from './models/AuthorRoyaltyReportResponse';
 export type { BookDetailResponse } from './models/BookDetailResponse';
 export type { BookLookupResponse } from './models/BookLookupResponse';
+export type { BookReportData } from './models/BookReportData';
 export type { BookRequest } from './models/BookRequest';
 export type { BookResponse } from './models/BookResponse';
 export type { ChangePasswordRequest } from './models/ChangePasswordRequest';
@@ -23,8 +26,11 @@ export type { PagedResponseAuthorPaymentGroupResponse } from './models/PagedResp
 export type { PagedResponseAuthorResponse } from './models/PagedResponseAuthorResponse';
 export type { PagedResponseBookResponse } from './models/PagedResponseBookResponse';
 export type { PagedResponseSaleResponse } from './models/PagedResponseSaleResponse';
+export type { QuarterBookData } from './models/QuarterBookData';
+export type { QuarterReportData } from './models/QuarterReportData';
 export { SaleRequest } from './models/SaleRequest';
 export { SaleResponse } from './models/SaleResponse';
+export type { TotalReportData } from './models/TotalReportData';
 export type { UserResponse } from './models/UserResponse';
 
 export { AuthService } from './services/AuthService';

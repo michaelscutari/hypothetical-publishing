@@ -2,6 +2,8 @@ package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
+import edu.duke.bookpublishing.sales.dto.AuthorRoyaltyReportRequest;
+import edu.duke.bookpublishing.sales.dto.AuthorRoyaltyReportResponse;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
@@ -133,6 +135,15 @@ public class SaleController {
       @Valid @RequestBody MarkAllPaidRequest request) {
     int updatedCount = saleService.markAllPaidByAuthorId(request.authorId());
     return new MarkAllPaidResponse(request.authorId(), updatedCount);
+  }
+
+  @Operation(
+      operationId = "generateAuthorRoyaltyReport",
+      summary = "Generate author royalty report")
+  @PostMapping("/author-royalty-report")
+  public AuthorRoyaltyReportResponse generateAuthorRoyaltyReport(
+      @Valid @RequestBody AuthorRoyaltyReportRequest request) {
+    return saleService.generateAuthorRoyaltyReport(request);
   }
 
   // ------- DELETE MAPPINGS -------

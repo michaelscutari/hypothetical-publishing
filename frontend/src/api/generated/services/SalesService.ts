@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { AuthorRoyaltyReportRequest } from '../models/AuthorRoyaltyReportRequest';
+import type { AuthorRoyaltyReportResponse } from '../models/AuthorRoyaltyReportResponse';
 import type { MarkAllPaidRequest } from '../models/MarkAllPaidRequest';
 import type { MarkAllPaidResponse } from '../models/MarkAllPaidResponse';
 import type { PagedResponseAuthorPaymentGroupResponse } from '../models/PagedResponseAuthorPaymentGroupResponse';
@@ -133,6 +135,22 @@ export class SalesService {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sales',
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Generate author royalty report
+     * @param requestBody
+     * @returns AuthorRoyaltyReportResponse OK
+     * @throws ApiError
+     */
+    public static generateAuthorRoyaltyReport(
+        requestBody: AuthorRoyaltyReportRequest,
+    ): CancelablePromise<AuthorRoyaltyReportResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/sales/author-royalty-report',
             body: requestBody,
             mediaType: 'application/json',
         });
