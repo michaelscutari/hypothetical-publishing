@@ -1,11 +1,14 @@
+import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
 import {
+  ApiError,
   BooksService,
-  type BookRequest,
   type BookDetailResponse,
+  type BookRequest,
   type BookResponse,
   type PagedResponseBookResponse,
 } from '../../../../api';
-import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
+import { OpenAPI } from '../../../../api/generated/core/OpenAPI';
+import { request as __request } from '../../../../api/generated/core/request';
 
 export type Book = BookResponse;
 export type BookDetail = BookDetailResponse;
@@ -14,23 +17,26 @@ export async function getMany({
   paginationModel,
   sortModel,
   query,
+  authorId,
   showAll = false,
 }: {
   paginationModel: GridPaginationModel;
   sortModel: GridSortModel;
+  authorId?: number;
   query?: string;
   showAll?: boolean;
 }): Promise<{ items: Book[]; itemCount: number }> {
-  const sortField = sortModel?.[0]?.field;
-  const sortDirection = sortModel?.[0]?.sort ?? 'asc';
+  const sortFields = sortModel?.map((s) => s.field);
+  const sortDirections = sortModel?.map((s) => s.sort ?? 'asc');
 
   const response: PagedResponseBookResponse = await BooksService.getAllBooks(
+    authorId,
     showAll ? 0 : paginationModel.page,
     showAll ? 1000 : paginationModel.pageSize,
     showAll,
     query || undefined,
-    sortField,
-    sortDirection,
+    sortFields.length ? sortFields : undefined,
+    sortDirections.length ? sortDirections : undefined,
   );
 
   return {
@@ -46,7 +52,7 @@ export async function getOne(bookId: number): Promise<BookDetail> {
 export async function createOne(data: Omit<Book, 'id' | 'totalSalesToDate'>): Promise<Book> {
   const request: BookRequest = {
     title: data.title ?? '',
-    author: data.author ?? '',
+    authorId: data.authorId ?? 0,
     isbn13: data.isbn13 ?? '',
     isbn10: data.isbn10 ?? undefined,
     publicationYear: data.publicationYear ?? new Date().getFullYear(),
@@ -68,7 +74,7 @@ export async function updateOne(
 ): Promise<Book> {
   const request: BookRequest = {
     title: data.title ?? '',
-    author: data.author ?? '',
+    authorId: data.authorId ?? 0,
     isbn13: data.isbn13 ?? '',
     isbn10: data.isbn10 ?? undefined,
     publicationYear: data.publicationYear ?? new Date().getFullYear(),
@@ -79,13 +85,20 @@ export async function updateOne(
     seriesPosition: data.seriesPosition ?? undefined,
     coverPrice: data.coverPrice ?? 0,
     printCost: data.printCost ?? 0,
-    coverImage: data.coverImage ?? undefined,
   };
   return BooksService.updateBook(bookId, request);
 }
 
 export async function deleteOne(bookId: number): Promise<void> {
   return BooksService.deleteBook(bookId);
+}
+
+export async function searchSeries(query?: string): Promise<string[]> {
+  return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/books/series',
+    query: { query },
+  });
 }
 
 type ValidationResult = { issues: { message: string; path: (keyof Book)[] }[] };
@@ -97,8 +110,8 @@ export function validate(book: Partial<Book>): ValidationResult {
     issues = [...issues, { message: 'Title is required', path: ['title'] }];
   }
 
-  if (!book.author) {
-    issues = [...issues, { message: 'Author is required', path: ['author'] }];
+  if (!book.authorId) {
+    issues = [...issues, { message: 'Author is required', path: ['authorId'] }];
   }
 
   if (!book.isbn13) {
@@ -175,7 +188,39 @@ export function validate(book: Partial<Book>): ValidationResult {
       ...issues,
       { message: 'Series position is required when series name is set', path: ['seriesPosition'] },
     ];
+  } else if (!book.seriesName && book.seriesPosition) {
+    issues = [
+      ...issues,
+      { message: 'Series name is required when position is set', path: ['seriesName'] },
+    ];
+  } else if (book.seriesPosition != null && book.seriesPosition < 1) {
+    issues = [
+      ...issues,
+      { message: 'Series position must be at least 1', path: ['seriesPosition'] },
+    ];
   }
 
   return { issues };
+}
+
+/**
+ * Parse field-level errors from a backend 400/409 response.
+ * Returns a partial record suitable for setFormErrors, or null if the error
+ * isn't a field-level validation error.
+ */
+export function parseFieldErrors(err: unknown): Partial<Record<keyof Book, string>> | null {
+  if (!(err instanceof ApiError)) return null;
+  if (err.status !== 400 && err.status !== 409) return null;
+  const body = err.body;
+  if (!body || typeof body !== 'object') return null;
+
+  const result: Partial<Record<string, string>> = {};
+  let found = false;
+  for (const [key, value] of Object.entries(body)) {
+    if (typeof value === 'string') {
+      result[key] = value;
+      found = true;
+    }
+  }
+  return found ? result : null;
 }

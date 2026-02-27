@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.books;
 
+import edu.duke.bookpublishing.common.StringUtils;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Path;
 import jakarta.persistence.criteria.Predicate;
@@ -13,6 +14,11 @@ public final class BookSpecifications {
   /** Builds a specification that matches books where all query terms match some field. */
   public static Specification<Book> matchesQuery(String query) {
     return (root, cq, cb) -> buildQueryPredicate(root, cb, query);
+  }
+
+  /** Filters books by author ID. */
+  public static Specification<Book> hasAuthorId(Long authorId) {
+    return (root, cq, cb) -> cb.equal(root.get("author").get("id"), authorId);
   }
 
   /**
@@ -42,10 +48,11 @@ public final class BookSpecifications {
 
     // Author matching: if the user typed punctuation (. ' -), match literally;
     // otherwise strip those characters from the DB value for lenient matching.
-    boolean hasAuthorPunctuation = containsAuthorPunctuation(lowerTerm);
+    boolean hasAuthorPunctuation = StringUtils.containsAuthorPunctuation(lowerTerm);
     Predicate authorPredicate;
     if (hasAuthorPunctuation) {
-      authorPredicate = cb.like(cb.lower(bookPath.get("author")), "%" + lowerTerm + "%");
+      authorPredicate =
+          cb.like(cb.lower(bookPath.get("author").get("name")), "%" + lowerTerm + "%");
     } else {
       authorPredicate =
           cb.like(
@@ -58,7 +65,7 @@ public final class BookSpecifications {
                       cb.function(
                           "REPLACE",
                           String.class,
-                          cb.lower(bookPath.get("author")),
+                          cb.lower(bookPath.get("author").get("name")),
                           cb.literal("."),
                           cb.literal("")),
                       cb.literal("'"),
@@ -72,10 +79,7 @@ public final class BookSpecifications {
         cb.like(cb.lower(bookPath.get("title")), "%" + lowerTerm + "%"),
         authorPredicate,
         cb.like(cb.lower(bookPath.get("isbn13")), "%" + normalizedTerm + "%"),
-        cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"));
-  }
-
-  static boolean containsAuthorPunctuation(String s) {
-    return s.chars().anyMatch(c -> c == '.' || c == '\'' || c == '-');
+        cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"),
+        cb.like(cb.lower(bookPath.get("seriesName")), "%" + lowerTerm + "%"));
   }
 }

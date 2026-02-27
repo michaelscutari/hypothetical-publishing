@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { IngramImportRequest } from '../models/IngramImportRequest';
+import type { IngramImportResponse } from '../models/IngramImportResponse';
 import type { MarkAllPaidRequest } from '../models/MarkAllPaidRequest';
 import type { MarkAllPaidResponse } from '../models/MarkAllPaidResponse';
 import type { PagedResponseAuthorPaymentGroupResponse } from '../models/PagedResponseAuthorPaymentGroupResponse';
@@ -135,6 +137,22 @@ export class SalesService {
             url: '/api/sales',
             body: requestBody,
             mediaType: 'application/json',
+        });
+    }
+    /**
+     * Previews a CSV import
+     * @param formData
+     * @returns IngramImportResponse OK
+     * @throws ApiError
+     */
+    public static previewCsv(
+        formData?: IngramImportRequest,
+    ): CancelablePromise<IngramImportResponse> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/sales/import',
+            formData: formData,
+            mediaType: 'multipart/form-data',
         });
     }
     /**

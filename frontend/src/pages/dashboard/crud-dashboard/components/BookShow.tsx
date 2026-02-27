@@ -190,7 +190,25 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Author</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.author}
+                <Box
+                  component="a"
+                  href={`/authors/${book.authorId}`}
+                  onClick={(e: React.MouseEvent) => {
+                    e.preventDefault();
+                    navigate(`/authors/${book.authorId}`);
+                  }}
+                  sx={{
+                    color: 'inherit',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                    '&:hover': {
+                      textDecoration: 'underline',
+                      color: 'primary.main',
+                    },
+                  }}
+                >
+                  {book.author}
+                </Box>
               </Typography>
             </Paper>
           </Grid>
@@ -272,18 +290,6 @@ export default function BookShow() {
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Cover Image</Typography>
-              {book.coverImage ? (
-                <Box
-                  component="img"
-                  src={book.coverImage}
-                  alt={`${book.title} cover`}
-                  sx={{ mt: 1, maxWidth: '100%', maxHeight: 240, objectFit: 'contain' }}
-                />
-              ) : (
-                <Typography variant="body1" sx={{ mb: 1 }}>
-                  —
-                </Typography>
-              )}
             </Paper>
           </Grid>
 
@@ -310,7 +316,17 @@ export default function BookShow() {
         </Box>
       </Box>
     ) : null;
-  }, [isLoading, error, book, handleBack, handleBookEdit, handleBookDelete, sales, reloadSales]);
+  }, [
+    isLoading,
+    error,
+    book,
+    handleBack,
+    handleBookEdit,
+    handleBookDelete,
+    sales,
+    reloadSales,
+    navigate,
+  ]);
 
   const truncate = React.useCallback((value: string | undefined, maxLength = 30) => {
     if (!value) return value;

@@ -1,5 +1,8 @@
 package edu.duke.bookpublishing.books;
 
+import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.author.AuthorService;
+import edu.duke.bookpublishing.author.dto.AuthorResponse;
 import edu.duke.bookpublishing.books.dto.BookDetailResponse;
 import edu.duke.bookpublishing.books.dto.BookLookupResponse;
 import edu.duke.bookpublishing.books.dto.BookRequest;
@@ -46,9 +49,17 @@ public class BookController {
   private static final BigDecimal DEFAULT_HAND_SOLD_ROYALTY_RATE = new BigDecimal("0.2");
   private static final BigDecimal DEFAULT_DISTRIBUTOR_ROYALTY_RATE = new BigDecimal("0.5");
 
+  private static final Sort DEFAULT_SORT =
+      Sort.by(
+          Sort.Order.asc("author"),
+          Sort.Order.asc("seriesName").nullsFirst(),
+          Sort.Order.asc("seriesPosition"),
+          Sort.Order.asc("title"));
+
   private final BookService bookService;
   private final SaleService saleService;
   private final BookLookupService bookLookupService;
+  private final AuthorService authorService;
 
   // ------- GET MAPPINGS -------
 
@@ -57,53 +68,70 @@ public class BookController {
       summary = "Get paginated books with optional search, sort, and filter")
   @GetMapping
   public PagedResponse<BookResponse> getBooks(
+      @RequestParam(required = false) Long authorId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll,
       @RequestParam(required = false) String query,
-      @RequestParam(required = false) String sortField,
-      @RequestParam(defaultValue = "asc") String sortDirection) {
+      @RequestParam(required = false) List<String> sortField,
+      @RequestParam(required = false) List<String> sortDirection) {
 
     Sort sort;
-    if (sortField != null) {
-      Sort.Direction dir = Sort.Direction.fromString(sortDirection);
-      if ("publicationDate".equals(sortField)) {
-        sort =
-            Sort.by(
-                new Sort.Order(dir, "publicationYear"), new Sort.Order(dir, "publicationMonth"));
-      } else {
-        sort = Sort.by(new Sort.Order(dir, sortField));
+    if (sortField != null && !sortField.isEmpty()) {
+      List<Sort.Order> orders = new java.util.ArrayList<>();
+      for (int i = 0; i < sortField.size(); i++) {
+        String field = sortField.get(i);
+        Sort.Direction dir =
+            (sortDirection != null && i < sortDirection.size())
+                ? Sort.Direction.fromString(sortDirection.get(i))
+                : Sort.Direction.ASC;
+        if ("publicationDate".equals(field)) {
+          orders.add(new Sort.Order(dir, "publicationYear"));
+          orders.add(new Sort.Order(dir, "publicationMonth"));
+        } else {
+          orders.add(new Sort.Order(dir, field));
+        }
       }
+      sort = Sort.by(orders);
     } else {
-      sort = Sort.unsorted();
+      sort = DEFAULT_SORT;
     }
 
     if (showAll) {
-      List<Book> all = bookService.findAll(query, sort);
+      List<Book> all = bookService.findAll(query, sort, authorId);
       return PagedResponse.unpaged(
           all, book -> BookResponse.from(book, book.getTotalSalesToDate()));
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
-    Page<Book> books = bookService.findAll(pageable, query);
+    Page<Book> books = bookService.findAll(pageable, query, authorId);
     return PagedResponse.paged(books, book -> BookResponse.from(book, book.getTotalSalesToDate()));
   }
 
-  @Operation(operationId = "searchAuthors", summary = "Search distinct author names")
+  @Operation(operationId = "searchAuthors", summary = "Search authors for autocomplete")
   @GetMapping("/authors")
-  public PagedResponse<String> searchAuthors(
+  public PagedResponse<AuthorResponse> searchAuthors(
       @RequestParam(required = false) String query,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll) {
 
+    Sort sort = Sort.by(Sort.Order.asc("name").ignoreCase());
+
     if (showAll) {
-      List<String> authors = bookService.findDistinctAuthors(query);
-      return PagedResponse.unpaged(authors);
+      List<Author> authors = authorService.findAll(query, sort);
+      return PagedResponse.unpaged(authors, AuthorResponse::from);
     }
 
-    Pageable pageable = PageRequest.of(page, size);
-    return PagedResponse.paged(bookService.findDistinctAuthors(query, pageable));
+    Pageable pageable = PageRequest.of(page, size, sort);
+    Page<Author> authors = authorService.findAll(pageable, query);
+    return PagedResponse.paged(authors, AuthorResponse::from);
+  }
+
+  @Operation(operationId = "searchSeries", summary = "Search distinct series names")
+  @GetMapping("/series")
+  public List<String> searchSeries(@RequestParam(required = false) String query) {
+    return bookService.findDistinctSeriesNames(query);
   }
 
   @Operation(operationId = "getBookById", summary = "Get a book by ID (includes financials)")
@@ -156,10 +184,16 @@ public class BookController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public BookResponse createBook(@Valid @RequestBody BookRequest request) {
+    Author author =
+        authorService
+            .findById(request.authorId())
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Author not found"));
+
     Book book =
         Book.builder()
             .title(request.title())
-            .author(request.author())
+            .author(author)
             .isbn13(request.isbn13())
             .isbn10(request.isbn10())
             .publicationYear(request.publicationYear())
@@ -177,7 +211,8 @@ public class BookController {
             .coverPrice(request.coverPrice())
             .printCost(request.printCost())
             .build();
-    return BookResponse.from(bookService.save(book));
+
+    return BookResponse.from(bookService.createBook(book));
   }
 
   // ------- PUT MAPPINGS -------
@@ -189,9 +224,17 @@ public class BookController {
         bookService
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
+    Author author =
+        authorService
+            .findById(request.authorId())
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Author not found"));
+
+    String oldSeriesName = book.getSeriesName();
+    Integer oldSeriesPosition = book.getSeriesPosition();
 
     book.setTitle(request.title());
-    book.setAuthor(request.author());
+    book.setAuthor(author);
     book.setIsbn13(request.isbn13());
     book.setIsbn10(request.isbn10());
     book.setPublicationYear(request.publicationYear());
@@ -209,7 +252,7 @@ public class BookController {
     book.setCoverPrice(request.coverPrice());
     book.setPrintCost(request.printCost());
 
-    return BookResponse.from(bookService.save(book));
+    return BookResponse.from(bookService.updateBook(book, oldSeriesName, oldSeriesPosition));
   }
 
   // ------- DELETE MAPPINGS -------
@@ -218,10 +261,6 @@ public class BookController {
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteBook(@PathVariable Long id) {
-    Book book =
-        bookService
-            .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
-    bookService.deleteById(book.getId());
+    bookService.deleteBook(id);
   }
 }

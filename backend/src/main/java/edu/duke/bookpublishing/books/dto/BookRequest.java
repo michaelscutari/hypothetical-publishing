@@ -18,9 +18,9 @@ public record BookRequest(
     @Schema(description = "Book title", example = "The Great Gatsby")
         @NotBlank(message = "Title is required")
         String title,
-    @Schema(description = "Author name(s)", example = "Fitzgerald, F. Scott")
-        @NotBlank(message = "Author is required")
-        String author,
+    @Schema(description = "Author ID", example = "12345")
+        @NotNull(message = "Author ID is required")
+        Long authorId,
     @Schema(description = "ISBN-13 identifier", example = "9780743273565")
         @NotBlank(message = "ISBN-13 is required")
         @ISBN13
@@ -60,6 +60,7 @@ public record BookRequest(
         @DecimalMin("0.00")
         BigDecimal printCost) {
 
+  @Schema(hidden = true)
   @AssertTrue(message = "Cover price must be greater than print cost")
   public boolean isCoverPriceGreaterThanPrintCost() {
     // @NotNull handles null error reporting
@@ -67,5 +68,17 @@ public record BookRequest(
       return true;
     }
     return coverPrice.compareTo(printCost) >= 0;
+  }
+
+  @Schema(hidden = true)
+  @AssertTrue(message = "Series position is required when series name is set")
+  public boolean isSeriesConsistent() {
+    if (seriesName != null && !seriesName.isBlank() && seriesPosition == null) {
+      return false;
+    }
+    if ((seriesName == null || seriesName.isBlank()) && seriesPosition != null) {
+      return false;
+    }
+    return true;
   }
 }

@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.exception;
 
+import edu.duke.bookpublishing.exception.custom.FieldValidationException;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +45,12 @@ public class GlobalExceptionHandler {
     }
 
     return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+  }
+
+  @ExceptionHandler(FieldValidationException.class)
+  public ResponseEntity<Map<String, String>> handleFieldValidation(FieldValidationException ex) {
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+        .body(Map.of(ex.getField(), ex.getMessage()));
   }
 
   @ExceptionHandler(NotFoundException.class)
