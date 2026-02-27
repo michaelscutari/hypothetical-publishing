@@ -3,7 +3,6 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
-import SortIcon from '@mui/icons-material/Sort';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -23,19 +22,19 @@ import {
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
-import { deleteOne as deleteBook, getMany as getBooks, type Book } from '../data/books';
+import { AuthorsService, type AuthorResponse } from '../../../../api';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import MultiSortDialog from './MultiSortDialog';
 import PageContainer from './PageContainer';
 
-const INITIAL_PAGE_SIZE = 10;
+const INITIAL_PAGE_SIZE = 25;
 const SHOW_ALL_SIZE = -1;
+const SHOW_ALL_PAGE_SIZE = 1000;
 
-export default function BookList() {
+const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+export default function AuthorList() {
   const navigate = useNavigate();
-
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
@@ -43,17 +42,12 @@ export default function BookList() {
     page: 0,
     pageSize: INITIAL_PAGE_SIZE,
   });
-
   const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
-  // const [sortModel, setSortModel] = React.useState<GridSortModel>([
-  //   { field: 'title', sort: 'asc' },
-  // ]);
   const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
 
   const [searchQuery, setSearchQuery] = React.useState('');
   const [debouncedQuery, setDebouncedQuery] = React.useState('');
   const debounceRef = React.useRef<number | null>(null);
-  const [multiSortOpen, setMultiSortOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
@@ -70,12 +64,9 @@ export default function BookList() {
   }, [debouncedQuery]);
 
   const [rowsState, setRowsState] = React.useState<{
-    rows: Book[];
+    rows: AuthorResponse[];
     rowCount: number;
-  }>({
-    rows: [],
-    rowCount: 0,
-  });
+  }>({ rows: [], rowCount: 0 });
 
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
@@ -85,19 +76,24 @@ export default function BookList() {
     setIsLoading(true);
 
     try {
-      const listData = await getBooks({
-        paginationModel,
-        sortModel,
-        query: debouncedQuery || undefined,
+      const sortField = sortModel?.[0]?.field;
+      const sortDirection = sortModel?.[0]?.sort ?? 'asc';
+
+      const response = await AuthorsService.getAllAuthors(
+        showAll ? 0 : paginationModel.page,
+        showAll ? SHOW_ALL_PAGE_SIZE : paginationModel.pageSize,
         showAll,
-      });
+        debouncedQuery || undefined,
+        sortField,
+        sortDirection,
+      );
 
       setRowsState({
-        rows: listData.items,
-        rowCount: listData.itemCount,
+        rows: response.content ?? [],
+        rowCount: response.totalElements ?? 0,
       });
-    } catch (listDataError) {
-      setError(listDataError as Error);
+    } catch (loadError) {
+      setError(loadError as Error);
     } finally {
       setIsLoading(false);
     }
@@ -108,35 +104,39 @@ export default function BookList() {
   }, [loadData]);
 
   const handleRefresh = React.useCallback(() => {
-    if (!isLoading) {
-      loadData();
-    }
+    if (!isLoading) loadData();
   }, [isLoading, loadData]);
 
+  const initialState = React.useMemo(
+    () => ({
+      pagination: { paginationModel: { pageSize: INITIAL_PAGE_SIZE } },
+    }),
+    [],
+  );
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }) => {
-      navigate(`/books/${row.id}`);
+      navigate(`/authors/${row.id}`);
     },
     [navigate],
   );
 
   const handleCreateClick = React.useCallback(() => {
-    navigate('/books/new');
+    navigate('/authors/new');
   }, [navigate]);
 
   const handleRowEdit = React.useCallback(
-    (book: Book) => () => {
-      navigate(`/books/${book.id}/edit`);
+    (author: AuthorResponse) => () => {
+      navigate(`/authors/${author.id}/edit`);
     },
     [navigate],
   );
 
   const handleRowDelete = React.useCallback(
-    (book: Book) => async () => {
+    (author: AuthorResponse) => async () => {
       const confirmed = await dialogs.confirm(
-        `Do you wish to delete ${book.title} by ${book.author}? By doing so, you will also be deleting ${book.totalSalesToDate} sales.`,
+        `Do you wish to delete ${author.name}? This will also delete all their sales.`,
         {
-          title: `Delete book?`,
+          title: 'Delete author?',
           severity: 'error',
           okText: 'Delete',
           cancelText: 'Cancel',
@@ -146,15 +146,14 @@ export default function BookList() {
       if (confirmed) {
         setIsLoading(true);
         try {
-          await deleteBook(Number(book.id));
-
-          notifications.show('Book deleted successfully.', {
+          await AuthorsService.deleteAuthor(Number(author.id));
+          notifications.show('Author deleted successfully.', {
             severity: 'success',
             autoHideDuration: 3000,
           });
           loadData();
         } catch (deleteError) {
-          notifications.show(`Failed to delete book. Reason: ${(deleteError as Error).message}`, {
+          notifications.show(`Failed to delete author. Reason: ${(deleteError as Error).message}`, {
             severity: 'error',
             autoHideDuration: 3000,
           });
@@ -165,57 +164,36 @@ export default function BookList() {
     [dialogs, notifications, loadData],
   );
 
-  const initialState = React.useMemo(
-    () => ({
-      pagination: { paginationModel: { pageSize: INITIAL_PAGE_SIZE } },
-    }),
-    [],
-  );
-
   const columns = React.useMemo<GridColDef[]>(
     () => [
-      { field: 'title', headerName: 'Title', width: 200 },
-      { field: 'author', headerName: 'Author', width: 180 },
-      { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
+      { field: 'name', headerName: 'Name', width: 200 },
+      { field: 'email', headerName: 'Email', width: 220 },
       {
-        field: 'publicationDate',
-        headerName: 'Publication',
-        width: 120,
-        valueGetter: (_value, row) => {
-          const year = row.publicationYear;
-          const month = row.publicationMonth;
-          if (year && month) {
-            return `${MONTH_NAMES[month - 1]} ${year}`;
-          }
-          return '';
-        },
-        sortComparator: (v1, v2, param1, param2) => {
-          const row1 = param1.api.getRow(param1.id);
-          const row2 = param2.api.getRow(param2.id);
-          const date1 = (row1?.publicationYear ?? 0) * 12 + (row1?.publicationMonth ?? 0);
-          const date2 = (row2?.publicationYear ?? 0) * 12 + (row2?.publicationMonth ?? 0);
-          return date1 - date2;
-        },
-      },
-      {
-        field: 'distributorAuthorRoyaltyRate',
-        headerName: 'Distributor Royalty',
+        field: 'bookCount',
+        headerName: 'Books',
         type: 'number',
-        width: 150,
-        valueFormatter: (value) => (value != null ? `${(value * 100).toFixed(0)}%` : ''),
+        width: 90,
       },
       {
-        field: 'handsoldAuthorRoyaltyRate',
-        headerName: 'Handsold Royalty',
+        field: 'totalRoyalty',
+        headerName: 'Total Royalty',
         type: 'number',
         width: 140,
-        valueFormatter: (value) => (value != null ? `${(value * 100).toFixed(0)}%` : ''),
+        valueFormatter: (value) => (value != null ? currencyFormatter.format(Number(value)) : ''),
       },
       {
-        field: 'totalSalesToDate',
-        headerName: 'Total Sales',
+        field: 'paidRoyalty',
+        headerName: 'Paid Royalty',
         type: 'number',
-        width: 100,
+        width: 130,
+        valueFormatter: (value) => (value != null ? currencyFormatter.format(Number(value)) : ''),
+      },
+      {
+        field: 'unpaidRoyalty',
+        headerName: 'Unpaid Royalty',
+        type: 'number',
+        width: 130,
+        valueFormatter: (value) => (value != null ? currencyFormatter.format(Number(value)) : ''),
       },
       {
         field: 'actions',
@@ -241,12 +219,10 @@ export default function BookList() {
     [handleRowEdit, handleRowDelete],
   );
 
-  const pageTitle = 'Books';
-
   return (
     <PageContainer
-      title={pageTitle}
-      breadcrumbs={[{ title: pageTitle }]}
+      title="Authors"
+      breadcrumbs={[{ title: 'Authors' }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
@@ -259,7 +235,7 @@ export default function BookList() {
 
           <TextField
             size="small"
-            placeholder="Search title, author, ISBN..."
+            placeholder="Search name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -278,19 +254,6 @@ export default function BookList() {
             }}
           />
 
-          <Button
-            variant="outlined"
-            startIcon={<SortIcon />}
-            onClick={() => setMultiSortOpen(true)}
-            sx={{
-              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
-              '&:hover': {
-                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)',
-              },
-            }}
-          >
-            Sort
-          </Button>
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             Create
           </Button>
@@ -312,22 +275,25 @@ export default function BookList() {
             hideFooter={false}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
-            //sortModel={sortModel}
-            //onSortModelChange={setSortModel}
-            disableColumnSorting
+            sortModel={sortModel}
+            onSortModelChange={setSortModel}
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
             loading={isLoading}
             initialState={initialState}
-            pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}
+            pageSizeOptions={[
+              10,
+              INITIAL_PAGE_SIZE,
+              50,
+              100,
+              { value: SHOW_ALL_SIZE, label: 'All' },
+            ]}
             slotProps={{
               loadingOverlay: {
                 variant: 'circular-progress',
                 noRowsVariant: 'circular-progress',
               },
-              baseIconButton: {
-                size: 'small',
-              },
+              baseIconButton: { size: 'small' },
             }}
             sx={{
               '--DataGrid-rowBorderColor': (theme) => theme.palette.divider,
@@ -342,27 +308,12 @@ export default function BookList() {
                 outline: 'transparent',
               },
               [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]:
-                {
-                  outline: 'none',
-                },
-              //if you liked the old header more
-              // [`& .${gridClasses.row}:hover`]: {
-              //   cursor: 'pointer',
-              // },
-              [`& .${gridClasses.columnHeaderTitle}`]: {
-                fontWeight: 700,
-                color: '#5C4033',
-              },
+                { outline: 'none' },
+              [`& .${gridClasses.row}:hover`]: { cursor: 'pointer' },
             }}
           />
         )}
       </Box>
-      <MultiSortDialog
-        open={multiSortOpen}
-        onClose={() => setMultiSortOpen(false)}
-        currentSortModel={sortModel}
-        onApply={setSortModel}
-      />
     </PageContainer>
   );
 }

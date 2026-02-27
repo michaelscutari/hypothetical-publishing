@@ -28,6 +28,7 @@ const AppBar = styled(MuiAppBar)(({ theme }) => ({
 const NAV_ITEMS = [
   { label: 'Books', path: '/books', pattern: '/books/*' },
   { label: 'Sales Records', path: '/sales', pattern: '/sales/*' },
+  { label: 'Authors', path: '/authors', pattern: '/authors/*' },
   { label: 'Author Payments', path: '/author-payments', pattern: '/author-payments' },
 ] as const;
 

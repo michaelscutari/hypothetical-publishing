@@ -2,8 +2,9 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type PagedResponseString = {
-    content?: Array<string>;
+import type { AuthorResponse } from './AuthorResponse';
+export type PagedResponseAuthorResponse = {
+    content?: Array<AuthorResponse>;
     pageNumber?: number;
     pageSize?: number;
     totalElements?: number;
