@@ -171,6 +171,43 @@ export default function BookList() {
 
   const columns = React.useMemo<GridColDef[]>(
     () => [
+      {
+        field: 'cover',
+        headerName: '',
+        width: 52,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) =>
+          row.hasCover ? (
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 0.75,
+              }}
+            >
+              <Box
+                component="img"
+                src={`/api/books/${row.id}/cover/thumbnail`}
+                alt=""
+                sx={{
+                  height: '100%',
+                  width: 'auto',
+                  maxWidth: 36,
+                  objectFit: 'contain',
+                  borderRadius: 0.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  display: 'block',
+                }}
+              />
+            </Box>
+          ) : null,
+      },
       { field: 'title', headerName: 'Title', width: 200 },
       { field: 'author', headerName: 'Author', width: 180 },
       { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
@@ -300,6 +337,7 @@ export default function BookList() {
           <DataGrid
             rows={rowsState.rows}
             rowCount={rowsState.rowCount}
+            disableMultipleColumnsSorting={false}
             columns={columns}
             sortingMode="server"
             paginationMode="server"
@@ -311,6 +349,7 @@ export default function BookList() {
             disableColumnSorting
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
+            rowHeight={60}
             loading={isLoading}
             initialState={initialState}
             pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}

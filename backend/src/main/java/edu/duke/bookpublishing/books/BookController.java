@@ -51,7 +51,7 @@ public class BookController {
 
   private static final Sort DEFAULT_SORT =
       Sort.by(
-          Sort.Order.asc("author"),
+          Sort.Order.asc("author.name"),
           Sort.Order.asc("seriesName").nullsFirst(),
           Sort.Order.asc("seriesPosition"),
           Sort.Order.asc("title"));
@@ -66,6 +66,32 @@ public class BookController {
   @Operation(
       operationId = "getAllBooks",
       summary = "Get paginated books with optional search, sort, and filter")
+  //   @GetMapping
+  //   public PagedResponse<BookResponse> getBooks(
+  //       @RequestParam(defaultValue = "0") int page,
+  //       @RequestParam(defaultValue = "25") int size,
+  //       @RequestParam(defaultValue = "false") boolean showAll,
+  //       @RequestParam(required = false) String query,
+  //       @RequestParam(required = false) String sortField,
+  //       @RequestParam(defaultValue = "asc") String sortDirection) {
+
+  //     Sort sort;
+  //     if (sortField != null) {
+  //       Sort.Direction dir = Sort.Direction.fromString(sortDirection);
+  //       if ("publicationDate".equals(sortField)) {
+  //         sort =
+  //             Sort.by(
+  //                 new Sort.Order(dir, "publicationYear"), new Sort.Order(dir,
+  // "publicationMonth"));
+  //       } else {
+  //         sort = Sort.by(new Sort.Order(dir, sortField));
+  //       }
+  //    } else {
+  //   sort = Sort.by(
+  //       Sort.Order.asc("author"),
+  //       Sort.Order.asc("title"));
+  // }
+
   @GetMapping
   public PagedResponse<BookResponse> getBooks(
       @RequestParam(required = false) Long authorId,
@@ -88,6 +114,8 @@ public class BookController {
         if ("publicationDate".equals(field)) {
           orders.add(new Sort.Order(dir, "publicationYear"));
           orders.add(new Sort.Order(dir, "publicationMonth"));
+        } else if ("author".equals(field)) {
+          orders.add(new Sort.Order(dir, "author.name"));
         } else {
           orders.add(new Sort.Order(dir, field));
         }
@@ -96,7 +124,6 @@ public class BookController {
     } else {
       sort = DEFAULT_SORT;
     }
-
     if (showAll) {
       List<Book> all = bookService.findAll(query, sort, authorId);
       return PagedResponse.unpaged(

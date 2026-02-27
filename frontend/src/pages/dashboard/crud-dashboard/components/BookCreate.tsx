@@ -1,6 +1,11 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ApiError, BooksService, type BookLookupResponse } from '../../../../api/generated';
+import {
+  ApiError,
+  BookCoversService,
+  BooksService,
+  type BookLookupResponse,
+} from '../../../../api/generated';
 import {
   createOne as createBook,
   validate as validateBook,
@@ -162,12 +167,27 @@ export default function BookCreate() {
     setFormErrors({});
 
     try {
-      await createBook(formValues as Omit<Book, 'id' | 'totalSalesToDate'>);
+      const book = await createBook(formValues as Omit<Book, 'id' | 'totalSalesToDate'>);
+
+      const coverFile =
+        formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;
+      if (coverFile && book.id != null) {
+        try {
+          await BookCoversService.uploadCover(book.id, { file: coverFile });
+        } catch {
+          notifications.show(
+            'Book created, but cover upload failed. You can add it from the edit page.',
+            { severity: 'warning', autoHideDuration: 5000 },
+          );
+          navigate('/books');
+          return;
+        }
+      }
+
       notifications.show('Book created successfully.', {
         severity: 'success',
         autoHideDuration: 3000,
       });
-
       navigate('/books');
     } catch (createError) {
       const fieldErrors = parseFieldErrors(createError);

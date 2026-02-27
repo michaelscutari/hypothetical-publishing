@@ -3,6 +3,8 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import FullPageLoader from '../../../../components/FullPageLoader';
+import { BookCoversService } from '../../../../api/generated';
 import {
   getOne as getBook,
   updateOne as updateBook,
@@ -14,21 +16,22 @@ import { AuthorsService, type AuthorResponse } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from './PageContainer';
-import FullPageLoader from '../../../../components/FullPageLoader';
 
 function BookEditForm({
   initialValues,
   initialAuthor,
+  bookId,
   onSubmit,
 }: {
   initialValues: Partial<BookFormState['values']>;
   initialAuthor: AuthorResponse | null;
+  bookId: number;
   onSubmit: (formValues: Partial<BookFormState['values']>) => Promise<void>;
 }) {
-  const { bookId } = useParams();
   const navigate = useNavigate();
 
   const notifications = useNotifications();
+  const coverRemovedRef = React.useRef(false);
 
   const [formState, setFormState] = React.useState<BookFormState>(() => ({
     values: initialValues,
@@ -52,6 +55,11 @@ function BookEditForm({
 
   const handleFormFieldChange = React.useCallback(
     (name: keyof BookFormState['values'], value: FormFieldValue) => {
+      if (name === 'coverImageFile' && value === null) {
+        coverRemovedRef.current = true;
+      } else if (name === 'coverImageFile') {
+        coverRemovedRef.current = false;
+      }
       setFormState((prev) => {
         const newValues = { ...prev.values, [name]: value };
         const { issues } = validateBook(newValues);
@@ -81,12 +89,38 @@ function BookEditForm({
 
     try {
       await onSubmit(formValues);
+      const coverFile =
+        formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;
+
+      if (coverFile) {
+        try {
+          await BookCoversService.uploadCover(bookId, { file: coverFile });
+        } catch {
+          notifications.show('Book saved, but cover upload failed. You can retry from this page.', {
+            severity: 'warning',
+            autoHideDuration: 5000,
+          });
+          navigate(`/books/${bookId}`);
+          return;
+        }
+      } else if (coverRemovedRef.current) {
+        try {
+          await BookCoversService.deleteCover(bookId);
+        } catch {
+          notifications.show('Book saved, but cover removal failed.', {
+            severity: 'warning',
+            autoHideDuration: 5000,
+          });
+          navigate(`/books/${bookId}`);
+          return;
+        }
+      }
+
       notifications.show('Book edited successfully.', {
         severity: 'success',
         autoHideDuration: 3000,
       });
-
-      navigate('/books');
+      navigate(`/books/${bookId}`);
     } catch (editError) {
       const fieldErrors = parseFieldErrors(editError);
       if (fieldErrors) {
@@ -99,7 +133,7 @@ function BookEditForm({
       }
       throw editError;
     }
-  }, [formValues, navigate, notifications, onSubmit, setFormErrors]);
+  }, [formValues, bookId, navigate, notifications, onSubmit, setFormErrors]);
 
   return (
     <BookForm
@@ -109,6 +143,7 @@ function BookEditForm({
       onReset={handleFormReset}
       submitButtonLabel="Save"
       backButtonPath={`/books/${bookId}`}
+      bookId={bookId}
       initialAuthor={initialAuthor}
     />
   );
@@ -184,9 +219,14 @@ export default function BookEdit() {
     }
 
     return book ? (
-      <BookEditForm initialValues={book} initialAuthor={authorForBook} onSubmit={handleSubmit} />
+      <BookEditForm
+        initialValues={book}
+        initialAuthor={authorForBook}
+        bookId={Number(bookId)}
+        onSubmit={handleSubmit}
+      />
     ) : null;
-  }, [isLoading, error, book, handleSubmit, authorForBook]);
+  }, [isLoading, error, book, bookId, handleSubmit, authorForBook]);
 
   const truncate = (value: string | undefined, maxLength = 30) =>
     value && value.length > maxLength ? `${value.slice(0, maxLength)}…` : (value ?? '');
