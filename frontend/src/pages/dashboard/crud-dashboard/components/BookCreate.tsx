@@ -1,6 +1,11 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ApiError, BooksService, type BookLookupResponse } from '../../../../api/generated';
+import {
+  ApiError,
+  BookCoversService,
+  BooksService,
+  type BookLookupResponse,
+} from '../../../../api/generated';
 import { createOne as createBook, validate as validateBook, type Book } from '../data/books';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
@@ -14,19 +19,6 @@ const INITIAL_FORM_VALUES: Partial<BookFormState['values']> = {
   coverPrice: 0,
   printCost: 0,
 };
-
-async function uploadCover(bookId: number, file: File): Promise<void> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await fetch(`/api/books/${bookId}/cover`, {
-    method: 'POST',
-    body: formData,
-    credentials: 'include',
-  });
-  if (!response.ok) {
-    throw new Error(`Cover upload failed: ${response.status}`);
-  }
-}
 
 export default function BookCreate() {
   const navigate = useNavigate();
@@ -176,7 +168,7 @@ export default function BookCreate() {
         formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;
       if (coverFile && book.id != null) {
         try {
-          await uploadCover(book.id, coverFile);
+          await BookCoversService.uploadCover(book.id, { file: coverFile });
         } catch {
           notifications.show(
             'Book created, but cover upload failed. You can add it from the edit page.',

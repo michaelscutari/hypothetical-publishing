@@ -4,6 +4,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FullPageLoader from '../../../../components/FullPageLoader';
+import { BookCoversService } from '../../../../api/generated';
 import {
   getOne as getBook,
   updateOne as updateBook,
@@ -13,29 +14,6 @@ import {
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from './PageContainer';
-
-async function uploadCover(bookId: number, file: File): Promise<void> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const response = await fetch(`/api/books/${bookId}/cover`, {
-    method: 'POST',
-    body: formData,
-    credentials: 'include',
-  });
-  if (!response.ok) {
-    throw new Error(`Cover upload failed: ${response.status}`);
-  }
-}
-
-async function deleteCover(bookId: number): Promise<void> {
-  const response = await fetch(`/api/books/${bookId}/cover`, {
-    method: 'DELETE',
-    credentials: 'include',
-  });
-  if (!response.ok) {
-    throw new Error(`Cover delete failed: ${response.status}`);
-  }
-}
 
 function BookEditForm({
   initialValues,
@@ -107,27 +85,12 @@ function BookEditForm({
 
     try {
       await onSubmit(formValues);
-
-      // const coverFile =
-      //   formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;
-      // if (coverFile) {
-      //   try {
-      //     await uploadCover(bookId, coverFile);
-      //   } catch {
-      //     notifications.show('Book saved, but cover upload failed. You can retry from this page.', {
-      //       severity: 'warning',
-      //       autoHideDuration: 5000,
-      //     });
-      //     navigate(`/books/${bookId}`);
-      //     return;
-      //   }
-      // }
       const coverFile =
         formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;
 
       if (coverFile) {
         try {
-          await uploadCover(bookId, coverFile);
+          await BookCoversService.uploadCover(bookId, { file: coverFile });
         } catch {
           notifications.show('Book saved, but cover upload failed. You can retry from this page.', {
             severity: 'warning',
@@ -138,7 +101,7 @@ function BookEditForm({
         }
       } else if (coverRemovedRef.current) {
         try {
-          await deleteCover(bookId);
+          await BookCoversService.deleteCover(bookId);
         } catch {
           notifications.show('Book saved, but cover removal failed.', {
             severity: 'warning',
