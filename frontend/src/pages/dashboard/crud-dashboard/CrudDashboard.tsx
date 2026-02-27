@@ -11,6 +11,10 @@ import SaleCreate from './components/SaleCreate';
 import SaleShow from './components/SaleShow';
 import SaleEdit from './components/SaleEdit';
 import AuthorPaymentsView from './components/AuthorPayments';
+import AuthorCreate from './components/AuthorCreate';
+import AuthorEdit from './components/AuthorEdit';
+import AuthorList from './components/AuthorList';
+import AuthorShow from './components/AuthorShow';
 
 export default function CrudDashboard() {
   return (
@@ -30,6 +34,10 @@ export default function CrudDashboard() {
           <Route path="sales/:saleId" element={<SaleShow />} />
           <Route path="sales/:saleId/edit" element={<SaleEdit />} />
           <Route path="author-payments" element={<AuthorPaymentsView />} />
+          <Route path="authors" element={<AuthorList />} />
+          <Route path="authors/new" element={<AuthorCreate />} />
+          <Route path="authors/:authorId" element={<AuthorShow />} />
+          <Route path="authors/:authorId/edit" element={<AuthorEdit />} />
         </Route>
       </Routes>
     </DialogsProvider>

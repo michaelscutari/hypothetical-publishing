@@ -7,8 +7,14 @@ export type PreferredMode = 'system' | 'light' | 'dark';
 export function usePreferredColorScheme() {
   const [preferred, setPreferred] = useState<PreferredMode>(() => {
     if (typeof window === 'undefined') return 'system';
-    const raw = localStorage.getItem(KEY);
-    return (raw as PreferredMode) ?? 'system';
+    try {
+      const storage = window.localStorage;
+      if (!storage || typeof storage.getItem !== 'function') return 'system';
+      const raw = storage.getItem(KEY);
+      return (raw as PreferredMode) ?? 'system';
+    } catch {
+      return 'system';
+    }
   });
 
   const [prefersDark, setPrefersDark] = useState<boolean>(() =>
@@ -24,9 +30,11 @@ export function usePreferredColorScheme() {
 
   useEffect(() => {
     try {
-      localStorage.setItem(KEY, preferred);
+      const storage = window.localStorage;
+      if (!storage || typeof storage.setItem !== 'function') return;
+      storage.setItem(KEY, preferred);
     } catch {
-      // Ignore localStorage errors (e.g., in private browsing)
+      // Ignore localStorage errors (e.g., in private browsing or test envs)
     }
   }, [preferred]);
 

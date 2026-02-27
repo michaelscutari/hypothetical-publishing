@@ -8,6 +8,10 @@ import type { AuthorPaymentSaleResponse } from './AuthorPaymentSaleResponse';
  */
 export type AuthorPaymentGroupResponse = {
     /**
+     * Author ID
+     */
+    authorId?: number;
+    /**
      * Author name
      */
     author?: string;

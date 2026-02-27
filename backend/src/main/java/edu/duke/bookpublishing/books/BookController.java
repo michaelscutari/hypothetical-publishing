@@ -1,5 +1,8 @@
 package edu.duke.bookpublishing.books;
 
+import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.author.AuthorService;
+import edu.duke.bookpublishing.author.dto.AuthorResponse;
 import edu.duke.bookpublishing.books.dto.BookDetailResponse;
 import edu.duke.bookpublishing.books.dto.BookLookupResponse;
 import edu.duke.bookpublishing.books.dto.BookRequest;
@@ -49,6 +52,7 @@ public class BookController {
   private final BookService bookService;
   private final SaleService saleService;
   private final BookLookupService bookLookupService;
+  private final AuthorService authorService;
 
   // ------- GET MAPPINGS -------
 
@@ -57,6 +61,7 @@ public class BookController {
       summary = "Get paginated books with optional search, sort, and filter")
   @GetMapping
   public PagedResponse<BookResponse> getBooks(
+      @RequestParam(required = false) Long authorId,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll,
@@ -86,31 +91,34 @@ public class BookController {
     }
 
     if (showAll) {
-      List<Book> all = bookService.findAll(query, sort);
+      List<Book> all = bookService.findAll(query, sort, authorId);
       return PagedResponse.unpaged(
           all, book -> BookResponse.from(book, book.getTotalSalesToDate()));
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
-    Page<Book> books = bookService.findAll(pageable, query);
+    Page<Book> books = bookService.findAll(pageable, query, authorId);
     return PagedResponse.paged(books, book -> BookResponse.from(book, book.getTotalSalesToDate()));
   }
 
-  @Operation(operationId = "searchAuthors", summary = "Search distinct author names")
+  @Operation(operationId = "searchAuthors", summary = "Search authors for autocomplete")
   @GetMapping("/authors")
-  public PagedResponse<String> searchAuthors(
+  public PagedResponse<AuthorResponse> searchAuthors(
       @RequestParam(required = false) String query,
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll) {
 
+    Sort sort = Sort.by(Sort.Order.asc("name").ignoreCase());
+
     if (showAll) {
-      List<String> authors = bookService.findDistinctAuthors(query);
-      return PagedResponse.unpaged(authors);
+      List<Author> authors = authorService.findAll(query, sort);
+      return PagedResponse.unpaged(authors, AuthorResponse::from);
     }
 
-    Pageable pageable = PageRequest.of(page, size);
-    return PagedResponse.paged(bookService.findDistinctAuthors(query, pageable));
+    Pageable pageable = PageRequest.of(page, size, sort);
+    Page<Author> authors = authorService.findAll(pageable, query);
+    return PagedResponse.paged(authors, AuthorResponse::from);
   }
 
   @Operation(operationId = "getBookById", summary = "Get a book by ID (includes financials)")
@@ -163,10 +171,16 @@ public class BookController {
   @PostMapping
   @ResponseStatus(HttpStatus.CREATED)
   public BookResponse createBook(@Valid @RequestBody BookRequest request) {
+    Author author =
+        authorService
+            .findById(request.authorId())
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Author not found"));
+
     Book book =
         Book.builder()
             .title(request.title())
-            .author(request.author())
+            .author(author)
             .isbn13(request.isbn13())
             .isbn10(request.isbn10())
             .publicationYear(request.publicationYear())
@@ -196,9 +210,13 @@ public class BookController {
         bookService
             .findById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
-
+    Author author =
+        authorService
+            .findById(request.authorId())
+            .orElseThrow(
+                () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Author not found"));
     book.setTitle(request.title());
-    book.setAuthor(request.author());
+    book.setAuthor(author);
     book.setIsbn13(request.isbn13());
     book.setIsbn10(request.isbn10());
     book.setPublicationYear(request.publicationYear());

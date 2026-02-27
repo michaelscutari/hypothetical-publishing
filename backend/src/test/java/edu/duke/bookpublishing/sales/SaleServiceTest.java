@@ -8,6 +8,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import edu.duke.bookpublishing.author.Author;
+import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
@@ -41,19 +43,24 @@ class SaleServiceTest {
 
   @Mock private SaleRepository saleRepository;
 
+  @Mock private AuthorRepository authorRepository;
+
   @InjectMocks private SaleService saleService;
 
   @Captor private ArgumentCaptor<Sale> saleCaptor;
 
+  private Author author;
   private Book book;
 
   @BeforeEach
   void setUp() {
+    author = Author.builder().id(1L).name("Test Author").email("test@example.com").build();
+
     book =
         Book.builder()
             .id(1L)
             .title("Test Book")
-            .author("Test Author")
+            .author(author)
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
@@ -193,11 +200,13 @@ class SaleServiceTest {
 
   @Test
   void updateSaleUpdatesFieldsAndRoyalty() {
+    Author newAuthor = Author.builder().id(2L).name("New Author").email("new@example.com").build();
+
     Book newBook =
         Book.builder()
             .id(2L)
             .title("New Book")
-            .author("New Author")
+            .author(newAuthor)
             .isbn13("9780743273566")
             .publicationYear(2021)
             .publicationMonth(2)
@@ -248,5 +257,23 @@ class SaleServiceTest {
     saleService.deleteById(7L);
 
     verify(saleRepository, times(1)).deleteById(7L);
+  }
+
+  @Test
+  void markAllPaidByAuthorIdMarksUnpaidSales() {
+    when(authorRepository.findById(1L)).thenReturn(Optional.of(author));
+    when(saleRepository.markAllPaidByAuthorId(1L)).thenReturn(3);
+
+    int count = saleService.markAllPaidByAuthorId(1L);
+
+    assertThat(count).isEqualTo(3);
+    verify(saleRepository).markAllPaidByAuthorId(1L);
+  }
+
+  @Test
+  void markAllPaidByAuthorIdThrowsWhenAuthorNotFound() {
+    when(authorRepository.findById(99L)).thenReturn(Optional.empty());
+
+    assertThrows(IllegalArgumentException.class, () -> saleService.markAllPaidByAuthorId(99L));
   }
 }

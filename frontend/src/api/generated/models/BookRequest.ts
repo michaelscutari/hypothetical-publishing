@@ -11,9 +11,9 @@ export type BookRequest = {
      */
     title: string;
     /**
-     * Author name(s)
+     * Author ID
      */
-    author: string;
+    authorId: number;
     /**
      * ISBN-13 identifier
      */

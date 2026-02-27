@@ -6,8 +6,8 @@ import type { BookDetailResponse } from '../models/BookDetailResponse';
 import type { BookLookupResponse } from '../models/BookLookupResponse';
 import type { BookRequest } from '../models/BookRequest';
 import type { BookResponse } from '../models/BookResponse';
+import type { PagedResponseAuthorResponse } from '../models/PagedResponseAuthorResponse';
 import type { PagedResponseBookResponse } from '../models/PagedResponseBookResponse';
-import type { PagedResponseString } from '../models/PagedResponseString';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -73,12 +73,14 @@ export class BooksService {
      * @param size
      * @param showAll
      * @param query
+     * @param authorId
      * @param sortField
      * @param sortDirection
      * @returns PagedResponseBookResponse OK
      * @throws ApiError
      */
     public static getAllBooks(
+        authorId?: number,
         page?: number,
         size: number = 25,
         showAll: boolean = false,
@@ -94,6 +96,7 @@ export class BooksService {
                 'size': size,
                 'showAll': showAll,
                 'query': query,
+                'authorId': authorId,
                 'sortField': sortField,
                 'sortDirection': sortDirection,
             },
@@ -139,12 +142,12 @@ export class BooksService {
         });
     }
     /**
-     * Search distinct author names
+     * Search authors for autocomplete
      * @param query
      * @param page
      * @param size
      * @param showAll
-     * @returns PagedResponseString OK
+     * @returns PagedResponseAuthorResponse OK
      * @throws ApiError
      */
     public static searchAuthors(
@@ -152,7 +155,7 @@ export class BooksService {
         page?: number,
         size: number = 25,
         showAll: boolean = false,
-    ): CancelablePromise<PagedResponseString> {
+    ): CancelablePromise<PagedResponseAuthorResponse> {
         return __request(OpenAPI, {
             method: 'GET',
             url: '/api/books/authors',

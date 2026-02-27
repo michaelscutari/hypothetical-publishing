@@ -5,6 +5,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import edu.duke.bookpublishing.author.Author;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
@@ -20,12 +21,16 @@ class BookLookupServiceTest {
   private BookLookupService bookLookupService;
   private ObjectMapper objectMapper;
 
+  private Author mockAuthor;
+
   @BeforeEach
   void setUp() {
     bookRepository = mock(BookRepository.class);
     openLibraryClient = mock(OpenLibraryClient.class);
     bookLookupService = new BookLookupService(bookRepository, openLibraryClient);
     objectMapper = new ObjectMapper();
+    mockAuthor =
+        Author.builder().id(1L).name("Existing Author").email("author@example.com").build();
   }
 
   @Test
@@ -34,7 +39,7 @@ class BookLookupServiceTest {
         Book.builder()
             .id(10L)
             .title("Existing Book")
-            .author("Existing Author")
+            .author(mockAuthor)
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
@@ -94,7 +99,7 @@ class BookLookupServiceTest {
         Book.builder()
             .id(12L)
             .title("Existing Book")
-            .author("Existing Author")
+            .author(mockAuthor)
             .isbn13("9780743273565")
             .publicationYear(2020)
             .publicationMonth(1)
