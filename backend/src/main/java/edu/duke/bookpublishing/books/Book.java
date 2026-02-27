@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.books;
 
+import edu.duke.bookpublishing.author.Author;
 import edu.duke.bookpublishing.common.StringUtils;
 import jakarta.persistence.Basic;
 import jakarta.persistence.Column;
@@ -8,7 +9,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.Lob;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -24,6 +27,8 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Formula;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 @Entity
 @Table(name = "books")
@@ -40,9 +45,10 @@ public class Book {
   @Column(nullable = false)
   private String title;
 
-  // TODO: Map as foreign key to author table once it is available
-  @Column(nullable = false)
-  private String author;
+  @ManyToOne(fetch = FetchType.EAGER, optional = false)
+  @JoinColumn(name = "author_id", nullable = false)
+  @OnDelete(action = OnDeleteAction.CASCADE)
+  private Author author;
 
   @Column(name = "isbn_13", nullable = false, unique = true, length = 13)
   private String isbn13;
@@ -106,7 +112,6 @@ public class Book {
     if (title != null) {
       title = title.trim();
     }
-    author = StringUtils.normalizeWhitespace(author);
     if (isbn13 != null) {
       isbn13 = isbn13.replaceAll("-", "");
     }

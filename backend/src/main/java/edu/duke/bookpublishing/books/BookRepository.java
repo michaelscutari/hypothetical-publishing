@@ -2,8 +2,6 @@ package edu.duke.bookpublishing.books;
 
 import java.util.List;
 import java.util.Optional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -36,42 +34,4 @@ public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificat
       "SELECT DISTINCT b.seriesName FROM Book b WHERE b.seriesName IS NOT NULL ORDER BY"
           + " b.seriesName ASC")
   List<String> findAllDistinctSeriesNames();
-
-  @Query(
-      """
-          select distinct b.author
-          from Book b
-          where replace(replace(replace(lower(b.author), '.', ''), '''', ''), '-', '')
-            like concat('%', replace(replace(replace(lower(:query), '.', ''), '''', ''), '-', ''), '%')
-          order by lower(b.author) asc
-          """)
-  List<String> findDistinctAuthors(@Param("query") String query);
-
-  @Query(
-      """
-          select distinct b.author
-          from Book b
-          where replace(replace(replace(lower(b.author), '.', ''), '''', ''), '-', '')
-            like concat('%', replace(replace(replace(lower(:query), '.', ''), '''', ''), '-', ''), '%')
-          order by lower(b.author) asc
-          """)
-  Page<String> findDistinctAuthors(@Param("query") String query, Pageable pageable);
-
-  @Query(
-      """
-          select distinct b.author
-          from Book b
-          where lower(b.author) like concat('%', lower(:query), '%')
-          order by lower(b.author) asc
-          """)
-  List<String> findDistinctAuthorsLiteral(@Param("query") String query);
-
-  @Query(
-      """
-          select distinct b.author
-          from Book b
-          where lower(b.author) like concat('%', lower(:query), '%')
-          order by lower(b.author) asc
-          """)
-  Page<String> findDistinctAuthorsLiteral(@Param("query") String query, Pageable pageable);
 }

@@ -24,7 +24,7 @@ public record AuthorPaymentSaleResponse(
         sale.getId(),
         sale.getBook().getId(),
         sale.getBook().getTitle(),
-        sale.getBook().getAuthor(),
+        sale.getBook().getAuthor().getName(),
         sale.getSaleMonth(),
         sale.getSaleYear(),
         sale.getQuantitySold(),

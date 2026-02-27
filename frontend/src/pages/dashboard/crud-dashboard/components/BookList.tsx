@@ -3,6 +3,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
+import SortIcon from '@mui/icons-material/Sort';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -22,11 +23,12 @@ import {
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 import { deleteOne as deleteBook, getMany as getBooks, type Book } from '../data/books';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
+import MultiSortDialog from './MultiSortDialog';
 import PageContainer from './PageContainer';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 
 const INITIAL_PAGE_SIZE = 10;
 const SHOW_ALL_SIZE = -1;
@@ -48,6 +50,7 @@ export default function BookList() {
   const [searchQuery, setSearchQuery] = React.useState('');
   const [debouncedQuery, setDebouncedQuery] = React.useState('');
   const debounceRef = React.useRef<number | null>(null);
+  const [multiSortOpen, setMultiSortOpen] = React.useState(false);
 
   React.useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
@@ -269,6 +272,19 @@ export default function BookList() {
             }}
           />
 
+          <Button
+            variant="outlined"
+            startIcon={<SortIcon />}
+            onClick={() => setMultiSortOpen(true)}
+            sx={{
+              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)',
+              },
+            }}
+          >
+            Sort
+          </Button>
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             Create
           </Button>
@@ -290,8 +306,9 @@ export default function BookList() {
             hideFooter={false}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
-            sortModel={sortModel}
-            onSortModelChange={setSortModel}
+            //sortModel={sortModel}
+            //onSortModelChange={setSortModel}
+            disableColumnSorting
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
             loading={isLoading}
@@ -322,13 +339,24 @@ export default function BookList() {
                 {
                   outline: 'none',
                 },
-              [`& .${gridClasses.row}:hover`]: {
-                cursor: 'pointer',
+              //if you liked the old header more
+              // [`& .${gridClasses.row}:hover`]: {
+              //   cursor: 'pointer',
+              // },
+              [`& .${gridClasses.columnHeaderTitle}`]: {
+                fontWeight: 700,
+                color: '#5C4033',
               },
             }}
           />
         )}
       </Box>
+      <MultiSortDialog
+        open={multiSortOpen}
+        onClose={() => setMultiSortOpen(false)}
+        currentSortModel={sortModel}
+        onApply={setSortModel}
+      />
     </PageContainer>
   );
 }

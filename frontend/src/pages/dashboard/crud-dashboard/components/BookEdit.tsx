@@ -10,6 +10,7 @@ import {
   parseFieldErrors,
   type Book,
 } from '../data/books';
+import { AuthorsService, type AuthorResponse } from '../../../../api';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from './PageContainer';
@@ -17,9 +18,11 @@ import FullPageLoader from '../../../../components/FullPageLoader';
 
 function BookEditForm({
   initialValues,
+  initialAuthor,
   onSubmit,
 }: {
   initialValues: Partial<BookFormState['values']>;
+  initialAuthor: AuthorResponse | null;
   onSubmit: (formValues: Partial<BookFormState['values']>) => Promise<void>;
 }) {
   const { bookId } = useParams();
@@ -106,6 +109,7 @@ function BookEditForm({
       onReset={handleFormReset}
       submitButtonLabel="Save"
       backButtonPath={`/books/${bookId}`}
+      initialAuthor={initialAuthor}
     />
   );
 }
@@ -114,6 +118,7 @@ export default function BookEdit() {
   const { bookId } = useParams();
 
   const [book, setBook] = React.useState<Book | null>(null);
+  const [authorForBook, setAuthorForBook] = React.useState<AuthorResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
@@ -124,6 +129,14 @@ export default function BookEdit() {
     try {
       const showData = await getBook(Number(bookId));
       setBook(showData);
+      if (showData.authorId) {
+        try {
+          const author = await AuthorsService.getAuthorById(showData.authorId);
+          setAuthorForBook(author);
+        } catch {
+          setAuthorForBook({ id: showData.authorId, name: showData.author });
+        }
+      }
     } catch (showDataError) {
       setError(showDataError as Error);
     } finally {
@@ -170,8 +183,10 @@ export default function BookEdit() {
       );
     }
 
-    return book ? <BookEditForm initialValues={book} onSubmit={handleSubmit} /> : null;
-  }, [isLoading, error, book, handleSubmit]);
+    return book ? (
+      <BookEditForm initialValues={book} initialAuthor={authorForBook} onSubmit={handleSubmit} />
+    ) : null;
+  }, [isLoading, error, book, handleSubmit, authorForBook]);
 
   const truncate = (value: string | undefined, maxLength = 30) =>
     value && value.length > maxLength ? `${value.slice(0, maxLength)}…` : (value ?? '');

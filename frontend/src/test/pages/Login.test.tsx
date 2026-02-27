@@ -25,7 +25,7 @@ function renderLogin() {
     }
     if (url.includes('/api/auth/login')) {
       return Promise.resolve(
-        new Response(null, {
+        new Response(JSON.stringify({ ok: true }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         }),
