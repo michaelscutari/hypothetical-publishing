@@ -33,7 +33,7 @@ export async function getMany({
     showAll,
     query || undefined,
     sortFields.length ? sortFields : undefined,
-    sortDirections.length ? sortDirections : undefined
+    sortDirections.length ? sortDirections : undefined,
   );
 
   return {

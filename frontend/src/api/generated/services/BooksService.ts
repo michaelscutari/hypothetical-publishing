@@ -69,11 +69,11 @@ export class BooksService {
     }
     /**
      * Get paginated books with optional search, sort, and filter
+     * @param authorId
      * @param page
      * @param size
      * @param showAll
      * @param query
-     * @param authorId
      * @param sortField
      * @param sortDirection
      * @returns PagedResponseBookResponse OK
@@ -92,11 +92,11 @@ export class BooksService {
             method: 'GET',
             url: '/api/books',
             query: {
+                'authorId': authorId,
                 'page': page,
                 'size': size,
                 'showAll': showAll,
                 'query': query,
-                'authorId': authorId,
                 'sortField': sortField,
                 'sortDirection': sortDirection,
             },
