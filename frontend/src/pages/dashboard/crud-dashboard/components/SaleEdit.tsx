@@ -19,15 +19,15 @@ import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   BooksService,
-  SalesService,
   SaleRequest,
+  SalesService,
   type BookResponse,
   type SaleResponse,
 } from '../../../../api';
+import { MONTH_NAMES } from '../../../../constants/months';
 import { isValidMonetaryInput } from '../../../../utils/monetary';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-import { MONTH_NAMES } from '../../../../constants/months';
 
 export default function SaleEdit() {
   const { saleId } = useParams();
@@ -91,7 +91,7 @@ export default function SaleEdit() {
       setComment(saleData.comment ?? '');
 
       // Load all books for dropdown
-      const booksResponse = await BooksService.getAllBooks(undefined, 100, false);
+      const booksResponse = await BooksService.getAllBooks(undefined, 0, 100, false);
       setBooks(booksResponse.content ?? []);
 
       // Find and set selected book
@@ -246,6 +246,7 @@ export default function SaleEdit() {
                 setSelectedBook(value);
               }}
               getOptionLabel={(option) => `${option.title} - ${option.author} (${option.isbn13})`}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
               renderInput={(params) => (
                 <TextField
                   {...params}

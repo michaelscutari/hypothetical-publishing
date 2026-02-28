@@ -237,6 +237,16 @@ export default function SaleList() {
         width: 180,
       },
       {
+        field: 'saleSource',
+        headerName: 'Sale Source',
+        width: 130,
+        valueGetter: (_value, row) => {
+          if (row.saleSource === 'DISTRIBUTOR') return 'Distributor';
+          if (row.saleSource === 'HAND_SOLD') return 'Hand Sold';
+          return row.saleSource;
+        },
+      },
+      {
         field: 'saleYear',
         headerName: 'Month/Year',
         width: 120,
