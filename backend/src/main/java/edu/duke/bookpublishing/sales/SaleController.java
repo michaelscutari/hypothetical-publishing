@@ -1,17 +1,7 @@
 package edu.duke.bookpublishing.sales;
 
-import edu.duke.bookpublishing.common.dto.PagedResponse;
-import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
-import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
-import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
-import edu.duke.bookpublishing.sales.dto.SaleRequest;
-import edu.duke.bookpublishing.sales.dto.SaleResponse;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,6 +18,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import edu.duke.bookpublishing.common.dto.PagedResponse;
+import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
+import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
+import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
+import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 /**
  * Rest Controller for Sale CRUD Operations
@@ -46,43 +46,44 @@ public class SaleController {
 
   @Operation(operationId = "getSales", summary = "Retrieves all sales, paginated")
   @GetMapping
-  public PagedResponse<SaleResponse> getSales(
-      @RequestParam(defaultValue = "0") int page,
+  public PagedResponse<SaleResponse> getSales(@RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll,
       @RequestParam(required = false) String sortField,
       @RequestParam(defaultValue = "asc") String sortDirection,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate startDate,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate endDate,
+      @RequestParam(required = false) @DateTimeFormat(
+          iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(
+          iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+      @RequestParam(required = false) Long authorId,
+      @RequestParam(required = false) String saleSource,
       @RequestParam(required = false) String query) {
 
-    Sort sort =
-        sortField != null
-            ? Sort.by(new Sort.Order(Sort.Direction.fromString(sortDirection), sortField))
-            : Sort.unsorted();
+    Sort sort = sortField != null
+        ? Sort.by(new Sort.Order(Sort.Direction.fromString(sortDirection), sortField))
+        : Sort.unsorted();
 
     if (showAll) {
-      List<Sale> sales = saleService.getAllSales(startDate, endDate, query, sort);
+      List<Sale> sales =
+          saleService.getAllSales(startDate, endDate, authorId, saleSource, query, sort);
       return PagedResponse.unpaged(sales, SaleResponse::from);
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
-    Page<Sale> sales = saleService.getPagedSales(startDate, endDate, query, pageable);
+    Page<Sale> sales =
+        saleService.getPagedSales(startDate, endDate, authorId, saleSource, query, pageable);
     return PagedResponse.paged(sales, SaleResponse::from);
   }
 
   @Operation(operationId = "getAuthorPayments", summary = "Gets grouped author payments view")
   @GetMapping("/author-payments")
   public PagedResponse<AuthorPaymentGroupResponse> getAuthorPayments(
-      @RequestParam(defaultValue = "0") int page,
-      @RequestParam(defaultValue = "25") int size,
+      @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate startDate,
-      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-          LocalDate endDate,
+      @RequestParam(required = false) @DateTimeFormat(
+          iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(
+          iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
       @RequestParam(required = false) String query) {
 
     // Build the full grouped list in required order, then paginate at the author-group level.
@@ -125,8 +126,7 @@ public class SaleController {
     return SaleResponse.from(saleService.updateSale(id, sale));
   }
 
-  @Operation(
-      operationId = "markAuthorPaymentsPaid",
+  @Operation(operationId = "markAuthorPaymentsPaid",
       summary = "Marks all unpaid sales for an author as paid")
   @PutMapping("/author-payments/mark-paid")
   public MarkAllPaidResponse markAuthorPaymentsPaid(

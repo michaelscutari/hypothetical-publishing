@@ -5,11 +5,17 @@ import EditIcon from '@mui/icons-material/Edit';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import Alert from '@mui/material/Alert';
+import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
+import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
+import InputLabel from '@mui/material/InputLabel';
+import MenuItem from '@mui/material/MenuItem';
+import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
+import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 
 import {
@@ -27,7 +33,12 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { type SaleResponse, SalesService } from '../../../../api';
+import {
+  type AuthorResponse,
+  AuthorsService,
+  type SaleResponse,
+  SalesService,
+} from '../../../../api';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
@@ -58,6 +69,10 @@ export default function SaleList() {
   const [error, setError] = React.useState<Error | null>(null);
   const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
   const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
+  const [selectedAuthor, setSelectedAuthor] = React.useState<AuthorResponse | null>(null);
+  const [saleSource, setSaleSource] = React.useState<string>('all');
+  const [authors, setAuthors] = React.useState<AuthorResponse[]>([]);
+  const [loadingAuthors, setLoadingAuthors] = React.useState(false);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -74,6 +89,10 @@ export default function SaleList() {
         : undefined;
       const endDateParam = endDate ? endDate.endOf('month').format('YYYY-MM-DD') : undefined;
 
+      // Author and sale source filters - requirement 3.1.2
+      const authorIdParam = selectedAuthor?.id;
+      const saleSourceParam = saleSource === 'all' ? undefined : saleSource.toUpperCase();
+
       const response = await SalesService.getSales(
         showAll ? 0 : paginationModel.page,
         showAll ? 1000 : paginationModel.pageSize, // Use large number for showAll
@@ -82,6 +101,8 @@ export default function SaleList() {
         sortDirection,
         startDateParam,
         endDateParam,
+        authorIdParam,
+        saleSourceParam,
       );
 
       setSales(response.content ?? []);
@@ -91,11 +112,27 @@ export default function SaleList() {
     } finally {
       setIsLoading(false);
     }
-  }, [paginationModel, sortModel, showAll, startDate, endDate]);
+  }, [paginationModel, sortModel, showAll, startDate, endDate, selectedAuthor, saleSource]);
 
   React.useEffect(() => {
     loadData();
   }, [loadData]);
+
+  React.useEffect(() => {
+    loadAuthors();
+  }, []);
+
+  const loadAuthors = React.useCallback(async () => {
+    setLoadingAuthors(true);
+    try {
+      const response = await AuthorsService.getAllAuthors(0, 1000, true);
+      setAuthors(response.content ?? []);
+    } catch (error) {
+      console.error('Failed to load authors:', error);
+    } finally {
+      setLoadingAuthors(false);
+    }
+  }, []);
 
   const handleRefresh = React.useCallback(() => {
     if (!isLoading) loadData();
@@ -325,6 +362,32 @@ export default function SaleList() {
               }}
             />
           </LocalizationProvider>
+
+          <Autocomplete
+            options={authors}
+            getOptionLabel={(author) => author.name ?? ''}
+            renderInput={(params) => (
+              <TextField {...params} label="Author" size="small" placeholder="All Authors" />
+            )}
+            value={selectedAuthor}
+            onChange={(_, newValue) => setSelectedAuthor(newValue)}
+            loading={loadingAuthors}
+            disabled={loadingAuthors}
+            sx={{ minWidth: 200 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Sale Source</InputLabel>
+            <Select
+              value={saleSource}
+              label="Sale Source"
+              onChange={(e: SelectChangeEvent) => setSaleSource(e.target.value)}
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="distributor">Distributor</MenuItem>
+              <MenuItem value="hand_sold">Hand Sold</MenuItem>
+            </Select>
+          </FormControl>
 
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             New Sale
