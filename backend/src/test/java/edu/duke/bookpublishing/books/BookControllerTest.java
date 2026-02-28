@@ -99,6 +99,23 @@ class BookControllerTest {
         new BigDecimal("5.00"));
   }
 
+  private BookRequest buildSeriesBookRequest(
+      String title, Long authorId, String isbn13, String seriesName, Integer seriesPosition) {
+    return new BookRequest(
+        title,
+        authorId,
+        isbn13,
+        null,
+        2020,
+        1,
+        new BigDecimal("0.5"),
+        new BigDecimal("0.2"),
+        seriesName,
+        seriesPosition,
+        new BigDecimal("20.00"),
+        new BigDecimal("5.00"));
+  }
+
   private Author createAuthor(String name) {
     return authorRepository.save(
         Author.builder()
@@ -944,6 +961,331 @@ class BookControllerTest {
             get("/api/books/authors").cookie(token).param("query", "rr").param("showAll", "true"))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.content", hasSize(2)));
+  }
+
+  // ---- Series tests ----
+
+  @Test
+  void createBookWithSeriesReturnsSeriesFields() throws Exception {
+    Cookie token = login();
+    BookRequest request =
+        buildSeriesBookRequest(
+            "Fellowship", defaultAuthor.getId(), "9780547928210", "Lord of the Rings", 1);
+
+    mockMvc
+        .perform(
+            post("/api/books")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.seriesName").value("Lord of the Rings"))
+        .andExpect(jsonPath("$.seriesPosition").value(1));
+  }
+
+  @Test
+  void createBookAtPositionShiftsExistingBooks() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        buildSeriesBookRequest("Fellowship", defaultAuthor.getId(), "9780547928210", "LOTR", 1));
+    createBook(
+        token,
+        buildSeriesBookRequest("Two Towers", defaultAuthor.getId(), "9780547928220", "LOTR", 2));
+
+    // Insert at position 1 — should push Fellowship to 2 and Two Towers to 3
+    createBook(
+        token,
+        buildSeriesBookRequest("Prequel", defaultAuthor.getId(), "9780547928230", "LOTR", 1));
+
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "LOTR").param("showAll", "true"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(3)));
+
+    // Verify positions shifted: Prequel=1, Fellowship=2, Two Towers=3
+    mockMvc
+        .perform(
+            get("/api/books")
+                .cookie(token)
+                .param("showAll", "true")
+                .param("sortField", "seriesPosition")
+                .param("sortDirection", "asc"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content[?(@.title=='Prequel')].seriesPosition").value(1))
+        .andExpect(jsonPath("$.content[?(@.title=='Fellowship')].seriesPosition").value(2))
+        .andExpect(jsonPath("$.content[?(@.title=='Two Towers')].seriesPosition").value(3));
+  }
+
+  @Test
+  void createBookSeriesPositionOutOfBoundsReturns400() throws Exception {
+    Cookie token = login();
+    // No books in series yet, so max position is 1
+    BookRequest request =
+        buildSeriesBookRequest("Book", defaultAuthor.getId(), "9780547928210", "New Series", 5);
+
+    mockMvc
+        .perform(
+            post("/api/books")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest())
+        .andExpect(jsonPath("$.seriesPosition").exists());
+  }
+
+  @Test
+  void createBookSeriesNameWithoutPositionReturns400() throws Exception {
+    Cookie token = login();
+    BookRequest request =
+        new BookRequest(
+            "Test Book",
+            defaultAuthor.getId(),
+            "9780547928210",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            "Some Series",
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"));
+
+    mockMvc
+        .perform(
+            post("/api/books")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createBookSeriesPositionWithoutNameReturns400() throws Exception {
+    Cookie token = login();
+    BookRequest request =
+        new BookRequest(
+            "Test Book",
+            defaultAuthor.getId(),
+            "9780547928210",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            3,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"));
+
+    mockMvc
+        .perform(
+            post("/api/books")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void deleteBookFromSeriesClosesGap() throws Exception {
+    Cookie token = login();
+    Long book1 =
+        createBook(
+            token,
+            buildSeriesBookRequest(
+                "Book 1", defaultAuthor.getId(), "9780547928210", "Series A", 1));
+    Long book2 =
+        createBook(
+            token,
+            buildSeriesBookRequest(
+                "Book 2", defaultAuthor.getId(), "9780547928220", "Series A", 2));
+    createBook(
+        token,
+        buildSeriesBookRequest("Book 3", defaultAuthor.getId(), "9780547928230", "Series A", 3));
+
+    // Delete middle book
+    mockMvc
+        .perform(delete("/api/books/{id}", book2).cookie(token))
+        .andExpect(status().isNoContent());
+
+    // Book 3 should now be at position 2
+    mockMvc
+        .perform(get("/api/books/{id}", book1).cookie(token))
+        .andExpect(jsonPath("$.seriesPosition").value(1));
+
+    mockMvc
+        .perform(
+            get("/api/books")
+                .cookie(token)
+                .param("showAll", "true")
+                .param("sortField", "seriesPosition")
+                .param("sortDirection", "asc"))
+        .andExpect(jsonPath("$.content[?(@.title=='Book 3')].seriesPosition").value(2));
+  }
+
+  @Test
+  void updateBookAddSeriesToBookWithoutSeries() throws Exception {
+    Cookie token = login();
+    Long bookId =
+        createBook(
+            token,
+            buildBookRequest(
+                "Solo Book",
+                defaultAuthor.getId(),
+                "9780547928210",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5")));
+
+    BookRequest updateRequest =
+        buildSeriesBookRequest(
+            "Solo Book", defaultAuthor.getId(), "9780547928210", "New Series", 1);
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", bookId)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.seriesName").value("New Series"))
+        .andExpect(jsonPath("$.seriesPosition").value(1));
+  }
+
+  @Test
+  void updateBookRemoveFromSeries() throws Exception {
+    Cookie token = login();
+    Long book1 =
+        createBook(
+            token,
+            buildSeriesBookRequest("Book 1", defaultAuthor.getId(), "9780547928210", "Series", 1));
+    createBook(
+        token,
+        buildSeriesBookRequest("Book 2", defaultAuthor.getId(), "9780547928220", "Series", 2));
+
+    // Remove book1 from series
+    BookRequest updateRequest =
+        buildBookRequest(
+            "Book 1", defaultAuthor.getId(), "9780547928210", null, 2020, 1, new BigDecimal("0.5"));
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", book1)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.seriesName").isEmpty())
+        .andExpect(jsonPath("$.seriesPosition").isEmpty());
+
+    // Book 2 should shift to position 1
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("showAll", "true"))
+        .andExpect(jsonPath("$.content[?(@.title=='Book 2')].seriesPosition").value(1));
+  }
+
+  @Test
+  void updateBookMoveWithinSeries() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        buildSeriesBookRequest("Book 1", defaultAuthor.getId(), "9780547928210", "Series", 1));
+    Long book2 =
+        createBook(
+            token,
+            buildSeriesBookRequest("Book 2", defaultAuthor.getId(), "9780547928220", "Series", 2));
+    createBook(
+        token,
+        buildSeriesBookRequest("Book 3", defaultAuthor.getId(), "9780547928230", "Series", 3));
+
+    // Move book 2 to position 1
+    BookRequest updateRequest =
+        buildSeriesBookRequest("Book 2", defaultAuthor.getId(), "9780547928220", "Series", 1);
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", book2)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.seriesPosition").value(1));
+
+    // Book 1 should now be at position 2
+    mockMvc
+        .perform(
+            get("/api/books")
+                .cookie(token)
+                .param("showAll", "true")
+                .param("sortField", "seriesPosition")
+                .param("sortDirection", "asc"))
+        .andExpect(jsonPath("$.content[?(@.title=='Book 2')].seriesPosition").value(1))
+        .andExpect(jsonPath("$.content[?(@.title=='Book 1')].seriesPosition").value(2))
+        .andExpect(jsonPath("$.content[?(@.title=='Book 3')].seriesPosition").value(3));
+  }
+
+  @Test
+  void searchSeriesEndpointReturnsMatchingNames() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        buildSeriesBookRequest(
+            "Book 1", defaultAuthor.getId(), "9780547928210", "Harry Potter", 1));
+    createBook(
+        token,
+        buildSeriesBookRequest(
+            "Book 2", defaultAuthor.getId(), "9780547928220", "Lord of the Rings", 1));
+
+    mockMvc
+        .perform(get("/api/books/series").cookie(token).param("query", "Harry"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(1)))
+        .andExpect(jsonPath("$[0]").value("Harry Potter"));
+  }
+
+  @Test
+  void searchSeriesEndpointReturnsAllWhenNoQuery() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        buildSeriesBookRequest(
+            "Book 1", defaultAuthor.getId(), "9780547928210", "Alpha Series", 1));
+    createBook(
+        token,
+        buildSeriesBookRequest("Book 2", defaultAuthor.getId(), "9780547928220", "Beta Series", 1));
+
+    mockMvc
+        .perform(get("/api/books/series").cookie(token))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$", hasSize(2)));
+  }
+
+  @Test
+  void searchBooksFindsSeriesName() throws Exception {
+    Cookie token = login();
+    createBook(
+        token,
+        buildSeriesBookRequest(
+            "The Hobbit", defaultAuthor.getId(), "9780547928210", "Middle Earth", 1));
+    createBook(
+        token,
+        buildBookRequest(
+            "Unrelated Book",
+            defaultAuthor.getId(),
+            "9780547928220",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5")));
+
+    mockMvc
+        .perform(get("/api/books").cookie(token).param("query", "Middle Earth"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(1)))
+        .andExpect(jsonPath("$.content[0].title").value("The Hobbit"));
   }
 
   @Test

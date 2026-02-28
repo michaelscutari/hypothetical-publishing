@@ -1,7 +1,17 @@
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ApiError, BooksService, type BookLookupResponse } from '../../../../api/generated';
-import { createOne as createBook, validate as validateBook, type Book } from '../data/books';
+import {
+  ApiError,
+  BookCoversService,
+  BooksService,
+  type BookLookupResponse,
+} from '../../../../api/generated';
+import {
+  createOne as createBook,
+  validate as validateBook,
+  type Book,
+  parseFieldErrors,
+} from '../data/books';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from './PageContainer';
@@ -157,18 +167,38 @@ export default function BookCreate() {
     setFormErrors({});
 
     try {
-      await createBook(formValues as Omit<Book, 'id' | 'totalSalesToDate'>);
+      const book = await createBook(formValues as Omit<Book, 'id' | 'totalSalesToDate'>);
+
+      const coverFile =
+        formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;
+      if (coverFile && book.id != null) {
+        try {
+          await BookCoversService.uploadCover(book.id, { file: coverFile });
+        } catch {
+          notifications.show(
+            'Book created, but cover upload failed. You can add it from the edit page.',
+            { severity: 'warning', autoHideDuration: 5000 },
+          );
+          navigate('/books');
+          return;
+        }
+      }
+
       notifications.show('Book created successfully.', {
         severity: 'success',
         autoHideDuration: 3000,
       });
-
       navigate('/books');
     } catch (createError) {
-      notifications.show(`Failed to create book. Reason: ${(createError as Error).message}`, {
-        severity: 'error',
-        autoHideDuration: 3000,
-      });
+      const fieldErrors = parseFieldErrors(createError);
+      if (fieldErrors) {
+        setFormErrors(fieldErrors);
+      } else {
+        notifications.show(`Failed to create book. Reason: ${(createError as Error).message}`, {
+          severity: 'error',
+          autoHideDuration: 3000,
+        });
+      }
       throw createError;
     }
   }, [formValues, navigate, notifications, setFormErrors]);

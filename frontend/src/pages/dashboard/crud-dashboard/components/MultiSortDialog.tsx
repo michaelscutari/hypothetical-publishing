@@ -30,7 +30,6 @@ const SORT_OPTIONS: SortOption[] = [
   { field: 'publicationDate', label: 'Publication Date' },
   { field: 'distributorAuthorRoyaltyRate', label: 'Distributor Royalty' },
   { field: 'handsoldAuthorRoyaltyRate', label: 'Handsold Royalty' },
-  { field: 'totalSalesToDate', label: 'Total Sales' },
 ];
 
 interface SortRow {

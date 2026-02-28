@@ -1,5 +1,21 @@
 package edu.duke.bookpublishing.sales;
 
+import edu.duke.bookpublishing.author.AuthorRepository;
+import edu.duke.bookpublishing.books.Book;
+import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.books.BookService;
+import edu.duke.bookpublishing.exception.custom.NotFoundException;
+import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
+import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
+import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
+import edu.duke.bookpublishing.sales.dto.IngramImportResponse;
+import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
+import edu.duke.bookpublishing.sales.parser.ImportParser;
+import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
+import edu.duke.bookpublishing.sales.parser.ParsedBatch;
+import edu.duke.bookpublishing.sales.parser.ParsingError;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -24,6 +40,8 @@ import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Backend service for SaleController. All business logic is handled here.
@@ -37,8 +55,10 @@ public class SaleService {
   private static final LocalDate MIN_SALE_START_DATE = LocalDate.of(1900, 1, 1);
   private static final LocalDate MAX_SALE_END_DATE = LocalDate.of(2100, 1, 1);
 
+  private final BookService bookService;
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
+  private final ImportParser<IngramCsvEntry> ingramCsvParser;
   private final AuthorRepository authorRepository;
 
   public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, Long authorId,
@@ -221,6 +241,49 @@ public class SaleService {
         .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId)).build();
   }
 
+  // CSV Import
+  @Transactional
+  public IngramImportResponse importSalesFromCsv(IngramImportRequest ingramImportRequest) {
+
+    ParsedBatch<IngramCsvEntry> parsedBatch = ingramCsvParser.parse(ingramImportRequest.csvFile());
+
+    List<IngramCsvEntry> rows = parsedBatch.records();
+    List<ParsingError> csvErrors = parsedBatch.parsingErrors();
+
+    if (!csvErrors.isEmpty()) {
+      return new IngramImportResponse(List.of(), csvErrors, List.of());
+    }
+
+    List<Sale> sales = new ArrayList<>();
+    List<ParsingError> domainErrors = new ArrayList<>();
+
+    int rowNum = 0;
+    for (IngramCsvEntry csvEntry : rows) {
+      rowNum++;
+      try {
+        Sale sale = mapIngramCsvRowToSale(ingramImportRequest, parsedBatch, csvEntry);
+        sales.add(sale);
+      } catch (NotFoundException e) {
+        domainErrors.add(new ParsingError(rowNum, null, "book.notFound"));
+      } catch (RuntimeException e) {
+        domainErrors.add(new ParsingError(rowNum, null, "sale.mappingFailed"));
+      }
+    }
+
+    if (!domainErrors.isEmpty()) {
+      return new IngramImportResponse(List.of(), List.of(), domainErrors);
+    }
+
+    // Save if not preview
+    if (!ingramImportRequest.isPreview()) {
+      saveSalesToRepo(sales);
+    }
+
+    List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
+
+    return new IngramImportResponse(saleResponses, List.of(), List.of());
+  }
+
   private Sale getOrThrowSaleFromRepoById(Long id) {
     return saleRepository.findById(id).orElseThrow(() -> new NotFoundException("Sale not found"));
   }
@@ -253,5 +316,46 @@ public class SaleService {
           "publisherRevenue and authorRoyaltyRate must be non-null");
     }
     return publisherRevenue.multiply(authorRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
+  }
+
+  private Sale mapIngramCsvRowToSale(
+      IngramImportRequest ingramImportRequest,
+      ParsedBatch<IngramCsvEntry> parsedBatch,
+      IngramCsvEntry ingramCsvEntry) {
+
+    Book book =
+        bookService
+            .findBookByIsbn(ingramCsvEntry.getIsbn())
+            .orElseThrow(() -> new NotFoundException("Book not found"));
+
+    BigDecimal authorRoyaltyRate = SaleSource.DISTRIBUTOR.getRoyaltyRate(book);
+    BigDecimal authorRoyalty =
+        computeAuthorRoyalty(ingramCsvEntry.getNetCompensation(), authorRoyaltyRate);
+
+    return Sale.builder()
+        .saleSource(SaleSource.DISTRIBUTOR)
+        .saleMonth(ingramImportRequest.saleMonth())
+        .saleYear(ingramImportRequest.saleYear())
+        .book(book)
+        .quantitySold(Math.toIntExact(ingramCsvEntry.getNetQty()))
+        .publisherRevenue(ingramCsvEntry.getNetCompensation())
+        .authorRoyalty(authorRoyalty)
+        .hasAuthorBeenPaid(false)
+        .comment(getCommentFromCSV(ingramImportRequest.csvFile(), parsedBatch, ingramCsvEntry))
+        .build();
+  }
+
+  private String getCommentFromCSV(
+      MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
+    return String.format(
+        "Ingram: Format='%s' Market='%s' File='%s' (%s)",
+        ingramCsvEntry.getFormat(),
+        ingramCsvEntry.getSalesMarket(),
+        file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown",
+        parsedBatch.timestamp());
+  }
+
+  private void saveSalesToRepo(List<Sale> sales) {
+    saleRepository.saveAll(sales);
   }
 }
