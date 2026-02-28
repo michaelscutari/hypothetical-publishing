@@ -11,6 +11,18 @@ export type ReportBookRow = {
      */
     displayName?: string;
     /**
+     * Book title
+     */
+    title?: string;
+    /**
+     * Series name (null if not part of a series)
+     */
+    seriesName?: string;
+    /**
+     * Position in series (null if not part of a series)
+     */
+    seriesPosition?: number;
+    /**
      * Total quantity sold
      */
     quantity?: number;

@@ -97,7 +97,7 @@ export default function AuthorRoyaltyReport() {
 
             <Typography variant="body2" color="text.secondary">
               Select an author and timespan to generate a detailed royalty report. The report will
-              be generated as a PDF document suitable for printing.
+              be generated as a PDF document.
             </Typography>
 
             <Autocomplete

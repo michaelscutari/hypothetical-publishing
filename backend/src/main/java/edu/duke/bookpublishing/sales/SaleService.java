@@ -233,7 +233,16 @@ public class SaleService {
     // Handle empty case
     if (allSales.isEmpty()) {
       ReportBookRow emptyTotals =
-          new ReportBookRow("All Books", 0, 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+          new ReportBookRow(
+              "All Books",
+              null,
+              null,
+              null,
+              0,
+              0,
+              BigDecimal.ZERO,
+              BigDecimal.ZERO,
+              BigDecimal.ZERO);
       return new RoyaltyReportResponse(
           authorName,
           startQuarter,
@@ -322,7 +331,17 @@ public class SaleService {
               .filter(s -> Boolean.TRUE.equals(s.getHasAuthorBeenPaid()))
               .map(Sale::getAuthorRoyalty)
               .reduce(BigDecimal.ZERO, BigDecimal::add);
-      rows.add(new ReportBookRow(displayName, qty, handsold, unpaid, paid, unpaid.add(paid)));
+      rows.add(
+          new ReportBookRow(
+              displayName,
+              book.getTitle(),
+              book.getSeriesName(),
+              book.getSeriesPosition(),
+              qty,
+              handsold,
+              unpaid,
+              paid,
+              unpaid.add(paid)));
     }
     rows.sort(
         Comparator.<ReportBookRow, Boolean>comparing(r -> !r.displayName().contains("("))
@@ -337,7 +356,8 @@ public class SaleService {
         rows.stream().map(ReportBookRow::unpaidRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal paid =
         rows.stream().map(ReportBookRow::paidRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
-    return new ReportBookRow("All Books", qty, handsold, unpaid, paid, unpaid.add(paid));
+    return new ReportBookRow(
+        "All Books", null, null, null, qty, handsold, unpaid, paid, unpaid.add(paid));
   }
 
   private String bookDisplayName(Book book) {

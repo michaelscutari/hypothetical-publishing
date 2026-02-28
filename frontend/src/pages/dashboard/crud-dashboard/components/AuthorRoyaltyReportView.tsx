@@ -71,7 +71,20 @@ export default function AuthorRoyaltyReportView() {
     if (!row) return null;
     return (
       <TableRow key={key}>
-        <TableCell>{periodLabel || row.displayName}</TableCell>
+        <TableCell>
+          {periodLabel ? (
+            periodLabel
+          ) : (
+            <Box>
+              <div style={{ fontWeight: 500 }}>{row.title}</div>
+              {row.seriesName && (
+                <div style={{ fontSize: '0.85em', color: '#666' }}>
+                  {row.seriesName} ({row.seriesPosition})
+                </div>
+              )}
+            </Box>
+          )}
+        </TableCell>
         <TableCell align="right">{row.quantity ?? 0}</TableCell>
         <TableCell align="right">{row.handsold ?? 0}</TableCell>
         <TableCell align="right">{formatCurrency(row.unpaidRoyalty)}</TableCell>
@@ -121,6 +134,30 @@ export default function AuthorRoyaltyReportView() {
 
   return (
     <Box className="report-container">
+      {/* PDF Export Instructions (hidden when printing) */}
+      <Box className="no-print" sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+          Save as PDF
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
+          To save this report as a PDF document suitable for sharing with the author:
+        </Typography>
+        <Typography
+          variant="body2"
+          component="ol"
+          sx={{
+            color: '#555',
+            pl: 2,
+            m: 0,
+            '& li': { mb: 0.5 },
+          }}
+        >
+          <li>Use your browser's print function (Ctrl+P on Windows, Cmd+P on Mac)</li>
+          <li>Select "Save as PDF" in the printer dropdown</li>
+          <li>Click "Save" and choose your desired file location</li>
+        </Typography>
+      </Box>
+
       <Paper className="report-page" elevation={0}>
         {/* Header */}
         <Box className="report-header">
@@ -135,9 +172,6 @@ export default function AuthorRoyaltyReportView() {
             <Box>
               <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 0.5 }}>
                 Hypothetical Publishing
-              </Typography>
-              <Typography variant="body2" sx={{ color: '#666' }}>
-                Professional Publishing Solutions
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'right' }}>
@@ -158,10 +192,6 @@ export default function AuthorRoyaltyReportView() {
               <strong>Report Period:</strong> {getQuarterLabel(reportData.startQuarter)}{' '}
               {reportData.startYear} – {getQuarterLabel(reportData.endQuarter)} {reportData.endYear}
             </Typography>
-            <Typography variant="caption" sx={{ color: '#666' }}>
-              This report provides a detailed breakdown of sales and royalty information for the
-              specified author and reporting period.
-            </Typography>
           </Box>
         </Box>
 
@@ -170,11 +200,15 @@ export default function AuthorRoyaltyReportView() {
           const quarterlyData = getQuarterlyDataForBook(book.displayName);
           return (
             <Box key={`book-${book.displayName}`} className="report-section book-section">
-              <Typography variant="h6" className="section-title">
-                {book.displayName}
+              <Typography variant="h5" className="section-title" sx={{ mb: 0.5 }}>
+                {book.title}
               </Typography>
+              {book.seriesName && (
+                <Typography variant="subtitle1" sx={{ color: '#666', mb: 2 }}>
+                  {book.seriesName} ({book.seriesPosition})
+                </Typography>
+              )}
 
-              {/* Book Quarterly Breakdown */}
               <TableContainer sx={{ mb: 2 }}>
                 <Table size="small">
                   <TableHead>
@@ -255,30 +289,6 @@ export default function AuthorRoyaltyReportView() {
           </Typography>
         </Box>
       </Paper>
-
-      {/* PDF Export Instructions (hidden when printing) */}
-      <Box className="no-print" sx={{ mt: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
-        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
-          Save as PDF
-        </Typography>
-        <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
-          To save this report as a PDF document suitable for sharing with the author:
-        </Typography>
-        <Typography
-          variant="body2"
-          component="ol"
-          sx={{
-            color: '#555',
-            pl: 2,
-            m: 0,
-            '& li': { mb: 0.5 },
-          }}
-        >
-          <li>Use your browser's print function (Ctrl+P on Windows, Cmd+P on Mac)</li>
-          <li>Select "Save as PDF" in the printer dropdown</li>
-          <li>Click "Save" and choose your desired file location</li>
-        </Typography>
-      </Box>
     </Box>
   );
 }
