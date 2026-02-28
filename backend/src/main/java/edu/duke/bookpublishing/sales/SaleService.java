@@ -6,17 +6,14 @@ import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.books.BookService;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
+import edu.duke.bookpublishing.sales.dto.AllTimeTotals;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
-import edu.duke.bookpublishing.sales.dto.AuthorRoyaltyReportRequest;
-import edu.duke.bookpublishing.sales.dto.AuthorRoyaltyReportResponse;
-import edu.duke.bookpublishing.sales.dto.BookReportData;
-import edu.duke.bookpublishing.sales.dto.QuarterBookData;
-import edu.duke.bookpublishing.sales.dto.QuarterReportData;
-import edu.duke.bookpublishing.sales.dto.SaleRequest;
-import edu.duke.bookpublishing.sales.dto.TotalReportData;
 import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
 import edu.duke.bookpublishing.sales.dto.IngramImportResponse;
+import edu.duke.bookpublishing.sales.dto.QuarterSection;
+import edu.duke.bookpublishing.sales.dto.ReportBookRow;
+import edu.duke.bookpublishing.sales.dto.RoyaltyReportResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
@@ -27,7 +24,6 @@ import edu.duke.bookpublishing.sales.parser.ParsingError;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -222,6 +218,135 @@ public class SaleService {
     return saleRepository.markAllPaidByAuthorId(authorId);
   }
 
+  public RoyaltyReportResponse generateRoyaltyReport(
+      Long authorId, int startQuarter, int startYear, int endQuarter, int endYear) {
+    // Get author for display name
+    String authorName =
+        authorRepository
+            .findById(authorId)
+            .map(Author::getName)
+            .orElseThrow(() -> new NotFoundException("Author not found"));
+
+    // Get all sales for this author
+    List<Sale> allSales = saleRepository.findAllByAuthorId(authorId);
+
+    // Handle empty case
+    if (allSales.isEmpty()) {
+      ReportBookRow emptyTotals =
+          new ReportBookRow("All Books", 0, 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+      return new RoyaltyReportResponse(
+          authorName,
+          startQuarter,
+          startYear,
+          endQuarter,
+          endYear,
+          List.of(),
+          new AllTimeTotals(List.of(), emptyTotals));
+    }
+
+    // Generate quarter sections
+    List<QuarterSection> sections = new ArrayList<>();
+    int qYear = startYear;
+    int qQuarter = startQuarter;
+    while (qYear < endYear || (qYear == endYear && qQuarter <= endQuarter)) {
+      List<Sale> quarterSales = filterByQuarter(allSales, qQuarter, qYear);
+      if (!quarterSales.isEmpty()) {
+        sections.add(buildQuarterSection(quarterSales, qQuarter, qYear));
+      }
+      qQuarter++;
+      if (qQuarter > 4) {
+        qQuarter = 1;
+        qYear++;
+      }
+    }
+
+    // Build all-time totals
+    AllTimeTotals allTime = buildAllTimeTotals(allSales);
+
+    return new RoyaltyReportResponse(
+        authorName, startQuarter, startYear, endQuarter, endYear, sections, allTime);
+  }
+
+  private List<Sale> filterByQuarter(List<Sale> sales, int quarter, int year) {
+    int startMonth = (quarter - 1) * 3 + 1;
+    int endMonth = startMonth + 2;
+    return sales.stream()
+        .filter(
+            s ->
+                s.getSaleYear() == year
+                    && s.getSaleMonth() >= startMonth
+                    && s.getSaleMonth() <= endMonth)
+        .toList();
+  }
+
+  private QuarterSection buildQuarterSection(List<Sale> sales, int quarter, int year) {
+    Map<Long, List<Sale>> byBook = groupByBook(sales);
+    List<ReportBookRow> rows = buildSortedBookRows(byBook);
+    ReportBookRow totals = sumRows(rows);
+    return new QuarterSection(quarter, year, rows, totals);
+  }
+
+  private AllTimeTotals buildAllTimeTotals(List<Sale> sales) {
+    Map<Long, List<Sale>> byBook = groupByBook(sales);
+    List<ReportBookRow> rows = buildSortedBookRows(byBook);
+    ReportBookRow totals = sumRows(rows);
+    return new AllTimeTotals(rows, totals);
+  }
+
+  private Map<Long, List<Sale>> groupByBook(List<Sale> sales) {
+    Map<Long, List<Sale>> map = new LinkedHashMap<>();
+    for (Sale s : sales) {
+      map.computeIfAbsent(s.getBook().getId(), k -> new ArrayList<>()).add(s);
+    }
+    return map;
+  }
+
+  private List<ReportBookRow> buildSortedBookRows(Map<Long, List<Sale>> byBook) {
+    List<ReportBookRow> rows = new ArrayList<>();
+    for (List<Sale> bookSales : byBook.values()) {
+      Book book = bookSales.get(0).getBook();
+      String displayName = bookDisplayName(book);
+      int qty = bookSales.stream().mapToInt(Sale::getQuantitySold).sum();
+      int handsold =
+          bookSales.stream()
+              .filter(s -> s.getSaleSource() == SaleSource.HAND_SOLD)
+              .mapToInt(Sale::getQuantitySold)
+              .sum();
+      BigDecimal unpaid =
+          bookSales.stream()
+              .filter(s -> !Boolean.TRUE.equals(s.getHasAuthorBeenPaid()))
+              .map(Sale::getAuthorRoyalty)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+      BigDecimal paid =
+          bookSales.stream()
+              .filter(s -> Boolean.TRUE.equals(s.getHasAuthorBeenPaid()))
+              .map(Sale::getAuthorRoyalty)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+      rows.add(new ReportBookRow(displayName, qty, handsold, unpaid, paid, unpaid.add(paid)));
+    }
+    rows.sort(
+        Comparator.<ReportBookRow, Boolean>comparing(r -> !r.displayName().contains("("))
+            .thenComparing(ReportBookRow::displayName, String.CASE_INSENSITIVE_ORDER));
+    return rows;
+  }
+
+  private ReportBookRow sumRows(List<ReportBookRow> rows) {
+    int qty = rows.stream().mapToInt(ReportBookRow::quantity).sum();
+    int handsold = rows.stream().mapToInt(ReportBookRow::handsold).sum();
+    BigDecimal unpaid =
+        rows.stream().map(ReportBookRow::unpaidRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal paid =
+        rows.stream().map(ReportBookRow::paidRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
+    return new ReportBookRow("All Books", qty, handsold, unpaid, paid, unpaid.add(paid));
+  }
+
+  private String bookDisplayName(Book book) {
+    if (book.getSeriesName() != null && book.getSeriesPosition() != null) {
+      return book.getSeriesName() + " (" + book.getSeriesPosition() + ")";
+    }
+    return book.getTitle();
+  }
+
   // Req 2.2.2
   public Long getBookTotalSales(Long bookId) {
     return saleRepository.totalUnitsSoldByBook(bookId);
@@ -316,157 +441,6 @@ public class SaleService {
     return publisherRevenue.multiply(authorRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
   }
 
-  /** Generate author royalty report data */
-  public AuthorRoyaltyReportResponse generateAuthorRoyaltyReport(
-      AuthorRoyaltyReportRequest request) {
-    // Validate and get author
-    Author author =
-        authorRepository
-            .findById(request.authorId())
-            .orElseThrow(() -> new NotFoundException("Author not found"));
-
-    // Get all sales for this author
-    List<Sale> allSales = saleRepository.findAll();
-    List<Sale> authorSales =
-        allSales.stream()
-            .filter(s -> s.getBook().getAuthor().getId().equals(author.getId()))
-            .toList();
-
-    // Get books by this author and sort them (series books first by series name/position, then
-    // non-series by title)
-    List<Book> authorBooks = new ArrayList<>();
-    for (Sale sale : authorSales) {
-      if (!authorBooks.contains(sale.getBook())) {
-        authorBooks.add(sale.getBook());
-      }
-    }
-
-    Comparator<Book> bookComparator =
-        Comparator.comparing((Book b) -> b.getSeriesName() == null ? 1 : 0) // Series books first
-            .thenComparing(
-                b -> b.getSeriesName() != null ? b.getSeriesName() : "",
-                Comparator.nullsLast(String::compareTo))
-            .thenComparing(
-                b -> b.getSeriesPosition() != null ? b.getSeriesPosition() : Integer.MAX_VALUE)
-            .thenComparing(Book::getTitle);
-
-    authorBooks.sort(bookComparator);
-
-    // Generate quarter list
-    List<QuarterYear> quarters = generateQuarterList(request);
-
-    // Build book report data
-    List<BookReportData> bookReports = new ArrayList<>();
-    for (Book book : authorBooks) {
-      List<Sale> bookSales =
-          authorSales.stream().filter(s -> s.getBook().getId().equals(book.getId())).toList();
-
-      List<QuarterBookData> quarterData = new ArrayList<>();
-      for (QuarterYear qy : quarters) {
-        TotalReportData totals = computeTotals(bookSales, qy);
-        quarterData.add(new QuarterBookData(qy.quarter(), qy.year(), totals));
-      }
-
-      TotalReportData bookTotals = computeTotals(bookSales, null); // all time
-      bookReports.add(
-          new BookReportData(
-              book.getId(),
-              book.getTitle(),
-              book.getSeriesName(),
-              book.getSeriesPosition(),
-              book.getPublicationYear(),
-              book.getPublicationMonth(),
-              quarterData,
-              bookTotals));
-    }
-
-    // Build quarter report data (totals across all books)
-    List<QuarterReportData> quarterReports = new ArrayList<>();
-    for (QuarterYear qy : quarters) {
-      TotalReportData totals = computeTotals(authorSales, qy);
-      quarterReports.add(new QuarterReportData(qy.quarter(), qy.year(), totals));
-    }
-
-    // All-time totals
-    TotalReportData allTimeTotals = computeTotals(authorSales, null);
-
-    String generatedDate = LocalDate.now().format(DateTimeFormatter.ofPattern("MMMM d, yyyy"));
-
-    return new AuthorRoyaltyReportResponse(
-        author.getId(),
-        author.getName(),
-        author.getEmail(),
-        generatedDate,
-        request.startQuarter(),
-        request.startYear(),
-        request.endQuarter(),
-        request.endYear(),
-        bookReports,
-        quarterReports,
-        allTimeTotals);
-  }
-
-  private record QuarterYear(int quarter, int year) {}
-
-  private List<QuarterYear> generateQuarterList(AuthorRoyaltyReportRequest request) {
-    List<QuarterYear> quarters = new ArrayList<>();
-    int currentYear = request.startYear();
-    int currentQuarter = request.startQuarter();
-
-    while (currentYear < request.endYear()
-        || (currentYear == request.endYear() && currentQuarter <= request.endQuarter())) {
-      quarters.add(new QuarterYear(currentQuarter, currentYear));
-
-      currentQuarter++;
-      if (currentQuarter > 4) {
-        currentQuarter = 1;
-        currentYear++;
-      }
-    }
-    return quarters;
-  }
-
-  private TotalReportData computeTotals(List<Sale> sales, QuarterYear qy) {
-    List<Sale> filteredSales = sales;
-
-    if (qy != null) {
-      // Filter by quarter
-      int startMonth = (qy.quarter() - 1) * 3 + 1;
-      int endMonth = qy.quarter() * 3;
-      filteredSales =
-          sales.stream()
-              .filter(
-                  s ->
-                      s.getSaleYear().equals(qy.year())
-                          && s.getSaleMonth() >= startMonth
-                          && s.getSaleMonth() <= endMonth)
-              .toList();
-    }
-
-    int totalQuantity = filteredSales.stream().mapToInt(Sale::getQuantitySold).sum();
-    int handsoldQuantity =
-        filteredSales.stream()
-            .filter(s -> s.getSaleSource() == SaleSource.HAND_SOLD)
-            .mapToInt(Sale::getQuantitySold)
-            .sum();
-
-    BigDecimal unpaidRoyalty =
-        filteredSales.stream()
-            .filter(s -> !s.getHasAuthorBeenPaid())
-            .map(Sale::getAuthorRoyalty)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal paidRoyalty =
-        filteredSales.stream()
-            .filter(Sale::getHasAuthorBeenPaid)
-            .map(Sale::getAuthorRoyalty)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    BigDecimal totalRoyalty =
-        filteredSales.stream().map(Sale::getAuthorRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
-
-    return new TotalReportData(
-        totalQuantity, handsoldQuantity, unpaidRoyalty, paidRoyalty, totalRoyalty);
   private Sale mapIngramCsvRowToSale(
       IngramImportRequest ingramImportRequest,
       ParsedBatch<IngramCsvEntry> parsedBatch,

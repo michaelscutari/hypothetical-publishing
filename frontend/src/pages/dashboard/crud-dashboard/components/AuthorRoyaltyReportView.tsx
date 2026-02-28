@@ -12,16 +12,12 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  SalesService,
-  type AuthorRoyaltyReportResponse,
-  type BookReportData,
-} from '../../../../api';
+import { SalesService, type ReportBookRow, type RoyaltyReportResponse } from '../../../../api';
 import './AuthorRoyaltyReportView.css';
 
 export default function AuthorRoyaltyReportView() {
   const [searchParams] = useSearchParams();
-  const [reportData, setReportData] = useState<AuthorRoyaltyReportResponse | null>(null);
+  const [reportData, setReportData] = useState<RoyaltyReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,13 +35,13 @@ export default function AuthorRoyaltyReportView() {
         throw new Error('Missing required parameters');
       }
 
-      const data = await SalesService.generateAuthorRoyaltyReport({
+      const data = await SalesService.getRoyaltyReport(
         authorId,
         startQuarter,
         startYear,
         endQuarter,
         endYear,
-      });
+      );
 
       setReportData(data);
     } catch (err) {
@@ -71,11 +67,40 @@ export default function AuthorRoyaltyReportView() {
     return labels[(quarter ?? 1) - 1];
   };
 
-  const getBookLabel = (book: BookReportData) => {
-    if (book.seriesName && book.seriesPosition) {
-      return `${book.seriesName} #${book.seriesPosition}: ${book.title}`;
-    }
-    return book.title;
+  const renderBookRow = (row: ReportBookRow | undefined, periodLabel?: string, key?: string) => {
+    if (!row) return null;
+    return (
+      <TableRow key={key}>
+        <TableCell>{periodLabel || row.displayName}</TableCell>
+        <TableCell align="right">{row.quantity ?? 0}</TableCell>
+        <TableCell align="right">{row.handsold ?? 0}</TableCell>
+        <TableCell align="right">{formatCurrency(row.unpaidRoyalty)}</TableCell>
+        <TableCell align="right">{formatCurrency(row.paidRoyalty)}</TableCell>
+        <TableCell align="right">
+          <strong>{formatCurrency(row.totalRoyalty)}</strong>
+        </TableCell>
+      </TableRow>
+    );
+  };
+
+  const getQuarterlyDataForBook = (displayName: string | undefined) => {
+    if (!displayName || !reportData?.quarters) return [];
+    // For each quarter, find the row matching this book's displayName
+    return reportData.quarters
+      .map((quarter) => ({
+        quarter: quarter.quarter,
+        year: quarter.year,
+        bookRow: quarter.books?.find((b) => b.displayName === displayName),
+      }))
+      .filter((q) => q.bookRow);
+  };
+
+  const getGeneratedDate = () => {
+    return new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
   if (loading) {
@@ -99,207 +124,159 @@ export default function AuthorRoyaltyReportView() {
       <Paper className="report-page" elevation={0}>
         {/* Header */}
         <Box className="report-header">
-          <Box className="report-branding">
-            <Typography variant="h4" className="report-title">
-              Hypothetical Publishing
-            </Typography>
-            <Typography variant="subtitle1" className="report-subtitle">
-              Author Royalty Report
-            </Typography>
+          <Box
+            sx={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'flex-start',
+              mb: 3,
+            }}
+          >
+            <Box>
+              <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 0.5 }}>
+                Hypothetical Publishing
+              </Typography>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                Professional Publishing Solutions
+              </Typography>
+            </Box>
+            <Box sx={{ textAlign: 'right' }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>
+                Author Royalty Report
+              </Typography>
+              <Typography variant="caption" sx={{ color: '#999' }}>
+                Generated: {getGeneratedDate()}
+              </Typography>
+            </Box>
           </Box>
-          <Box className="report-info">
-            <Typography variant="body1">
-              <strong>Author:</strong> {reportData.authorName}
+
+          <Box sx={{ borderTop: '2px solid #1976d2', pt: 2 }}>
+            <Typography variant="body1" sx={{ mb: 1 }}>
+              <strong>Author Name:</strong> {reportData.author}
             </Typography>
-            <Typography variant="body2" color="text.secondary">
-              {reportData.authorEmail}
-            </Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
+            <Typography variant="body1" sx={{ mb: 1 }}>
               <strong>Report Period:</strong> {getQuarterLabel(reportData.startQuarter)}{' '}
               {reportData.startYear} – {getQuarterLabel(reportData.endQuarter)} {reportData.endYear}
             </Typography>
-            <Typography variant="body2">
-              <strong>Generated:</strong> {reportData.generatedDate}
+            <Typography variant="caption" sx={{ color: '#666' }}>
+              This report provides a detailed breakdown of sales and royalty information for the
+              specified author and reporting period.
             </Typography>
           </Box>
         </Box>
 
-        {/* All-Time Summary */}
-        <Box className="report-section">
-          <Typography variant="h6" className="section-title">
-            All-Time Totals
-          </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Total Sold</TableCell>
-                  <TableCell>Handsold</TableCell>
-                  <TableCell align="right">Unpaid Royalty</TableCell>
-                  <TableCell align="right">Paid Royalty</TableCell>
-                  <TableCell align="right">Total Royalty</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                <TableRow>
-                  <TableCell>{reportData.allTimeTotals?.quantitySold ?? 0}</TableCell>
-                  <TableCell>{reportData.allTimeTotals?.quantityHandsold ?? 0}</TableCell>
-                  <TableCell align="right">
-                    {formatCurrency(reportData.allTimeTotals?.authorRoyaltyUnpaid)}
-                  </TableCell>
-                  <TableCell align="right">
-                    {formatCurrency(reportData.allTimeTotals?.authorRoyaltyPaid)}
-                  </TableCell>
-                  <TableCell align="right">
-                    <strong>{formatCurrency(reportData.allTimeTotals?.authorRoyaltyTotal)}</strong>
-                  </TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+        {/* Per-Book Sections */}
+        {reportData.allTime?.books?.map((book) => {
+          const quarterlyData = getQuarterlyDataForBook(book.displayName);
+          return (
+            <Box key={`book-${book.displayName}`} className="report-section book-section">
+              <Typography variant="h6" className="section-title">
+                {book.displayName}
+              </Typography>
 
-        {/* Quarterly Breakdown */}
-        <Box className="report-section">
-          <Typography variant="h6" className="section-title">
-            Quarterly Breakdown
-          </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Quarter</TableCell>
-                  <TableCell>Total Sold</TableCell>
-                  <TableCell>Handsold</TableCell>
-                  <TableCell align="right">Unpaid Royalty</TableCell>
-                  <TableCell align="right">Paid Royalty</TableCell>
-                  <TableCell align="right">Total Royalty</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {reportData.quarters?.map((q) => (
-                  <TableRow key={`${q.year}-${q.quarter}`}>
-                    <TableCell>
-                      {getQuarterLabel(q.quarter)} {q.year}
-                    </TableCell>
-                    <TableCell>{q.totals?.quantitySold ?? 0}</TableCell>
-                    <TableCell>{q.totals?.quantityHandsold ?? 0}</TableCell>
-                    <TableCell align="right">
-                      {formatCurrency(q.totals?.authorRoyaltyUnpaid)}
-                    </TableCell>
-                    <TableCell align="right">
-                      {formatCurrency(q.totals?.authorRoyaltyPaid)}
-                    </TableCell>
-                    <TableCell align="right">
-                      {formatCurrency(q.totals?.authorRoyaltyTotal)}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-
-        {/* Books Breakdown */}
-        {reportData.books?.map((book) => (
-          <Box key={book.bookId} className="report-section book-section">
-            <Typography variant="h6" className="section-title">
-              {getBookLabel(book)}
-            </Typography>
-            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1 }}>
-              Published: {book.publicationMonth}/{book.publicationYear}
-            </Typography>
-
-            {/* Book All-Time Totals */}
-            <TableContainer sx={{ mb: 2 }}>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell colSpan={6}>
-                      <strong>Book Totals</strong>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Total Sold</TableCell>
-                    <TableCell>Handsold</TableCell>
-                    <TableCell align="right">Unpaid Royalty</TableCell>
-                    <TableCell align="right">Paid Royalty</TableCell>
-                    <TableCell align="right">Total Royalty</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>{book.totals?.quantitySold ?? 0}</TableCell>
-                    <TableCell>{book.totals?.quantityHandsold ?? 0}</TableCell>
-                    <TableCell align="right">
-                      {formatCurrency(book.totals?.authorRoyaltyUnpaid)}
-                    </TableCell>
-                    <TableCell align="right">
-                      {formatCurrency(book.totals?.authorRoyaltyPaid)}
-                    </TableCell>
-                    <TableCell align="right">
-                      <strong>{formatCurrency(book.totals?.authorRoyaltyTotal)}</strong>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* Book Quarterly Breakdown */}
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell colSpan={6}>
-                      <strong>Quarterly Breakdown</strong>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>Quarter</TableCell>
-                    <TableCell>Total Sold</TableCell>
-                    <TableCell>Handsold</TableCell>
-                    <TableCell align="right">Unpaid Royalty</TableCell>
-                    <TableCell align="right">Paid Royalty</TableCell>
-                    <TableCell align="right">Total Royalty</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {book.quarters?.map((q) => (
-                    <TableRow key={`${book.bookId}-${q.year}-${q.quarter}`}>
-                      <TableCell>
-                        {getQuarterLabel(q.quarter)} {q.year}
-                      </TableCell>
-                      <TableCell>{q.totals?.quantitySold ?? 0}</TableCell>
-                      <TableCell>{q.totals?.quantityHandsold ?? 0}</TableCell>
-                      <TableCell align="right">
-                        {formatCurrency(q.totals?.authorRoyaltyUnpaid)}
-                      </TableCell>
-                      <TableCell align="right">
-                        {formatCurrency(q.totals?.authorRoyaltyPaid)}
-                      </TableCell>
-                      <TableCell align="right">
-                        {formatCurrency(q.totals?.authorRoyaltyTotal)}
-                      </TableCell>
+              {/* Book Quarterly Breakdown */}
+              <TableContainer sx={{ mb: 2 }}>
+                <Table size="small">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Period</TableCell>
+                      <TableCell align="right">Total Sold</TableCell>
+                      <TableCell align="right">Handsold</TableCell>
+                      <TableCell align="right">Unpaid Royalty</TableCell>
+                      <TableCell align="right">Paid Royalty</TableCell>
+                      <TableCell align="right">Total Royalty</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Box>
-        ))}
+                  </TableHead>
+                  <TableBody>
+                    {quarterlyData.map((qData) =>
+                      renderBookRow(
+                        qData.bookRow,
+                        `${getQuarterLabel(qData.quarter)} ${qData.year}`,
+                        `${book.displayName}-q${qData.quarter}${qData.year}`,
+                      ),
+                    )}
+                    {renderBookRow(book, 'All-Time', `${book.displayName}-alltime`)}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Box>
+          );
+        })}
+
+        {/* All-Book Totals Section */}
+        <Box className="report-section">
+          <Typography variant="h6" className="section-title">
+            All-Book Quarterly Summary
+          </Typography>
+          <TableContainer>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Period</TableCell>
+                  <TableCell align="right">Total Sold</TableCell>
+                  <TableCell align="right">Handsold</TableCell>
+                  <TableCell align="right">Unpaid Royalty</TableCell>
+                  <TableCell align="right">Paid Royalty</TableCell>
+                  <TableCell align="right">Total Royalty</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {reportData.quarters?.map((quarter) =>
+                  renderBookRow(
+                    quarter.totals,
+                    `${getQuarterLabel(quarter.quarter)} ${quarter.year}`,
+                    `allbooks-q${quarter.quarter}${quarter.year}`,
+                  ),
+                )}
+                {renderBookRow(reportData.allTime?.totals, 'All-Time', 'allbooks-alltime')}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
 
         {/* Footer */}
-        <Box className="report-footer">
-          <Typography variant="caption" color="text.secondary">
-            Hypothetical Publishing • Author Royalty Report • Generated {reportData.generatedDate}
+        <Box
+          sx={{
+            borderTop: '1px solid #e0e0e0',
+            mt: 4,
+            pt: 2,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Typography variant="caption" sx={{ color: '#999' }}>
+            © 2026 Hypothetical Publishing. All rights reserved.
+          </Typography>
+          <Typography variant="caption" sx={{ color: '#999' }}>
+            Document ID: {reportData.author?.toLowerCase().replace(/\s+/g, '-')}-
+            {reportData.startYear}-q{reportData.startQuarter}-{reportData.endYear}-q
+            {reportData.endQuarter}
           </Typography>
         </Box>
       </Paper>
 
-      {/* Print instructions (hidden when printing) */}
-      <Box className="no-print" sx={{ mt: 2, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
-          Use your browser's print function (Ctrl+P or Cmd+P) and save as PDF
+      {/* PDF Export Instructions (hidden when printing) */}
+      <Box className="no-print" sx={{ mt: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
+          Save as PDF
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
+          To save this report as a PDF document suitable for sharing with the author:
+        </Typography>
+        <Typography
+          variant="body2"
+          component="ol"
+          sx={{
+            color: '#555',
+            pl: 2,
+            m: 0,
+            '& li': { mb: 0.5 },
+          }}
+        >
+          <li>Use your browser's print function (Ctrl+P on Windows, Cmd+P on Mac)</li>
+          <li>Select "Save as PDF" in the printer dropdown</li>
+          <li>Click "Save" and choose your desired file location</li>
         </Typography>
       </Box>
     </Box>

@@ -18,11 +18,6 @@ import SaleList from './components/SaleList';
 import SaleShow from './components/SaleShow';
 import DialogsProvider from './hooks/useDialogs/DialogsProvider';
 import SaleImport from './components/SaleImport';
-import AuthorPaymentsView from './components/AuthorPayments';
-import AuthorCreate from './components/AuthorCreate';
-import AuthorEdit from './components/AuthorEdit';
-import AuthorList from './components/AuthorList';
-import AuthorShow from './components/AuthorShow';
 
 export default function CrudDashboard() {
   return (

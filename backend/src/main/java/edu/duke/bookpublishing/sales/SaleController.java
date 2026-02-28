@@ -2,12 +2,11 @@ package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
-import edu.duke.bookpublishing.sales.dto.AuthorRoyaltyReportRequest;
-import edu.duke.bookpublishing.sales.dto.AuthorRoyaltyReportResponse;
 import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
 import edu.duke.bookpublishing.sales.dto.IngramImportResponse;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
+import edu.duke.bookpublishing.sales.dto.RoyaltyReportResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -110,6 +109,20 @@ public class SaleController {
     return new PagedResponse<>(content, page, size, totalElements, totalPages, true);
   }
 
+  @Operation(
+      operationId = "getRoyaltyReport",
+      summary = "Generates an author royalty report for a quarter range")
+  @GetMapping("/royalty-report")
+  public RoyaltyReportResponse getRoyaltyReport(
+      @RequestParam Long authorId,
+      @RequestParam int startQuarter,
+      @RequestParam int startYear,
+      @RequestParam int endQuarter,
+      @RequestParam int endYear) {
+    return saleService.generateRoyaltyReport(
+        authorId, startQuarter, startYear, endQuarter, endYear);
+  }
+
   @Operation(operationId = "getSaleById", summary = "Gets a sale by its ID")
   @GetMapping("/{id}")
   public SaleResponse getSale(@PathVariable Long id) {
@@ -148,15 +161,6 @@ public class SaleController {
       @Valid @RequestBody MarkAllPaidRequest request) {
     int updatedCount = saleService.markAllPaidByAuthorId(request.authorId());
     return new MarkAllPaidResponse(request.authorId(), updatedCount);
-  }
-
-  @Operation(
-      operationId = "generateAuthorRoyaltyReport",
-      summary = "Generate author royalty report")
-  @PostMapping("/author-royalty-report")
-  public AuthorRoyaltyReportResponse generateAuthorRoyaltyReport(
-      @Valid @RequestBody AuthorRoyaltyReportRequest request) {
-    return saleService.generateAuthorRoyaltyReport(request);
   }
 
   // ------- DELETE MAPPINGS -------

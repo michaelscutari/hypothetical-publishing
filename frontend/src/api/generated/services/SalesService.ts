@@ -2,14 +2,13 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { AuthorRoyaltyReportRequest } from '../models/AuthorRoyaltyReportRequest';
-import type { AuthorRoyaltyReportResponse } from '../models/AuthorRoyaltyReportResponse';
 import type { IngramImportRequest } from '../models/IngramImportRequest';
 import type { IngramImportResponse } from '../models/IngramImportResponse';
 import type { MarkAllPaidRequest } from '../models/MarkAllPaidRequest';
 import type { MarkAllPaidResponse } from '../models/MarkAllPaidResponse';
 import type { PagedResponseAuthorPaymentGroupResponse } from '../models/PagedResponseAuthorPaymentGroupResponse';
 import type { PagedResponseSaleResponse } from '../models/PagedResponseSaleResponse';
+import type { RoyaltyReportResponse } from '../models/RoyaltyReportResponse';
 import type { SaleRequest } from '../models/SaleRequest';
 import type { SaleResponse } from '../models/SaleResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -142,19 +141,6 @@ export class SalesService {
         });
     }
     /**
-     * Generate author royalty report
-     * @param requestBody
-     * @returns AuthorRoyaltyReportResponse OK
-     * @throws ApiError
-     */
-    public static generateAuthorRoyaltyReport(
-        requestBody: AuthorRoyaltyReportRequest,
-    ): CancelablePromise<AuthorRoyaltyReportResponse> {
-        return __request(OpenAPI, {
-            method: 'POST',
-            url: '/api/sales/author-royalty-report',
-            body: requestBody,
-            mediaType: 'application/json',
      * Previews a CSV import
      * @param formData
      * @returns IngramImportResponse OK
@@ -168,6 +154,35 @@ export class SalesService {
             url: '/api/sales/import',
             formData: formData,
             mediaType: 'multipart/form-data',
+        });
+    }
+    /**
+     * Generates an author royalty report for a quarter range
+     * @param authorId
+     * @param startQuarter
+     * @param startYear
+     * @param endQuarter
+     * @param endYear
+     * @returns RoyaltyReportResponse OK
+     * @throws ApiError
+     */
+    public static getRoyaltyReport(
+        authorId: number,
+        startQuarter: number,
+        startYear: number,
+        endQuarter: number,
+        endYear: number,
+    ): CancelablePromise<RoyaltyReportResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sales/royalty-report',
+            query: {
+                'authorId': authorId,
+                'startQuarter': startQuarter,
+                'startYear': startYear,
+                'endQuarter': endQuarter,
+                'endYear': endYear,
+            },
         });
     }
     /**

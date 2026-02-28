@@ -10,12 +10,14 @@
   padding: 0.75in;
   background: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 .report-header {
   margin-bottom: 2rem;
-  padding-bottom: 1rem;
-  border-bottom: 2px solid #333;
+  padding-bottom: 1.5rem;
+  border-bottom: 3px solid #1976d2;
+  page-break-after: avoid;
 }
 
 .report-branding {
@@ -45,22 +47,41 @@
 .section-title {
   margin-bottom: 1rem;
   font-weight: 600;
-  color: #333;
+  color: #1976d2;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.5rem;
 }
 
 .book-section {
-  border-left: 3px solid #1976d2;
+  border-left: 4px solid #1976d2;
   padding-left: 1rem;
+  break-inside: avoid;
 }
 
 .report-footer {
   margin-top: 3rem;
   padding-top: 1rem;
-  border-top: 1px solid #ddd;
-  text-align: center;
+  border-top: 2px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #999;
 }
 
 @media print {
+  @page {
+    size: letter;
+    margin: 0.5in;
+  }
+
+  html,
+  body {
+    background: white;
+    margin: 0;
+    padding: 0;
+  }
+
   .no-print {
     display: none !important;
   }
@@ -68,31 +89,37 @@
   .report-container {
     background: white;
     padding: 0;
+    margin: 0;
+    min-height: auto;
   }
 
   .report-page {
     max-width: 100%;
     margin: 0;
-    padding: 0.75in;
+    padding: 0;
     box-shadow: none;
+    page-break-after: always;
   }
 
   .report-header {
     page-break-after: avoid;
+    margin-bottom: 1.5rem;
   }
 
   .report-section {
     page-break-inside: avoid;
+    margin-bottom: 1.5rem;
   }
 
   .book-section {
-    page-break-before: auto;
-    page-break-after: auto;
     page-break-inside: avoid;
+    page-break-before: auto;
   }
 
   table {
     page-break-inside: auto;
+    width: 100%;
+    border-collapse: collapse;
   }
 
   tr {
@@ -110,11 +137,21 @@
 
   .MuiTableCell-root {
     padding: 6px 8px !important;
+    border: 1px solid #ddd;
+  }
+
+  .MuiTableHead-root .MuiTableCell-root {
+    background-color: #f0f0f0;
+    font-weight: bold;
   }
 }
 
 @media screen {
   .report-container {
     padding: 20px;
+  }
+
+  .report-page {
+    page-break-inside: auto;
   }
 }
