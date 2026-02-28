@@ -17,6 +17,12 @@ import SaleEdit from './components/SaleEdit';
 import SaleList from './components/SaleList';
 import SaleShow from './components/SaleShow';
 import DialogsProvider from './hooks/useDialogs/DialogsProvider';
+import SaleImport from './components/SaleImport';
+import AuthorPaymentsView from './components/AuthorPayments';
+import AuthorCreate from './components/AuthorCreate';
+import AuthorEdit from './components/AuthorEdit';
+import AuthorList from './components/AuthorList';
+import AuthorShow from './components/AuthorShow';
 
 export default function CrudDashboard() {
   return (
@@ -33,6 +39,7 @@ export default function CrudDashboard() {
           <Route path="*" element={<Navigate to="/books" replace />} />
           <Route path="sales" element={<SaleList />} />
           <Route path="sales/new" element={<SaleCreate />} />
+          <Route path="sales/import" element={<SaleImport />} />
           <Route path="sales/:saleId" element={<SaleShow />} />
           <Route path="sales/:saleId/edit" element={<SaleEdit />} />
           <Route path="author-payments" element={<AuthorPaymentsView />} />

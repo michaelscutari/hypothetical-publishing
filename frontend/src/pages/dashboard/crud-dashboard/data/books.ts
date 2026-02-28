@@ -1,11 +1,14 @@
 import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
 import {
+  ApiError,
   BooksService,
   type BookDetailResponse,
   type BookRequest,
   type BookResponse,
   type PagedResponseBookResponse,
 } from '../../../../api';
+import { OpenAPI } from '../../../../api/generated/core/OpenAPI';
+import { request as __request } from '../../../../api/generated/core/request';
 
 export type Book = BookResponse;
 export type BookDetail = BookDetailResponse;
@@ -88,6 +91,14 @@ export async function updateOne(
 
 export async function deleteOne(bookId: number): Promise<void> {
   return BooksService.deleteBook(bookId);
+}
+
+export async function searchSeries(query?: string): Promise<string[]> {
+  return __request(OpenAPI, {
+    method: 'GET',
+    url: '/api/books/series',
+    query: { query },
+  });
 }
 
 type ValidationResult = { issues: { message: string; path: (keyof Book)[] }[] };
@@ -177,7 +188,39 @@ export function validate(book: Partial<Book>): ValidationResult {
       ...issues,
       { message: 'Series position is required when series name is set', path: ['seriesPosition'] },
     ];
+  } else if (!book.seriesName && book.seriesPosition) {
+    issues = [
+      ...issues,
+      { message: 'Series name is required when position is set', path: ['seriesName'] },
+    ];
+  } else if (book.seriesPosition != null && book.seriesPosition < 1) {
+    issues = [
+      ...issues,
+      { message: 'Series position must be at least 1', path: ['seriesPosition'] },
+    ];
   }
 
   return { issues };
+}
+
+/**
+ * Parse field-level errors from a backend 400/409 response.
+ * Returns a partial record suitable for setFormErrors, or null if the error
+ * isn't a field-level validation error.
+ */
+export function parseFieldErrors(err: unknown): Partial<Record<keyof Book, string>> | null {
+  if (!(err instanceof ApiError)) return null;
+  if (err.status !== 400 && err.status !== 409) return null;
+  const body = err.body;
+  if (!body || typeof body !== 'object') return null;
+
+  const result: Partial<Record<string, string>> = {};
+  let found = false;
+  for (const [key, value] of Object.entries(body)) {
+    if (typeof value === 'string') {
+      result[key] = value;
+      found = true;
+    }
+  }
+  return found ? result : null;
 }

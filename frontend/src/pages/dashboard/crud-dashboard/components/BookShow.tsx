@@ -11,8 +11,9 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import FullPageLoader from '../../../../components/FullPageLoader';
+import { MONTH_NAMES } from '../../../../constants/months';
 import BookSalesList from '../components/BookSalesList';
 import FinancialSummary from '../components/FinancialSummary';
 import { deleteOne as deleteBook, getOne as getBook, type BookDetail } from '../data/books';
@@ -20,7 +21,6 @@ import * as salesData from '../data/sales';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-import { MONTH_NAMES } from '../../../../constants/months';
 
 export default function BookShow() {
   const { bookId } = useParams<{ bookId?: string }>();
@@ -290,6 +290,18 @@ export default function BookShow() {
           <Grid size={{ xs: 12, sm: 6 }}>
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Cover Image</Typography>
+              {book.hasCover ? (
+                <Box
+                  component="img"
+                  src={`/api/books/${book.id}/cover/thumbnail`}
+                  alt={`${book.title} cover`}
+                  sx={{ mt: 1, maxWidth: '100%', maxHeight: 240, objectFit: 'contain' }}
+                />
+              ) : (
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  —
+                </Typography>
+              )}
             </Paper>
           </Grid>
 

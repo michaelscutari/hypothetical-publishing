@@ -45,9 +45,6 @@ export default function BookList() {
   });
 
   const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
-  // const [sortModel, setSortModel] = React.useState<GridSortModel>([
-  //   { field: 'title', sort: 'asc' },
-  // ]);
   const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
 
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -174,9 +171,57 @@ export default function BookList() {
 
   const columns = React.useMemo<GridColDef[]>(
     () => [
+      {
+        field: 'cover',
+        headerName: '',
+        width: 52,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) =>
+          row.hasCover ? (
+            <Box
+              sx={{
+                width: '100%',
+                height: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 0.75,
+              }}
+            >
+              <Box
+                component="img"
+                src={`/api/books/${row.id}/cover/thumbnail`}
+                alt=""
+                sx={{
+                  height: '100%',
+                  width: 'auto',
+                  maxWidth: 36,
+                  objectFit: 'contain',
+                  borderRadius: 0.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  display: 'block',
+                }}
+              />
+            </Box>
+          ) : null,
+      },
       { field: 'title', headerName: 'Title', width: 200 },
       { field: 'author', headerName: 'Author', width: 180 },
       { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
+      {
+        field: 'seriesPosition',
+        headerName: 'Series',
+        width: 180,
+        valueGetter: (_value, row) => {
+          if (row.seriesName) {
+            return `${row.seriesName} (#${row.seriesPosition})`;
+          }
+          return '';
+        },
+      },
       {
         field: 'publicationDate',
         headerName: 'Publication',
@@ -196,20 +241,6 @@ export default function BookList() {
           const date2 = (row2?.publicationYear ?? 0) * 12 + (row2?.publicationMonth ?? 0);
           return date1 - date2;
         },
-      },
-      {
-        field: 'distributorAuthorRoyaltyRate',
-        headerName: 'Distributor Royalty',
-        type: 'number',
-        width: 150,
-        valueFormatter: (value) => (value != null ? `${(value * 100).toFixed(0)}%` : ''),
-      },
-      {
-        field: 'handsoldAuthorRoyaltyRate',
-        headerName: 'Handsold Royalty',
-        type: 'number',
-        width: 140,
-        valueFormatter: (value) => (value != null ? `${(value * 100).toFixed(0)}%` : ''),
       },
       {
         field: 'totalSalesToDate',
@@ -259,7 +290,7 @@ export default function BookList() {
 
           <TextField
             size="small"
-            placeholder="Search title, author, ISBN..."
+            placeholder="Search title, author, series, ISBN..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
@@ -306,6 +337,7 @@ export default function BookList() {
           <DataGrid
             rows={rowsState.rows}
             rowCount={rowsState.rowCount}
+            disableMultipleColumnsSorting={false}
             columns={columns}
             sortingMode="server"
             paginationMode="server"
@@ -317,6 +349,7 @@ export default function BookList() {
             disableColumnSorting
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
+            rowHeight={60}
             loading={isLoading}
             initialState={initialState}
             pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}

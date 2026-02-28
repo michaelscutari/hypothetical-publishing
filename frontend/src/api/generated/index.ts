@@ -19,6 +19,8 @@ export type { BookReportData } from './models/BookReportData';
 export type { BookRequest } from './models/BookRequest';
 export type { BookResponse } from './models/BookResponse';
 export type { ChangePasswordRequest } from './models/ChangePasswordRequest';
+export type { IngramImportRequest } from './models/IngramImportRequest';
+export type { IngramImportResponse } from './models/IngramImportResponse';
 export type { LoginRequest } from './models/LoginRequest';
 export type { MarkAllPaidRequest } from './models/MarkAllPaidRequest';
 export type { MarkAllPaidResponse } from './models/MarkAllPaidResponse';
@@ -28,6 +30,7 @@ export type { PagedResponseBookResponse } from './models/PagedResponseBookRespon
 export type { PagedResponseSaleResponse } from './models/PagedResponseSaleResponse';
 export type { QuarterBookData } from './models/QuarterBookData';
 export type { QuarterReportData } from './models/QuarterReportData';
+export type { ParsingError } from './models/ParsingError';
 export { SaleRequest } from './models/SaleRequest';
 export { SaleResponse } from './models/SaleResponse';
 export type { TotalReportData } from './models/TotalReportData';

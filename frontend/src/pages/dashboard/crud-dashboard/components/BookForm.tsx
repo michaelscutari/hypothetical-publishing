@@ -1,5 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
@@ -21,8 +22,13 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthorsService, BooksService, type AuthorResponse } from '../../../../api';
-import { MONTH_NAMES } from '../../../../constants/months';
 import type { Book } from '../data/books';
+import { searchSeries } from '../data/books';
+import { MONTH_NAMES } from '../../../../constants/months';
+
+type BookFormValues = Partial<Omit<Book, 'id' | 'totalSalesToDate'>> & {
+  coverImageFile?: File | null;
+};
 
 const CREATE_NEW_SENTINEL: AuthorResponse = {
   id: -1,
@@ -30,8 +36,8 @@ const CREATE_NEW_SENTINEL: AuthorResponse = {
 };
 
 export interface BookFormState {
-  values: Partial<Omit<Book, 'id' | 'totalSalesToDate'>>;
-  errors: Partial<Record<keyof BookFormState['values'], string>>;
+  values: BookFormValues;
+  errors: Partial<Record<keyof BookFormValues, string>>;
 }
 
 export type FormFieldValue = string | string[] | number | boolean | File | null;
@@ -45,9 +51,12 @@ export interface BookFormProps {
   backButtonPath?: string;
   onIsbnLookup?: (isbn: string) => Promise<void>;
   isbnLookupLoading?: boolean;
+  bookId?: number;
   initialAuthor?: AuthorResponse | null;
   lookupAuthorName?: string | null;
 }
+
+const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/gif,image/png,image/webp';
 
 export default function BookForm(props: BookFormProps) {
   const {
@@ -59,6 +68,7 @@ export default function BookForm(props: BookFormProps) {
     backButtonPath,
     onIsbnLookup,
     isbnLookupLoading,
+    bookId,
     initialAuthor,
     lookupAuthorName,
   } = props;
@@ -69,6 +79,83 @@ export default function BookForm(props: BookFormProps) {
   const navigate = useNavigate();
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // previewUrl is always a blob URL — either created from a picked file,
+  // or fetched from the server with credentials on edit load.
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const pickedFilePreview = React.useRef<string | null>(null);
+
+  // On mount in edit mode, fetch the existing thumbnail with credentials.
+  React.useEffect(() => {
+    if (bookId == null) return;
+    let blobUrl: string | null = null;
+
+    fetch(`/api/books/${bookId}/cover/thumbnail`, { credentials: 'include' })
+      .then((res) => (res.ok ? res.blob() : null))
+      .then((blob) => {
+        if (blob) {
+          blobUrl = URL.createObjectURL(blob);
+          setPreviewUrl(blobUrl);
+        }
+      })
+      .catch(() => {
+        // No cover yet — leave preview empty.
+      });
+
+    return () => {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+  }, [bookId]);
+
+  // Revoke the picked-file blob URL on unmount.
+  React.useEffect(() => {
+    return () => {
+      if (pickedFilePreview.current) {
+        URL.revokeObjectURL(pickedFilePreview.current);
+      }
+    };
+  }, []);
+
+  const handleFileChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0] ?? null;
+
+      // Revoke any previous picked-file blob URL.
+      if (pickedFilePreview.current) {
+        URL.revokeObjectURL(pickedFilePreview.current);
+        pickedFilePreview.current = null;
+      }
+
+      if (file) {
+        const blobUrl = URL.createObjectURL(file);
+        pickedFilePreview.current = blobUrl;
+        setPreviewUrl(blobUrl);
+        onFieldChange('coverImageFile', file);
+      } else {
+        onFieldChange('coverImageFile', null);
+      }
+
+      // Reset the input so the same file can be re-selected if needed.
+      event.target.value = '';
+    },
+    [onFieldChange],
+  );
+  const handleClearImage = React.useCallback(() => {
+    if (pickedFilePreview.current) {
+      URL.revokeObjectURL(pickedFilePreview.current);
+      pickedFilePreview.current = null;
+    }
+    setPreviewUrl(null);
+    onFieldChange('coverImageFile', null);
+    // Reset the file input so the same file can be re-selected if needed.
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [onFieldChange]);
+  const handleChooseFile = React.useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
 
   const [authorOptions, setAuthorOptions] = React.useState<AuthorResponse[]>([]);
   const [selectedAuthor, setSelectedAuthor] = React.useState<AuthorResponse | null>(
@@ -225,6 +312,30 @@ export default function BookForm(props: BookFormProps) {
     },
     [onFieldChange],
   );
+
+  // Series autocomplete state
+  const [seriesOptions, setSeriesOptions] = React.useState<string[]>([]);
+  const [seriesInputValue, setSeriesInputValue] = React.useState(formValues.seriesName ?? '');
+  const seriesDebounceRef = React.useRef<number | null>(null);
+
+  React.useEffect(() => {
+    setSeriesInputValue(formValues.seriesName ?? '');
+  }, [formValues.seriesName]);
+
+  React.useEffect(() => {
+    if (seriesDebounceRef.current) window.clearTimeout(seriesDebounceRef.current);
+    seriesDebounceRef.current = window.setTimeout(async () => {
+      try {
+        const results = await searchSeries(seriesInputValue || undefined);
+        setSeriesOptions(results);
+      } catch {
+        setSeriesOptions([]);
+      }
+    }, 300);
+    return () => {
+      if (seriesDebounceRef.current) window.clearTimeout(seriesDebounceRef.current);
+    };
+  }, [seriesInputValue]);
 
   const handleReset = React.useCallback(() => {
     if (onReset) {
@@ -436,14 +547,40 @@ export default function BookForm(props: BookFormProps) {
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
-            <TextField
-              value={formValues.seriesName ?? ''}
-              onChange={handleTextFieldChange}
-              name="seriesName"
-              label="Series Name"
-              error={!!formErrors.seriesName}
-              helperText={formErrors.seriesName ?? ' '}
+            <Autocomplete
+              freeSolo
+              options={seriesOptions}
+              value={formValues.seriesName ?? null}
+              inputValue={seriesInputValue}
+              onInputChange={(_event, newInputValue) => {
+                setSeriesInputValue(newInputValue);
+              }}
+              onChange={(_event, newValue) => {
+                onFieldChange('seriesName', newValue ?? null);
+                if (!newValue) {
+                  onFieldChange('seriesPosition', null);
+                }
+              }}
+              onBlur={() => {
+                // Commit typed text as the value on blur
+                const trimmed = seriesInputValue.trim();
+                if (trimmed && trimmed !== (formValues.seriesName ?? '')) {
+                  onFieldChange('seriesName', trimmed);
+                } else if (!trimmed) {
+                  onFieldChange('seriesName', null);
+                  onFieldChange('seriesPosition', null);
+                }
+              }}
               fullWidth
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  name="seriesName"
+                  label="Series Name"
+                  error={!!formErrors.seriesName}
+                  helperText={formErrors.seriesName ?? ' '}
+                />
+              )}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
@@ -485,16 +622,75 @@ export default function BookForm(props: BookFormProps) {
               inputProps={{ step: '0.01', min: 0 }}
             />
           </Grid>
+
+          {/* Cover Art */}
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
-            <TextField
-              value={formValues.coverImage ?? ''}
-              onChange={handleTextFieldChange}
-              name="coverImage"
-              label="Cover Image URL"
-              error={!!formErrors.coverImage}
-              helperText={formErrors.coverImage ?? ' '}
-              fullWidth
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%' }}>
+              <Typography variant="body2" color="text.secondary">
+                Cover Art
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
+                {previewUrl && (
+                  <Box sx={{ position: 'relative', flexShrink: 0 }}>
+                    <Box
+                      component="img"
+                      src={previewUrl}
+                      alt="Cover preview"
+                      sx={{
+                        width: 80,
+                        height: 120,
+                        objectFit: 'contain',
+                        bgcolor: 'grey.100',
+                        borderRadius: 1,
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        display: 'block',
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      onClick={handleClearImage}
+                      sx={{
+                        position: 'absolute',
+                        top: -8,
+                        right: -8,
+                        bgcolor: 'background.paper',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        padding: '2px',
+                        '&:hover': {
+                          bgcolor: 'error.light',
+                          borderColor: 'error.light',
+                          color: 'white',
+                        },
+                      }}
+                    >
+                      <CloseIcon sx={{ fontSize: 14 }} />
+                    </IconButton>
+                  </Box>
+                )}
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <Button variant="outlined" size="small" onClick={handleChooseFile}>
+                    {previewUrl ? 'Replace Image' : 'Choose Image'}
+                  </Button>
+                  <Typography variant="caption" color="text.secondary">
+                    JPEG, PNG, GIF, or WEBP
+                  </Typography>
+                  {formErrors.coverImageFile && (
+                    <Typography variant="caption" color="error">
+                      {formErrors.coverImageFile}
+                    </Typography>
+                  )}
+                </Box>
+              </Box>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_IMAGE_TYPES}
+                onChange={handleFileChange}
+                style={{ display: 'none' }}
+              />
+            </Box>
           </Grid>
         </Grid>
       </FormGroup>

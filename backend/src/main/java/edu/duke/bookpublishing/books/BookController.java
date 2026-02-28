@@ -49,6 +49,13 @@ public class BookController {
   private static final BigDecimal DEFAULT_HAND_SOLD_ROYALTY_RATE = new BigDecimal("0.2");
   private static final BigDecimal DEFAULT_DISTRIBUTOR_ROYALTY_RATE = new BigDecimal("0.5");
 
+  private static final Sort DEFAULT_SORT =
+      Sort.by(
+          Sort.Order.asc("author.name"),
+          Sort.Order.asc("seriesName").nullsFirst(),
+          Sort.Order.asc("seriesPosition"),
+          Sort.Order.asc("title"));
+
   private final BookService bookService;
   private final SaleService saleService;
   private final BookLookupService bookLookupService;
@@ -59,6 +66,32 @@ public class BookController {
   @Operation(
       operationId = "getAllBooks",
       summary = "Get paginated books with optional search, sort, and filter")
+  //   @GetMapping
+  //   public PagedResponse<BookResponse> getBooks(
+  //       @RequestParam(defaultValue = "0") int page,
+  //       @RequestParam(defaultValue = "25") int size,
+  //       @RequestParam(defaultValue = "false") boolean showAll,
+  //       @RequestParam(required = false) String query,
+  //       @RequestParam(required = false) String sortField,
+  //       @RequestParam(defaultValue = "asc") String sortDirection) {
+
+  //     Sort sort;
+  //     if (sortField != null) {
+  //       Sort.Direction dir = Sort.Direction.fromString(sortDirection);
+  //       if ("publicationDate".equals(sortField)) {
+  //         sort =
+  //             Sort.by(
+  //                 new Sort.Order(dir, "publicationYear"), new Sort.Order(dir,
+  // "publicationMonth"));
+  //       } else {
+  //         sort = Sort.by(new Sort.Order(dir, sortField));
+  //       }
+  //    } else {
+  //   sort = Sort.by(
+  //       Sort.Order.asc("author"),
+  //       Sort.Order.asc("title"));
+  // }
+
   @GetMapping
   public PagedResponse<BookResponse> getBooks(
       @RequestParam(required = false) Long authorId,
@@ -81,15 +114,16 @@ public class BookController {
         if ("publicationDate".equals(field)) {
           orders.add(new Sort.Order(dir, "publicationYear"));
           orders.add(new Sort.Order(dir, "publicationMonth"));
+        } else if ("author".equals(field)) {
+          orders.add(new Sort.Order(dir, "author.name"));
         } else {
           orders.add(new Sort.Order(dir, field));
         }
       }
       sort = Sort.by(orders);
     } else {
-      sort = Sort.by(Sort.Order.asc("author"), Sort.Order.asc("title"));
+      sort = DEFAULT_SORT;
     }
-
     if (showAll) {
       List<Book> all = bookService.findAll(query, sort, authorId);
       return PagedResponse.unpaged(
@@ -119,6 +153,12 @@ public class BookController {
     Pageable pageable = PageRequest.of(page, size, sort);
     Page<Author> authors = authorService.findAll(pageable, query);
     return PagedResponse.paged(authors, AuthorResponse::from);
+  }
+
+  @Operation(operationId = "searchSeries", summary = "Search distinct series names")
+  @GetMapping("/series")
+  public List<String> searchSeries(@RequestParam(required = false) String query) {
+    return bookService.findDistinctSeriesNames(query);
   }
 
   @Operation(operationId = "getBookById", summary = "Get a book by ID (includes financials)")
@@ -198,7 +238,8 @@ public class BookController {
             .coverPrice(request.coverPrice())
             .printCost(request.printCost())
             .build();
-    return BookResponse.from(bookService.save(book));
+
+    return BookResponse.from(bookService.createBook(book));
   }
 
   // ------- PUT MAPPINGS -------
@@ -215,6 +256,10 @@ public class BookController {
             .findById(request.authorId())
             .orElseThrow(
                 () -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Author not found"));
+
+    String oldSeriesName = book.getSeriesName();
+    Integer oldSeriesPosition = book.getSeriesPosition();
+
     book.setTitle(request.title());
     book.setAuthor(author);
     book.setIsbn13(request.isbn13());
@@ -234,7 +279,7 @@ public class BookController {
     book.setCoverPrice(request.coverPrice());
     book.setPrintCost(request.printCost());
 
-    return BookResponse.from(bookService.save(book));
+    return BookResponse.from(bookService.updateBook(book, oldSeriesName, oldSeriesPosition));
   }
 
   // ------- DELETE MAPPINGS -------
@@ -243,10 +288,6 @@ public class BookController {
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteBook(@PathVariable Long id) {
-    Book book =
-        bookService
-            .findById(id)
-            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Book not found"));
-    bookService.deleteById(book.getId());
+    bookService.deleteBook(id);
   }
 }
