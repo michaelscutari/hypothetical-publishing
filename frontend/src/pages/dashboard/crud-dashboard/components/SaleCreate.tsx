@@ -292,9 +292,27 @@ export default function SaleCreate() {
 
   const handleQuantityChange = React.useCallback(
     (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
+      const value = event.target.value.trim();
+
+      if (value === '') {
+        updateRecord(index, {
+          quantitySold: null,
+          errors: {},
+        });
+        return;
+      }
+
+      if (!/^\d+$/.test(value)) {
+        return;
+      }
+
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+        return;
+      }
+
       updateRecord(index, {
-        quantitySold: value ? parseInt(value, 10) : null,
+        quantitySold: parsed,
         errors: {},
       });
     },
@@ -402,8 +420,8 @@ export default function SaleCreate() {
     if (record.quantitySold == null) {
       errors.quantitySold = 'Quantity is required';
       isValid = false;
-    } else if (record.quantitySold < 0) {
-      errors.quantitySold = 'Quantity must be non-negative';
+    } else if (record.quantitySold <= 0) {
+      errors.quantitySold = 'Quantity must be a positive number';
       isValid = false;
     }
 
@@ -637,12 +655,12 @@ export default function SaleCreate() {
                     <TextField
                       size="small"
                       type="text"
-                      placeholder="0"
-                      value={record.quantitySold ?? ''}
+                      placeholder="1"
+                      value={Number.isFinite(record.quantitySold) ? record.quantitySold : ''}
                       onFocus={() => activateRow(index)}
                       onChange={handleQuantityChange(index)}
                       error={!!record.errors.quantitySold}
-                      inputProps={{ inputMode: 'numeric' }}
+                      inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', min: 1 }}
                       fullWidth
                     />
                   </TableCell>
