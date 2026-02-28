@@ -16,6 +16,7 @@ import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
 import edu.duke.bookpublishing.sales.parser.ParsingError;
+import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -24,23 +25,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import edu.duke.bookpublishing.author.AuthorRepository;
-import edu.duke.bookpublishing.books.Book;
-import edu.duke.bookpublishing.books.BookRepository;
-import edu.duke.bookpublishing.exception.custom.NotFoundException;
-import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
-import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
-import edu.duke.bookpublishing.sales.dto.SaleRequest;
-import edu.duke.bookpublishing.sales.enums.SaleSource;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -61,22 +52,32 @@ public class SaleService {
   private final ImportParser<IngramCsvEntry> ingramCsvParser;
   private final AuthorRepository authorRepository;
 
-  public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, Long authorId,
-      String saleSource, String query, Sort sort) {
+  public List<Sale> getAllSales(
+      LocalDate startDate,
+      LocalDate endDate,
+      Long authorId,
+      String saleSource,
+      String query,
+      Sort sort) {
     Specification<Sale> spec =
         buildSaleSpecification(startDate, endDate, authorId, saleSource, query);
     return saleRepository.findAll(spec, sort);
   }
 
-  public Page<Sale> getPagedSales(LocalDate startDate, LocalDate endDate, Long authorId,
-      String saleSource, String query, Pageable pageable) {
+  public Page<Sale> getPagedSales(
+      LocalDate startDate,
+      LocalDate endDate,
+      Long authorId,
+      String saleSource,
+      String query,
+      Pageable pageable) {
     Specification<Sale> spec =
         buildSaleSpecification(startDate, endDate, authorId, saleSource, query);
     return saleRepository.findAll(spec, pageable);
   }
 
-  private Specification<Sale> buildSaleSpecification(LocalDate startDate, LocalDate endDate,
-      Long authorId, String saleSource, String query) {
+  private Specification<Sale> buildSaleSpecification(
+      LocalDate startDate, LocalDate endDate, Long authorId, String saleSource, String query) {
     Specification<Sale> spec = Specification.where(null);
 
     if (startDate != null || endDate != null) {
@@ -108,14 +109,16 @@ public class SaleService {
   /**
    * Builds grouped author payments data in the required sort order.
    *
-   * <p>
-   * Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
+   * <p>Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
    */
-  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(LocalDate startDate,
-      LocalDate endDate, String query) {
+  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(
+      LocalDate startDate, LocalDate endDate, String query) {
 
-    Sort sort = Sort.by(Sort.Order.asc("book.author.name").ignoreCase(),
-        Sort.Order.desc("saleYear"), Sort.Order.desc("saleMonth"));
+    Sort sort =
+        Sort.by(
+            Sort.Order.asc("book.author.name").ignoreCase(),
+            Sort.Order.desc("saleYear"),
+            Sort.Order.desc("saleMonth"));
 
     Specification<Sale> spec = Specification.where(null);
 
@@ -176,10 +179,17 @@ public class SaleService {
     boolean hasAuthorBeenPaid = Boolean.TRUE.equals(request.hasAuthorBeenPaid());
 
     Sale sale =
-        Sale.builder().book(book).saleSource(request.saleSource()).saleMonth(request.saleMonth())
-            .saleYear(request.saleYear()).quantitySold(request.quantitySold())
-            .publisherRevenue(publisherRevenue).authorRoyalty(authorRoyalty)
-            .hasAuthorBeenPaid(hasAuthorBeenPaid).comment(request.comment()).build();
+        Sale.builder()
+            .book(book)
+            .saleSource(request.saleSource())
+            .saleMonth(request.saleMonth())
+            .saleYear(request.saleYear())
+            .quantitySold(request.quantitySold())
+            .publisherRevenue(publisherRevenue)
+            .authorRoyalty(authorRoyalty)
+            .hasAuthorBeenPaid(hasAuthorBeenPaid)
+            .comment(request.comment())
+            .build();
 
     return saleRepository.save(sale);
   }
@@ -222,7 +232,8 @@ public class SaleService {
    */
   @Transactional
   public int markAllPaidByAuthorId(Long authorId) {
-    authorRepository.findById(authorId)
+    authorRepository
+        .findById(authorId)
         .orElseThrow(() -> new IllegalArgumentException("Author not found"));
     return saleRepository.markAllPaidByAuthorId(authorId);
   }
@@ -233,12 +244,14 @@ public class SaleService {
   }
 
   public BookFinancialSummary getBookFinancialSummary(Long bookId) {
-    return BookFinancialSummary.builder().bookId(bookId)
+    return BookFinancialSummary.builder()
+        .bookId(bookId)
         .totalUnitsSold(saleRepository.totalUnitsSoldByBook(bookId))
         .revenue(saleRepository.totalPublisherRevenueByBook(bookId))
         .unpaidRoyalty(saleRepository.totalUnpaidAuthorRoyaltyByBook(bookId))
         .paidRoyalty(saleRepository.totalPaidAuthorRoyaltyByBook(bookId))
-        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId)).build();
+        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId))
+        .build();
   }
 
   // CSV Import
@@ -301,7 +314,8 @@ public class SaleService {
       return request.publisherRevenue();
     }
 
-    return book.getCoverPrice().subtract(book.getPrintCost())
+    return book.getCoverPrice()
+        .subtract(book.getPrintCost())
         .multiply(BigDecimal.valueOf(request.quantitySold()));
   }
 
@@ -309,8 +323,8 @@ public class SaleService {
     return request.saleSource().getRoyaltyRate(book);
   }
 
-  private BigDecimal computeAuthorRoyalty(BigDecimal publisherRevenue,
-      BigDecimal authorRoyaltyRate) {
+  private BigDecimal computeAuthorRoyalty(
+      BigDecimal publisherRevenue, BigDecimal authorRoyaltyRate) {
     if (publisherRevenue == null || authorRoyaltyRate == null) {
       throw new DataIntegrityViolationException(
           "publisherRevenue and authorRoyaltyRate must be non-null");

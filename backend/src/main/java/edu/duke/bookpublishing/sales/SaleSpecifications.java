@@ -1,9 +1,9 @@
 package edu.duke.bookpublishing.sales;
 
-import java.time.LocalDate;
-import org.springframework.data.jpa.domain.Specification;
 import edu.duke.bookpublishing.books.BookSpecifications;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
+import java.time.LocalDate;
+import org.springframework.data.jpa.domain.Specification;
 
 /**
  * Specifications for filtering Sale queries.
@@ -35,20 +35,28 @@ public final class SaleSpecifications {
         int startYear = startDate.getYear();
         int startMonth = startDate.getMonthValue();
 
-        predicate = cb.and(predicate,
-            cb.or(cb.greaterThan(root.get("saleYear"), startYear),
-                cb.and(cb.equal(root.get("saleYear"), startYear),
-                    cb.greaterThanOrEqualTo(root.get("saleMonth"), startMonth))));
+        predicate =
+            cb.and(
+                predicate,
+                cb.or(
+                    cb.greaterThan(root.get("saleYear"), startYear),
+                    cb.and(
+                        cb.equal(root.get("saleYear"), startYear),
+                        cb.greaterThanOrEqualTo(root.get("saleMonth"), startMonth))));
       }
 
       if (endDate != null) {
         int endYear = endDate.getYear();
         int endMonth = endDate.getMonthValue();
 
-        predicate = cb.and(predicate,
-            cb.or(cb.lessThan(root.get("saleYear"), endYear),
-                cb.and(cb.equal(root.get("saleYear"), endYear),
-                    cb.lessThanOrEqualTo(root.get("saleMonth"), endMonth))));
+        predicate =
+            cb.and(
+                predicate,
+                cb.or(
+                    cb.lessThan(root.get("saleYear"), endYear),
+                    cb.and(
+                        cb.equal(root.get("saleYear"), endYear),
+                        cb.lessThanOrEqualTo(root.get("saleMonth"), endMonth))));
       }
 
       return predicate;

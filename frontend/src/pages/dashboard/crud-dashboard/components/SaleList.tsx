@@ -121,7 +121,7 @@ export default function SaleList() {
 
   React.useEffect(() => {
     loadAuthors();
-  }, []);
+  });
 
   const loadAuthors = React.useCallback(async () => {
     setLoadingAuthors(true);
@@ -311,7 +311,6 @@ export default function SaleList() {
 
   return (
     <PageContainer
-      title={pageTitle}
       breadcrumbs={[{ title: pageTitle }]}
       actions={
         <Stack direction="row" alignItems="center" spacing={1}>
