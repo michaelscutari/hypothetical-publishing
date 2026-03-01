@@ -1,5 +1,21 @@
 package edu.duke.bookpublishing.sales;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import edu.duke.bookpublishing.author.Author;
 import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
@@ -22,23 +38,7 @@ import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
 import edu.duke.bookpublishing.sales.parser.ParsingError;
 import jakarta.transaction.Transactional;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.jpa.domain.Specification;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Backend service for SaleController. All business logic is handled here.
@@ -58,32 +58,22 @@ public class SaleService {
   private final ImportParser<IngramCsvEntry> ingramCsvParser;
   private final AuthorRepository authorRepository;
 
-  public List<Sale> getAllSales(
-      LocalDate startDate,
-      LocalDate endDate,
-      Long authorId,
-      String saleSource,
-      String query,
-      Sort sort) {
+  public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, Long authorId,
+      String saleSource, String query, Sort sort) {
     Specification<Sale> spec =
         buildSaleSpecification(startDate, endDate, authorId, saleSource, query);
     return saleRepository.findAll(spec, sort);
   }
 
-  public Page<Sale> getPagedSales(
-      LocalDate startDate,
-      LocalDate endDate,
-      Long authorId,
-      String saleSource,
-      String query,
-      Pageable pageable) {
+  public Page<Sale> getPagedSales(LocalDate startDate, LocalDate endDate, Long authorId,
+      String saleSource, String query, Pageable pageable) {
     Specification<Sale> spec =
         buildSaleSpecification(startDate, endDate, authorId, saleSource, query);
     return saleRepository.findAll(spec, pageable);
   }
 
-  private Specification<Sale> buildSaleSpecification(
-      LocalDate startDate, LocalDate endDate, Long authorId, String saleSource, String query) {
+  private Specification<Sale> buildSaleSpecification(LocalDate startDate, LocalDate endDate,
+      Long authorId, String saleSource, String query) {
     Specification<Sale> spec = Specification.where(null);
 
     if (startDate != null || endDate != null) {
@@ -115,16 +105,14 @@ public class SaleService {
   /**
    * Builds grouped author payments data in the required sort order.
    *
-   * <p>Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
+   * <p>
+   * Sorting: author ASC, then sale year DESC, then sale month DESC (req 3.2).
    */
-  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(
-      LocalDate startDate, LocalDate endDate, String query) {
+  public List<AuthorPaymentGroupResponse> getAuthorPaymentGroups(LocalDate startDate,
+      LocalDate endDate, String query) {
 
-    Sort sort =
-        Sort.by(
-            Sort.Order.asc("book.author.name").ignoreCase(),
-            Sort.Order.desc("saleYear"),
-            Sort.Order.desc("saleMonth"));
+    Sort sort = Sort.by(Sort.Order.asc("book.author.name").ignoreCase(),
+        Sort.Order.desc("saleYear"), Sort.Order.desc("saleMonth"));
 
     Specification<Sale> spec = Specification.where(null);
 
@@ -185,17 +173,10 @@ public class SaleService {
     boolean hasAuthorBeenPaid = Boolean.TRUE.equals(request.hasAuthorBeenPaid());
 
     Sale sale =
-        Sale.builder()
-            .book(book)
-            .saleSource(request.saleSource())
-            .saleMonth(request.saleMonth())
-            .saleYear(request.saleYear())
-            .quantitySold(request.quantitySold())
-            .publisherRevenue(publisherRevenue)
-            .authorRoyalty(authorRoyalty)
-            .hasAuthorBeenPaid(hasAuthorBeenPaid)
-            .comment(request.comment())
-            .build();
+        Sale.builder().book(book).saleSource(request.saleSource()).saleMonth(request.saleMonth())
+            .saleYear(request.saleYear()).quantitySold(request.quantitySold())
+            .publisherRevenue(publisherRevenue).authorRoyalty(authorRoyalty)
+            .hasAuthorBeenPaid(hasAuthorBeenPaid).comment(request.comment()).build();
 
     return saleRepository.save(sale);
   }
@@ -238,31 +219,27 @@ public class SaleService {
    */
   @Transactional
   public int markAllPaidByAuthorId(Long authorId) {
-    authorRepository
-        .findById(authorId)
+    authorRepository.findById(authorId)
         .orElseThrow(() -> new IllegalArgumentException("Author not found"));
     return saleRepository.markAllPaidByAuthorId(authorId);
   }
 
-  public RoyaltyReportResponse generateRoyaltyReport(
-      Long authorId, int startQuarter, int startYear, int endQuarter, int endYear) {
+  public RoyaltyReportResponse generateRoyaltyReport(Long authorId, int startQuarter, int startYear,
+      int endQuarter, int endYear, boolean includeEmptyQuarters) {
     // Get author for display name
-    String authorName =
-        authorRepository
-            .findById(authorId)
-            .map(Author::getName)
-            .orElseThrow(() -> new NotFoundException("Author not found"));
+    String authorName = authorRepository.findById(authorId).map(Author::getName)
+        .orElseThrow(() -> new NotFoundException("Author not found"));
 
     // Get all sales for this author
     List<Sale> allSales = saleRepository.findAllByAuthorId(authorId);
 
-    // Generate quarter sections, only including quarters with sales
+    // Generate quarter sections, conditionally including quarters with no sales
     List<QuarterSection> sections = new ArrayList<>();
     int qYear = startYear;
     int qQuarter = startQuarter;
     while (qYear < endYear || (qYear == endYear && qQuarter <= endQuarter)) {
       List<Sale> quarterSales = filterByQuarter(allSales, qQuarter, qYear);
-      if (!quarterSales.isEmpty()) {
+      if (includeEmptyQuarters || !quarterSales.isEmpty()) {
         QuarterSection section = buildQuarterSection(quarterSales, qQuarter, qYear);
         sections.add(section);
       }
@@ -276,20 +253,15 @@ public class SaleService {
     // Build all-time totals
     AllTimeTotals allTime = buildAllTimeTotals(allSales);
 
-    return new RoyaltyReportResponse(
-        authorName, startQuarter, startYear, endQuarter, endYear, sections, allTime);
+    return new RoyaltyReportResponse(authorName, startQuarter, startYear, endQuarter, endYear,
+        sections, allTime);
   }
 
   private List<Sale> filterByQuarter(List<Sale> sales, int quarter, int year) {
     int startMonth = (quarter - 1) * 3 + 1;
     int endMonth = startMonth + 2;
-    return sales.stream()
-        .filter(
-            s ->
-                s.getSaleYear() == year
-                    && s.getSaleMonth() >= startMonth
-                    && s.getSaleMonth() <= endMonth)
-        .toList();
+    return sales.stream().filter(s -> s.getSaleYear() == year && s.getSaleMonth() >= startMonth
+        && s.getSaleMonth() <= endMonth).toList();
   }
 
   private QuarterSection buildQuarterSection(List<Sale> sales, int quarter, int year) {
@@ -320,36 +292,19 @@ public class SaleService {
       Book book = bookSales.get(0).getBook();
       String displayName = bookDisplayName(book);
       int qty = bookSales.stream().mapToInt(Sale::getQuantitySold).sum();
-      int handsold =
-          bookSales.stream()
-              .filter(s -> s.getSaleSource() == SaleSource.HAND_SOLD)
-              .mapToInt(Sale::getQuantitySold)
-              .sum();
+      int handsold = bookSales.stream().filter(s -> s.getSaleSource() == SaleSource.HAND_SOLD)
+          .mapToInt(Sale::getQuantitySold).sum();
       BigDecimal unpaid =
-          bookSales.stream()
-              .filter(s -> !Boolean.TRUE.equals(s.getHasAuthorBeenPaid()))
-              .map(Sale::getAuthorRoyalty)
-              .reduce(BigDecimal.ZERO, BigDecimal::add);
+          bookSales.stream().filter(s -> !Boolean.TRUE.equals(s.getHasAuthorBeenPaid()))
+              .map(Sale::getAuthorRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
       BigDecimal paid =
-          bookSales.stream()
-              .filter(s -> Boolean.TRUE.equals(s.getHasAuthorBeenPaid()))
-              .map(Sale::getAuthorRoyalty)
-              .reduce(BigDecimal.ZERO, BigDecimal::add);
-      rows.add(
-          new ReportBookRow(
-              displayName,
-              book.getTitle(),
-              book.getSeriesName(),
-              book.getSeriesPosition(),
-              qty,
-              handsold,
-              unpaid,
-              paid,
-              unpaid.add(paid)));
+          bookSales.stream().filter(s -> Boolean.TRUE.equals(s.getHasAuthorBeenPaid()))
+              .map(Sale::getAuthorRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
+      rows.add(new ReportBookRow(displayName, book.getTitle(), book.getSeriesName(),
+          book.getSeriesPosition(), qty, handsold, unpaid, paid, unpaid.add(paid)));
     }
-    rows.sort(
-        Comparator.<ReportBookRow, Boolean>comparing(r -> !r.displayName().contains("("))
-            .thenComparing(ReportBookRow::displayName, String.CASE_INSENSITIVE_ORDER));
+    rows.sort(Comparator.<ReportBookRow, Boolean>comparing(r -> !r.displayName().contains("("))
+        .thenComparing(ReportBookRow::displayName, String.CASE_INSENSITIVE_ORDER));
     return rows;
   }
 
@@ -360,8 +315,8 @@ public class SaleService {
         rows.stream().map(ReportBookRow::unpaidRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
     BigDecimal paid =
         rows.stream().map(ReportBookRow::paidRoyalty).reduce(BigDecimal.ZERO, BigDecimal::add);
-    return new ReportBookRow(
-        "All Books", null, null, null, qty, handsold, unpaid, paid, unpaid.add(paid));
+    return new ReportBookRow("All Books", null, null, null, qty, handsold, unpaid, paid,
+        unpaid.add(paid));
   }
 
   private String bookDisplayName(Book book) {
@@ -377,14 +332,12 @@ public class SaleService {
   }
 
   public BookFinancialSummary getBookFinancialSummary(Long bookId) {
-    return BookFinancialSummary.builder()
-        .bookId(bookId)
+    return BookFinancialSummary.builder().bookId(bookId)
         .totalUnitsSold(saleRepository.totalUnitsSoldByBook(bookId))
         .revenue(saleRepository.totalPublisherRevenueByBook(bookId))
         .unpaidRoyalty(saleRepository.totalUnpaidAuthorRoyaltyByBook(bookId))
         .paidRoyalty(saleRepository.totalPaidAuthorRoyaltyByBook(bookId))
-        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId))
-        .build();
+        .totalRoyalty(saleRepository.totalAuthorRoyaltyByBook(bookId)).build();
   }
 
   // CSV Import
@@ -447,8 +400,7 @@ public class SaleService {
       return request.publisherRevenue();
     }
 
-    return book.getCoverPrice()
-        .subtract(book.getPrintCost())
+    return book.getCoverPrice().subtract(book.getPrintCost())
         .multiply(BigDecimal.valueOf(request.quantitySold()));
   }
 
@@ -456,8 +408,8 @@ public class SaleService {
     return request.saleSource().getRoyaltyRate(book);
   }
 
-  private BigDecimal computeAuthorRoyalty(
-      BigDecimal publisherRevenue, BigDecimal authorRoyaltyRate) {
+  private BigDecimal computeAuthorRoyalty(BigDecimal publisherRevenue,
+      BigDecimal authorRoyaltyRate) {
     if (publisherRevenue == null || authorRoyaltyRate == null) {
       throw new DataIntegrityViolationException(
           "publisherRevenue and authorRoyaltyRate must be non-null");
@@ -465,39 +417,29 @@ public class SaleService {
     return publisherRevenue.multiply(authorRoyaltyRate).setScale(2, RoundingMode.HALF_UP);
   }
 
-  private Sale mapIngramCsvRowToSale(
-      IngramImportRequest ingramImportRequest,
-      ParsedBatch<IngramCsvEntry> parsedBatch,
-      IngramCsvEntry ingramCsvEntry) {
+  private Sale mapIngramCsvRowToSale(IngramImportRequest ingramImportRequest,
+      ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
 
-    Book book =
-        bookService
-            .findBookByIsbn(ingramCsvEntry.getIsbn())
-            .orElseThrow(() -> new NotFoundException("Book not found"));
+    Book book = bookService.findBookByIsbn(ingramCsvEntry.getIsbn())
+        .orElseThrow(() -> new NotFoundException("Book not found"));
 
     BigDecimal authorRoyaltyRate = SaleSource.DISTRIBUTOR.getRoyaltyRate(book);
     BigDecimal authorRoyalty =
         computeAuthorRoyalty(ingramCsvEntry.getNetCompensation(), authorRoyaltyRate);
 
-    return Sale.builder()
-        .saleSource(SaleSource.DISTRIBUTOR)
-        .saleMonth(ingramImportRequest.saleMonth())
-        .saleYear(ingramImportRequest.saleYear())
-        .book(book)
-        .quantitySold(Math.toIntExact(ingramCsvEntry.getNetQty()))
-        .publisherRevenue(ingramCsvEntry.getNetCompensation())
-        .authorRoyalty(authorRoyalty)
+    return Sale.builder().saleSource(SaleSource.DISTRIBUTOR)
+        .saleMonth(ingramImportRequest.saleMonth()).saleYear(ingramImportRequest.saleYear())
+        .book(book).quantitySold(Math.toIntExact(ingramCsvEntry.getNetQty()))
+        .publisherRevenue(ingramCsvEntry.getNetCompensation()).authorRoyalty(authorRoyalty)
         .hasAuthorBeenPaid(false)
         .comment(getCommentFromCSV(ingramImportRequest.csvFile(), parsedBatch, ingramCsvEntry))
         .build();
   }
 
-  private String getCommentFromCSV(
-      MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
-    return String.format(
-        "Ingram: Format='%s' Market='%s' File='%s' (%s)",
-        ingramCsvEntry.getFormat(),
-        ingramCsvEntry.getSalesMarket(),
+  private String getCommentFromCSV(MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch,
+      IngramCsvEntry ingramCsvEntry) {
+    return String.format("Ingram: Format='%s' Market='%s' File='%s' (%s)",
+        ingramCsvEntry.getFormat(), ingramCsvEntry.getSalesMarket(),
         file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown",
         parsedBatch.timestamp());
   }

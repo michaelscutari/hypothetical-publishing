@@ -169,6 +169,7 @@ export class SalesService {
      * @param startYear
      * @param endQuarter
      * @param endYear
+     * @param includeEmptyQuarters
      * @returns RoyaltyReportResponse OK
      * @throws ApiError
      */
@@ -178,6 +179,7 @@ export class SalesService {
         startYear: number,
         endQuarter: number,
         endYear: number,
+        includeEmptyQuarters: boolean = false,
     ): CancelablePromise<RoyaltyReportResponse> {
         return __request(OpenAPI, {
             method: 'GET',
@@ -188,6 +190,7 @@ export class SalesService {
                 'startYear': startYear,
                 'endQuarter': endQuarter,
                 'endYear': endYear,
+                'includeEmptyQuarters': includeEmptyQuarters,
             },
         });
     }

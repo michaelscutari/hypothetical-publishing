@@ -1,6 +1,8 @@
 import {
   Box,
+  Checkbox,
   CircularProgress,
+  FormControlLabel,
   Paper,
   Table,
   TableBody,
@@ -20,6 +22,7 @@ export default function AuthorRoyaltyReportView() {
   const [reportData, setReportData] = useState<RoyaltyReportResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [includeEmptyQuarters, setIncludeEmptyQuarters] = useState(false);
 
   const loadReport = useCallback(async () => {
     setLoading(true);
@@ -41,6 +44,7 @@ export default function AuthorRoyaltyReportView() {
         startYear,
         endQuarter,
         endYear,
+        includeEmptyQuarters,
       );
 
       setReportData(data);
@@ -49,7 +53,7 @@ export default function AuthorRoyaltyReportView() {
     } finally {
       setLoading(false);
     }
-  }, [searchParams]);
+  }, [searchParams, includeEmptyQuarters]);
 
   useEffect(() => {
     loadReport();
@@ -216,6 +220,18 @@ export default function AuthorRoyaltyReportView() {
           <li>Select "Save as PDF" in the printer dropdown</li>
           <li>Click "Save" and choose your desired file location</li>
         </Typography>
+
+        <Box sx={{ mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={includeEmptyQuarters}
+                onChange={(e) => setIncludeEmptyQuarters(e.target.checked)}
+              />
+            }
+            label="Include quarters with no sales"
+          />
+        </Box>
       </Box>
 
       <Paper
