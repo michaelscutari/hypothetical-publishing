@@ -337,7 +337,6 @@ export default function BookList() {
           <DataGrid
             rows={rowsState.rows}
             rowCount={rowsState.rowCount}
-            disableMultipleColumnsSorting={false}
             columns={columns}
             sortingMode="server"
             paginationMode="server"

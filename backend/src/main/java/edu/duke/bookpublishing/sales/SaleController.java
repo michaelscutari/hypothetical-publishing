@@ -6,6 +6,7 @@ import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
 import edu.duke.bookpublishing.sales.dto.IngramImportResponse;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
+import edu.duke.bookpublishing.sales.dto.RoyaltyReportResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -110,6 +111,21 @@ public class SaleController {
         fromIndex >= toIndex ? List.of() : groups.subList(fromIndex, toIndex);
 
     return new PagedResponse<>(content, page, size, totalElements, totalPages, true);
+  }
+
+  @Operation(
+      operationId = "getRoyaltyReport",
+      summary = "Generates an author royalty report for a quarter range")
+  @GetMapping("/royalty-report")
+  public RoyaltyReportResponse getRoyaltyReport(
+      @RequestParam Long authorId,
+      @RequestParam int startQuarter,
+      @RequestParam int startYear,
+      @RequestParam int endQuarter,
+      @RequestParam int endYear,
+      @RequestParam(defaultValue = "false") boolean includeEmptyQuarters) {
+    return saleService.generateRoyaltyReport(
+        authorId, startQuarter, startYear, endQuarter, endYear, includeEmptyQuarters);
   }
 
   @Operation(operationId = "getSaleById", summary = "Gets a sale by its ID")

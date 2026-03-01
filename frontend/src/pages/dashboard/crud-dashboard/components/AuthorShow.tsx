@@ -1,5 +1,6 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DescriptionIcon from '@mui/icons-material/Description';
 import EditIcon from '@mui/icons-material/Edit';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -90,6 +91,13 @@ export default function AuthorShow() {
   const handleBack = React.useCallback(() => {
     navigate('/authors');
   }, [navigate]);
+
+  const handleGenerateReport = React.useCallback(() => {
+    if (author?.id) {
+      navigate(`/reports/author-royalty?authorId=${author.id}`);
+    }
+  }, [author?.id, navigate]);
+
   const formatCurrency = (value?: number) =>
     value != null ? value.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '$0.00';
   if (isLoading) {
@@ -111,6 +119,13 @@ export default function AuthorShow() {
             Back
           </Button>
           <Stack direction="row" spacing={2}>
+            <Button
+              variant="contained"
+              startIcon={<DescriptionIcon />}
+              onClick={handleGenerateReport}
+            >
+              Generate Report
+            </Button>
             <Button variant="contained" startIcon={<EditIcon />} onClick={handleEdit}>
               Edit
             </Button>

@@ -7,6 +7,7 @@ export { CancelablePromise, CancelError } from './core/CancelablePromise';
 export { OpenAPI } from './core/OpenAPI';
 export type { OpenAPIConfig } from './core/OpenAPI';
 
+export type { AllTimeTotals } from './models/AllTimeTotals';
 export type { AuthorPaymentGroupResponse } from './models/AuthorPaymentGroupResponse';
 export type { AuthorPaymentSaleResponse } from './models/AuthorPaymentSaleResponse';
 export type { AuthorRequest } from './models/AuthorRequest';
@@ -26,6 +27,9 @@ export type { PagedResponseAuthorResponse } from './models/PagedResponseAuthorRe
 export type { PagedResponseBookResponse } from './models/PagedResponseBookResponse';
 export type { PagedResponseSaleResponse } from './models/PagedResponseSaleResponse';
 export type { ParsingError } from './models/ParsingError';
+export type { QuarterSection } from './models/QuarterSection';
+export type { ReportBookRow } from './models/ReportBookRow';
+export type { RoyaltyReportResponse } from './models/RoyaltyReportResponse';
 export { SaleRequest } from './models/SaleRequest';
 export { SaleResponse } from './models/SaleResponse';
 export type { UserResponse } from './models/UserResponse';

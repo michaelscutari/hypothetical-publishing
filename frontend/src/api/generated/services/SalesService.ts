@@ -8,6 +8,7 @@ import type { MarkAllPaidRequest } from '../models/MarkAllPaidRequest';
 import type { MarkAllPaidResponse } from '../models/MarkAllPaidResponse';
 import type { PagedResponseAuthorPaymentGroupResponse } from '../models/PagedResponseAuthorPaymentGroupResponse';
 import type { PagedResponseSaleResponse } from '../models/PagedResponseSaleResponse';
+import type { RoyaltyReportResponse } from '../models/RoyaltyReportResponse';
 import type { SaleRequest } from '../models/SaleRequest';
 import type { SaleResponse } from '../models/SaleResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -159,6 +160,38 @@ export class SalesService {
             url: '/api/sales/import',
             formData: formData,
             mediaType: 'multipart/form-data',
+        });
+    }
+    /**
+     * Generates an author royalty report for a quarter range
+     * @param authorId
+     * @param startQuarter
+     * @param startYear
+     * @param endQuarter
+     * @param endYear
+     * @param includeEmptyQuarters
+     * @returns RoyaltyReportResponse OK
+     * @throws ApiError
+     */
+    public static getRoyaltyReport(
+        authorId: number,
+        startQuarter: number,
+        startYear: number,
+        endQuarter: number,
+        endYear: number,
+        includeEmptyQuarters: boolean = false,
+    ): CancelablePromise<RoyaltyReportResponse> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sales/royalty-report',
+            query: {
+                'authorId': authorId,
+                'startQuarter': startQuarter,
+                'startYear': startYear,
+                'endQuarter': endQuarter,
+                'endYear': endYear,
+                'includeEmptyQuarters': includeEmptyQuarters,
+            },
         });
     }
     /**

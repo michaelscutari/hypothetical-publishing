@@ -1,9 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import ProtectedRoute from './components/ProtectedRoute';
+import ApiTest from './pages/api-test';
 import Auth from './pages/auth';
 import Dashboard from './pages/dashboard';
-import ApiTest from './pages/api-test';
-import BackendStatus from './components/BackendStatus';
-import ProtectedRoute from './components/ProtectedRoute';
 import NotificationsProvider from './pages/dashboard/crud-dashboard/hooks/useNotifications/NotificationsProvider';
 
 function App() {
@@ -32,7 +31,6 @@ function App() {
             }
           />
         </Routes>
-        <BackendStatus />
       </NotificationsProvider>
     </BrowserRouter>
   );

@@ -310,6 +310,10 @@ export default function AuthorList() {
               [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]:
                 { outline: 'none' },
               [`& .${gridClasses.row}:hover`]: { cursor: 'pointer' },
+              [`& .${gridClasses.columnHeaderTitle}`]: {
+                fontWeight: 700,
+                color: '#5C4033',
+              },
             }}
           />
         )}

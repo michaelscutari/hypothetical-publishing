@@ -1,21 +1,23 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
+import AuthorCreate from './components/AuthorCreate';
+import AuthorEdit from './components/AuthorEdit';
+import AuthorList from './components/AuthorList';
+import AuthorPaymentsView from './components/AuthorPayments';
+import AuthorRoyaltyReport from './components/AuthorRoyaltyReport';
+import AuthorRoyaltyReportView from './components/AuthorRoyaltyReportView';
+import AuthorShow from './components/AuthorShow';
 import BookCreate from './components/BookCreate';
 import BookEdit from './components/BookEdit';
 import BookList from './components/BookList';
 import BookShow from './components/BookShow';
 import ChangePassword from './components/ChangePassword';
 import DashboardLayout from './components/DashboardLayout';
-import DialogsProvider from './hooks/useDialogs/DialogsProvider';
-import SaleList from './components/SaleList';
 import SaleCreate from './components/SaleCreate';
-import SaleShow from './components/SaleShow';
 import SaleEdit from './components/SaleEdit';
+import SaleList from './components/SaleList';
+import SaleShow from './components/SaleShow';
+import DialogsProvider from './hooks/useDialogs/DialogsProvider';
 import SaleImport from './components/SaleImport';
-import AuthorPaymentsView from './components/AuthorPayments';
-import AuthorCreate from './components/AuthorCreate';
-import AuthorEdit from './components/AuthorEdit';
-import AuthorList from './components/AuthorList';
-import AuthorShow from './components/AuthorShow';
 
 export default function CrudDashboard() {
   return (
@@ -40,7 +42,9 @@ export default function CrudDashboard() {
           <Route path="authors/new" element={<AuthorCreate />} />
           <Route path="authors/:authorId" element={<AuthorShow />} />
           <Route path="authors/:authorId/edit" element={<AuthorEdit />} />
+          <Route path="reports/author-royalty" element={<AuthorRoyaltyReport />} />
         </Route>
+        <Route path="author-royalty-report" element={<AuthorRoyaltyReportView />} />
       </Routes>
     </DialogsProvider>
   );
