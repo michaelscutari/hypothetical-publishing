@@ -1,6 +1,7 @@
 package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.books.BookSpecifications;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import java.time.LocalDate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -14,6 +15,16 @@ public final class SaleSpecifications {
   /** Filters sales where book title, author, or ISBN matches the query terms. */
   public static Specification<Sale> matchesQuery(String query) {
     return (root, q, cb) -> BookSpecifications.buildQueryPredicate(root.get("book"), cb, query);
+  }
+
+  /** Filters sales by author ID. */
+  public static Specification<Sale> byAuthor(Long authorId) {
+    return (root, query, cb) -> cb.equal(root.get("book").get("author").get("id"), authorId);
+  }
+
+  /** Filters sales by sale source (DISTRIBUTOR or HAND_SOLD). */
+  public static Specification<Sale> bySaleSource(SaleSource saleSource) {
+    return (root, query, cb) -> cb.equal(root.get("saleSource"), saleSource);
   }
 
   public static Specification<Sale> withinDateRange(LocalDate startDate, LocalDate endDate) {

@@ -1,4 +1,8 @@
-import * as React from 'react';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import PendingIcon from '@mui/icons-material/Pending';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -9,17 +13,13 @@ import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import PendingIcon from '@mui/icons-material/Pending';
-import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import * as React from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { BooksService, SalesService, type BookResponse, type SaleResponse } from '../../../../api';
+import { MONTH_NAMES } from '../../../../constants/months';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import { SalesService, BooksService, type SaleResponse, type BookResponse } from '../../../../api';
 import PageContainer from './PageContainer';
-import { MONTH_NAMES } from '../../../../constants/months';
 
 export default function SaleShow() {
   const { saleId } = useParams();
@@ -202,7 +202,11 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Sale Source</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {sale.saleSource ?? '—'}
+                {sale.saleSource === 'DISTRIBUTOR'
+                  ? 'Distributor'
+                  : sale.saleSource === 'HAND_SOLD'
+                    ? 'Hand Sold'
+                    : '—'}
               </Typography>
             </Paper>
           </Grid>

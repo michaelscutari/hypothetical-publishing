@@ -21,6 +21,7 @@ import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
 import edu.duke.bookpublishing.sales.parser.ParsingError;
+import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -37,7 +38,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -58,25 +58,51 @@ public class SaleService {
   private final ImportParser<IngramCsvEntry> ingramCsvParser;
   private final AuthorRepository authorRepository;
 
-  public List<Sale> getAllSales(LocalDate startDate, LocalDate endDate, String query, Sort sort) {
-    Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
+  public List<Sale> getAllSales(
+      LocalDate startDate,
+      LocalDate endDate,
+      Long authorId,
+      String saleSource,
+      String query,
+      Sort sort) {
+    Specification<Sale> spec =
+        buildSaleSpecification(startDate, endDate, authorId, saleSource, query);
     return saleRepository.findAll(spec, sort);
   }
 
   public Page<Sale> getPagedSales(
-      LocalDate startDate, LocalDate endDate, String query, Pageable pageable) {
-    Specification<Sale> spec = buildSaleSpecification(startDate, endDate, query);
+      LocalDate startDate,
+      LocalDate endDate,
+      Long authorId,
+      String saleSource,
+      String query,
+      Pageable pageable) {
+    Specification<Sale> spec =
+        buildSaleSpecification(startDate, endDate, authorId, saleSource, query);
     return saleRepository.findAll(spec, pageable);
   }
 
   private Specification<Sale> buildSaleSpecification(
-      LocalDate startDate, LocalDate endDate, String query) {
+      LocalDate startDate, LocalDate endDate, Long authorId, String saleSource, String query) {
     Specification<Sale> spec = Specification.where(null);
 
     if (startDate != null || endDate != null) {
       LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
       LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
       spec = spec.and(SaleSpecifications.withinDateRange(specStartDate, specEndDate));
+    }
+
+    if (authorId != null) {
+      spec = spec.and(SaleSpecifications.byAuthor(authorId));
+    }
+
+    if (saleSource != null && !saleSource.isBlank()) {
+      try {
+        SaleSource source = SaleSource.valueOf(saleSource.toUpperCase());
+        spec = spec.and(SaleSpecifications.bySaleSource(source));
+      } catch (IllegalArgumentException e) {
+        // Ignore invalid sale source values
+      }
     }
 
     if (query != null && !query.isBlank()) {

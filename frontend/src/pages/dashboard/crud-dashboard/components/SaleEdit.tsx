@@ -246,6 +246,7 @@ export default function SaleEdit() {
                 setSelectedBook(value);
               }}
               getOptionLabel={(option) => `${option.title} - ${option.author} (${option.isbn13})`}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
               renderInput={(params) => (
                 <TextField
                   {...params}

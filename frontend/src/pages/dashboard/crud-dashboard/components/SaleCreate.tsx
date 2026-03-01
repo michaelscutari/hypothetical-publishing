@@ -1,10 +1,15 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import CommentIcon from '@mui/icons-material/Comment';
 import DeleteIcon from '@mui/icons-material/Delete';
 import {
   Alert,
   Autocomplete,
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControlLabel,
   IconButton,
   MenuItem,
@@ -115,6 +120,8 @@ export default function SaleCreate() {
   const [books, setBooks] = React.useState<BookResponse[]>([]);
   const [bookSearchInput, setBookSearchInput] = React.useState('');
   const [isLoadingBooks, setIsLoadingBooks] = React.useState(false);
+  const [commentDialogOpen, setCommentDialogOpen] = React.useState<number | null>(null);
+  const [commentDialogValue, setCommentDialogValue] = React.useState('');
 
   function createEmptyRecord(
     defaults?: Partial<SaleRecordInput>,
@@ -179,7 +186,6 @@ export default function SaleCreate() {
     });
   }, []);
 
-  // Load books for autocomplete
   const loadBooks = React.useCallback(async (searchQuery: string) => {
     setIsLoadingBooks(true);
     try {
@@ -193,22 +199,17 @@ export default function SaleCreate() {
       setBooks(response.content ?? []);
     } catch (error) {
       console.error('Failed to load books:', error);
+    } finally {
+      setIsLoadingBooks(false);
     }
-    setIsLoadingBooks(false);
   }, []);
 
-  // Debounced search
   React.useEffect(() => {
     const timer = setTimeout(() => {
-      loadBooks(bookSearchInput);
+      void loadBooks(bookSearchInput);
     }, 300);
     return () => clearTimeout(timer);
   }, [bookSearchInput, loadBooks]);
-
-  // Initial load
-  React.useEffect(() => {
-    loadBooks('');
-  }, [loadBooks]);
 
   const updateRecord = React.useCallback((index: number, updates: Partial<SaleRecordInput>) => {
     setRecords((prev) => {
@@ -291,9 +292,27 @@ export default function SaleCreate() {
 
   const handleQuantityChange = React.useCallback(
     (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      const value = event.target.value;
+      const value = event.target.value.trim();
+
+      if (value === '') {
+        updateRecord(index, {
+          quantitySold: null,
+          errors: {},
+        });
+        return;
+      }
+
+      if (!/^\d+$/.test(value)) {
+        return;
+      }
+
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+        return;
+      }
+
       updateRecord(index, {
-        quantitySold: value ? parseInt(value, 10) : null,
+        quantitySold: parsed,
         errors: {},
       });
     },
@@ -329,12 +348,26 @@ export default function SaleCreate() {
     [updateRecord],
   );
 
-  const handleCommentChange = React.useCallback(
-    (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      updateRecord(index, { comment: event.target.value, errors: {} });
+  const handleOpenCommentDialog = React.useCallback(
+    (index: number) => {
+      activateRow(index);
+      setCommentDialogValue(records[index].comment || '');
+      setCommentDialogOpen(index);
     },
-    [updateRecord],
+    [records, activateRow],
   );
+
+  const handleCloseCommentDialog = React.useCallback(() => {
+    setCommentDialogOpen(null);
+    setCommentDialogValue('');
+  }, []);
+
+  const handleSaveComment = React.useCallback(() => {
+    if (commentDialogOpen !== null) {
+      updateRecord(commentDialogOpen, { comment: commentDialogValue, errors: {} });
+      handleCloseCommentDialog();
+    }
+  }, [commentDialogOpen, commentDialogValue, updateRecord, handleCloseCommentDialog]);
 
   const handlePaidChange = React.useCallback(
     (index: number) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -387,8 +420,8 @@ export default function SaleCreate() {
     if (record.quantitySold == null) {
       errors.quantitySold = 'Quantity is required';
       isValid = false;
-    } else if (record.quantitySold < 0) {
-      errors.quantitySold = 'Quantity must be non-negative';
+    } else if (record.quantitySold <= 0) {
+      errors.quantitySold = 'Quantity must be a positive number';
       isValid = false;
     }
 
@@ -504,18 +537,19 @@ export default function SaleCreate() {
         <TableContainer component={Paper}>
           <Table size="small" sx={{ tableLayout: 'fixed' }}>
             <colgroup>
-              <col style={{ width: '28%' }} /> {/* Book */}
-              <col style={{ width: '16%' }} /> {/* Date */}
+              <col style={{ width: '18%' }} /> {/* Book */}
+              <col style={{ width: '18%' }} /> {/* Date */}
+              <col style={{ width: '10%' }} /> {/* Sale Source */}
               <col style={{ width: '10%' }} /> {/* Quantity */}
-              <col style={{ width: '14%' }} /> {/* Revenue */}
-              <col style={{ width: '14%' }} /> {/* Royalty */}
-              <col style={{ width: '10%' }} /> {/* Paid */}
-              <col style={{ width: '4%' }} /> {/* Delete */}
+              <col style={{ width: '12%' }} /> {/* Publisher Revenue */}
+              <col style={{ width: '10%' }} /> {/* Author Royalty */}
+              <col style={{ width: '6%' }} /> {/* Comment */}
+              <col style={{ width: '6%' }} /> {/* Payment Status*/}
             </colgroup>
             <TableHead>
               <TableRow sx={{ '& th': { whiteSpace: 'nowrap' } }}>
-                <TableCell>Sale Date (Month/Year)</TableCell>
                 <TableCell>Book</TableCell>
+                <TableCell>Sale Date (Month/Year)</TableCell>
                 <TableCell>Sale Source</TableCell>
                 <TableCell>Quantity</TableCell>
                 <TableCell>Publisher Revenue</TableCell>
@@ -542,14 +576,18 @@ export default function SaleCreate() {
                       value={record.book}
                       onChange={handleBookChange(index)}
                       loading={isLoadingBooks}
-                      onOpen={() => loadBooks('')}
+                      onOpen={() => {
+                        void loadBooks(bookSearchInput);
+                      }}
                       onInputChange={(_, value) => {
                         activateRow(index);
                         setBookSearchInput(value);
                       }}
+                      onFocus={() => activateRow(index)}
                       getOptionLabel={(option) =>
                         `${option.title} - ${option.author} (${option.isbn13})`
                       }
+                      isOptionEqualToValue={(option, value) => option.id === value.id}
                       filterOptions={(x) => x}
                       renderInput={(params: AutocompleteRenderInputParams) => (
                         <TextField
@@ -617,12 +655,12 @@ export default function SaleCreate() {
                     <TextField
                       size="small"
                       type="text"
-                      placeholder="0"
-                      value={record.quantitySold ?? ''}
+                      placeholder="1"
+                      value={Number.isFinite(record.quantitySold) ? record.quantitySold : ''}
                       onFocus={() => activateRow(index)}
                       onChange={handleQuantityChange(index)}
                       error={!!record.errors.quantitySold}
-                      inputProps={{ inputMode: 'numeric' }}
+                      inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', min: 1 }}
                       fullWidth
                     />
                   </TableCell>
@@ -663,16 +701,34 @@ export default function SaleCreate() {
                   </TableCell>
 
                   <TableCell>
-                    <TextField
-                      size="small"
-                      value={record.comment ?? ''}
-                      onFocus={() => activateRow(index)}
-                      onChange={handleCommentChange(index)}
-                      error={!!record.errors.comment}
-                      helperText={record.errors.comment}
-                      inputProps={{ maxLength: 256 }}
-                      fullWidth
-                    />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.5,
+                        cursor: 'pointer',
+                        '&:hover': { bgcolor: 'action.hover' },
+                        p: 0.5,
+                        borderRadius: 1,
+                      }}
+                      onClick={() => handleOpenCommentDialog(index)}
+                    >
+                      <IconButton size="small" sx={{ p: 0.25 }}>
+                        <CommentIcon fontSize="small" />
+                      </IconButton>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          flex: 1,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                          color: record.comment ? 'text.primary' : 'text.disabled',
+                        }}
+                      >
+                        {record.comment || 'Add comment...'}
+                      </Typography>
+                    </Box>
                   </TableCell>
 
                   <TableCell>
@@ -689,7 +745,7 @@ export default function SaleCreate() {
                     />
                   </TableCell>
 
-                  <TableCell>
+                  <TableCell align="right">
                     {!record.isPlaceholder && records.length > 1 && (
                       <IconButton
                         size="small"
@@ -729,6 +785,35 @@ export default function SaleCreate() {
               : `Create ${records.filter((r) => !r.isPlaceholder && r.book).length} Record(s)`}
           </Button>
         </Stack>
+
+        <Dialog
+          open={commentDialogOpen !== null}
+          onClose={handleCloseCommentDialog}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle>Edit Comment</DialogTitle>
+          <DialogContent>
+            <TextField
+              autoFocus
+              multiline
+              rows={4}
+              value={commentDialogValue}
+              onChange={(e) => setCommentDialogValue(e.target.value)}
+              placeholder="Enter comment (optional)"
+              inputProps={{ maxLength: 256 }}
+              fullWidth
+              helperText={`${commentDialogValue.length}/256 characters`}
+              sx={{ mt: 1 }}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCommentDialog}>Cancel</Button>
+            <Button onClick={handleSaveComment} variant="contained">
+              Save
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Stack>
     </PageContainer>
   );
