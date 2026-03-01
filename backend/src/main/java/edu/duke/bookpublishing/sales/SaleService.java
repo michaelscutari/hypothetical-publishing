@@ -256,27 +256,20 @@ public class SaleService {
     // Get all sales for this author
     List<Sale> allSales = saleRepository.findAllByAuthorId(authorId);
 
-    // Generate quarter sections, grouping by year to filter empty years
+    // Generate quarter sections, only including quarters with sales
     List<QuarterSection> sections = new ArrayList<>();
-    Map<Integer, List<QuarterSection>> sectionsByYear = new LinkedHashMap<>();
     int qYear = startYear;
     int qQuarter = startQuarter;
     while (qYear < endYear || (qYear == endYear && qQuarter <= endQuarter)) {
       List<Sale> quarterSales = filterByQuarter(allSales, qQuarter, qYear);
-      QuarterSection section = buildQuarterSection(quarterSales, qQuarter, qYear);
-      sectionsByYear.computeIfAbsent(qYear, k -> new ArrayList<>()).add(section);
+      if (!quarterSales.isEmpty()) {
+        QuarterSection section = buildQuarterSection(quarterSales, qQuarter, qYear);
+        sections.add(section);
+      }
       qQuarter++;
       if (qQuarter > 4) {
         qQuarter = 1;
         qYear++;
-      }
-    }
-
-    // Only include years that have at least one quarter with sales
-    for (Map.Entry<Integer, List<QuarterSection>> entry : sectionsByYear.entrySet()) {
-      boolean yearHasSales = entry.getValue().stream().anyMatch(qs -> !qs.books().isEmpty());
-      if (yearHasSales) {
-        sections.addAll(entry.getValue());
       }
     }
 

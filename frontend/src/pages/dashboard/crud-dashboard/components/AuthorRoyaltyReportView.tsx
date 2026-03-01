@@ -292,51 +292,66 @@ export default function AuthorRoyaltyReportView() {
                 >
                   {year}
                 </Typography>
-                <TableContainer>
+                <TableContainer className="quarterly-table">
                   <Table size="small">
                     <TableHead>
                       <TableRow>
-                        <TableCell>Book</TableCell>
+                        <TableCell rowSpan={2}>Book</TableCell>
                         {sortedYearQuarters.map((quarter) => (
-                          <TableCell key={`header-${year}-q${quarter.quarter}`} align="right">
+                          <TableCell
+                            key={`header-${year}-q${quarter.quarter}`}
+                            align="center"
+                            colSpan={5}
+                            sx={{ borderLeft: 2, borderColor: 'divider' }}
+                          >
                             {getQuarterLabel(quarter.quarter)}
                           </TableCell>
                         ))}
-                        <TableCell align="right">Quantity Sold</TableCell>
-                        <TableCell align="right">Quantity Handsold</TableCell>
-                        <TableCell align="right">Author Royalty (Unpaid)</TableCell>
-                        <TableCell align="right">Author Royalty (Paid)</TableCell>
-                        <TableCell align="right">Author Royalty (Total)</TableCell>
+                      </TableRow>
+                      <TableRow>
+                        {sortedYearQuarters.map((quarter) => (
+                          <>
+                            <TableCell
+                              key={`header-${year}-q${quarter.quarter}-qty`}
+                              align="right"
+                              sx={{ borderLeft: 2, borderColor: 'divider', fontSize: '0.7rem' }}
+                            >
+                              Qty
+                            </TableCell>
+                            <TableCell
+                              key={`header-${year}-q${quarter.quarter}-hand`}
+                              align="right"
+                              sx={{ fontSize: '0.7rem' }}
+                            >
+                              Hand
+                            </TableCell>
+                            <TableCell
+                              key={`header-${year}-q${quarter.quarter}-unpaid`}
+                              align="right"
+                              sx={{ fontSize: '0.7rem' }}
+                            >
+                              Unpaid
+                            </TableCell>
+                            <TableCell
+                              key={`header-${year}-q${quarter.quarter}-paid`}
+                              align="right"
+                              sx={{ fontSize: '0.7rem' }}
+                            >
+                              Paid
+                            </TableCell>
+                            <TableCell
+                              key={`header-${year}-q${quarter.quarter}-total`}
+                              align="right"
+                              sx={{ fontSize: '0.7rem' }}
+                            >
+                              Total
+                            </TableCell>
+                          </>
+                        ))}
                       </TableRow>
                     </TableHead>
                     <TableBody>
                       {books.map((book) => {
-                        const yearBookMetrics = sortedYearQuarters.reduce(
-                          (accumulated, quarter) => {
-                            const quarterBook = quarter.books?.find(
-                              (candidate) => candidate.displayName === book.displayName,
-                            );
-
-                            return {
-                              quantity: accumulated.quantity + (quarterBook?.quantity ?? 0),
-                              handsold: accumulated.handsold + (quarterBook?.handsold ?? 0),
-                              unpaidRoyalty:
-                                accumulated.unpaidRoyalty + (quarterBook?.unpaidRoyalty ?? 0),
-                              paidRoyalty:
-                                accumulated.paidRoyalty + (quarterBook?.paidRoyalty ?? 0),
-                              totalRoyalty:
-                                accumulated.totalRoyalty + (quarterBook?.totalRoyalty ?? 0),
-                            };
-                          },
-                          {
-                            quantity: 0,
-                            handsold: 0,
-                            unpaidRoyalty: 0,
-                            paidRoyalty: 0,
-                            totalRoyalty: 0,
-                          },
-                        );
-
                         return (
                           <TableRow key={`matrix-${year}-book-${book.displayName ?? book.title}`}>
                             <TableCell>
@@ -360,81 +375,215 @@ export default function AuthorRoyaltyReportView() {
                               );
 
                               return (
-                                <TableCell
-                                  key={`matrix-${year}-${book.displayName}-q${quarter.quarter}`}
-                                  align="right"
-                                >
-                                  {quarterBook?.quantity ?? 0}
-                                </TableCell>
+                                <>
+                                  <TableCell
+                                    key={`matrix-${year}-${book.displayName}-q${quarter.quarter}-qty`}
+                                    align="right"
+                                    sx={{ borderLeft: 2, borderColor: 'divider' }}
+                                  >
+                                    {quarterBook?.quantity ?? 0}
+                                  </TableCell>
+                                  <TableCell
+                                    key={`matrix-${year}-${book.displayName}-q${quarter.quarter}-hand`}
+                                    align="right"
+                                  >
+                                    {quarterBook?.handsold ?? 0}
+                                  </TableCell>
+                                  <TableCell
+                                    key={`matrix-${year}-${book.displayName}-q${quarter.quarter}-unpaid`}
+                                    align="right"
+                                  >
+                                    {formatCurrency(quarterBook?.unpaidRoyalty ?? 0)}
+                                  </TableCell>
+                                  <TableCell
+                                    key={`matrix-${year}-${book.displayName}-q${quarter.quarter}-paid`}
+                                    align="right"
+                                  >
+                                    {formatCurrency(quarterBook?.paidRoyalty ?? 0)}
+                                  </TableCell>
+                                  <TableCell
+                                    key={`matrix-${year}-${book.displayName}-q${quarter.quarter}-total`}
+                                    align="right"
+                                  >
+                                    {formatCurrency(quarterBook?.totalRoyalty ?? 0)}
+                                  </TableCell>
+                                </>
                               );
                             })}
-                            <TableCell align="right">{yearBookMetrics.quantity}</TableCell>
-                            <TableCell align="right">{yearBookMetrics.handsold}</TableCell>
-                            <TableCell align="right">
-                              {formatCurrency(yearBookMetrics.unpaidRoyalty)}
-                            </TableCell>
-                            <TableCell align="right">
-                              {formatCurrency(yearBookMetrics.paidRoyalty)}
-                            </TableCell>
-                            <TableCell align="right" sx={{ fontWeight: 600 }}>
-                              {formatCurrency(yearBookMetrics.totalRoyalty)}
-                            </TableCell>
                           </TableRow>
                         );
                       })}
 
                       <TableRow sx={{ '& td': { fontWeight: 700 } }}>
-                        <TableCell>{year} Totals</TableCell>
+                        <TableCell>Quarter Totals</TableCell>
                         {sortedYearQuarters.map((quarter) => (
-                          <TableCell key={`year-total-${year}-q${quarter.quarter}`} align="right">
-                            {quarter.totals?.quantity ?? 0}
-                          </TableCell>
+                          <>
+                            <TableCell
+                              key={`year-total-${year}-q${quarter.quarter}-qty`}
+                              align="right"
+                              sx={{ borderLeft: 2, borderColor: 'divider' }}
+                            >
+                              {quarter.totals?.quantity ?? 0}
+                            </TableCell>
+                            <TableCell
+                              key={`year-total-${year}-q${quarter.quarter}-hand`}
+                              align="right"
+                            >
+                              {quarter.totals?.handsold ?? 0}
+                            </TableCell>
+                            <TableCell
+                              key={`year-total-${year}-q${quarter.quarter}-unpaid`}
+                              align="right"
+                            >
+                              {formatCurrency(quarter.totals?.unpaidRoyalty ?? 0)}
+                            </TableCell>
+                            <TableCell
+                              key={`year-total-${year}-q${quarter.quarter}-paid`}
+                              align="right"
+                            >
+                              {formatCurrency(quarter.totals?.paidRoyalty ?? 0)}
+                            </TableCell>
+                            <TableCell
+                              key={`year-total-${year}-q${quarter.quarter}-total`}
+                              align="right"
+                            >
+                              {formatCurrency(quarter.totals?.totalRoyalty ?? 0)}
+                            </TableCell>
+                          </>
                         ))}
-                        <TableCell align="right">
-                          {sortedYearQuarters.reduce(
-                            (total, quarter) => total + (quarter.totals?.quantity ?? 0),
-                            0,
-                          )}
-                        </TableCell>
-                        <TableCell align="right">
-                          {sortedYearQuarters.reduce(
-                            (total, quarter) => total + (quarter.totals?.handsold ?? 0),
-                            0,
-                          )}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(
-                            sortedYearQuarters.reduce(
-                              (total, quarter) => total + (quarter.totals?.unpaidRoyalty ?? 0),
-                              0,
-                            ),
-                          )}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(
-                            sortedYearQuarters.reduce(
-                              (total, quarter) => total + (quarter.totals?.paidRoyalty ?? 0),
-                              0,
-                            ),
-                          )}
-                        </TableCell>
-                        <TableCell align="right">
-                          {formatCurrency(
-                            sortedYearQuarters.reduce(
-                              (total, quarter) => total + (quarter.totals?.totalRoyalty ?? 0),
-                              0,
-                            ),
-                          )}
-                        </TableCell>
                       </TableRow>
                     </TableBody>
                   </Table>
                 </TableContainer>
+
+                {/* Year totals table */}
+                <Box className="year-totals-section" sx={{ mt: 2 }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1 }}>
+                    {year} Year Totals
+                  </Typography>
+                  <TableContainer>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Book</TableCell>
+                          <TableCell align="right">Qty</TableCell>
+                          <TableCell align="right">Handsold</TableCell>
+                          <TableCell align="right">Unpaid</TableCell>
+                          <TableCell align="right">Paid</TableCell>
+                          <TableCell align="right">Total</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {books.map((book) => {
+                          const yearBookMetrics = sortedYearQuarters.reduce(
+                            (accumulated, quarter) => {
+                              const quarterBook = quarter.books?.find(
+                                (candidate) => candidate.displayName === book.displayName,
+                              );
+
+                              return {
+                                quantity: accumulated.quantity + (quarterBook?.quantity ?? 0),
+                                handsold: accumulated.handsold + (quarterBook?.handsold ?? 0),
+                                unpaidRoyalty:
+                                  accumulated.unpaidRoyalty + (quarterBook?.unpaidRoyalty ?? 0),
+                                paidRoyalty:
+                                  accumulated.paidRoyalty + (quarterBook?.paidRoyalty ?? 0),
+                                totalRoyalty:
+                                  accumulated.totalRoyalty + (quarterBook?.totalRoyalty ?? 0),
+                              };
+                            },
+                            {
+                              quantity: 0,
+                              handsold: 0,
+                              unpaidRoyalty: 0,
+                              paidRoyalty: 0,
+                              totalRoyalty: 0,
+                            },
+                          );
+
+                          return (
+                            <TableRow key={`year-summary-${year}-${book.displayName}`}>
+                              <TableCell>
+                                <Box>
+                                  <Box component="div" sx={{ fontWeight: 500 }}>
+                                    {book.title}
+                                  </Box>
+                                  {book.seriesName && (
+                                    <Box
+                                      component="div"
+                                      sx={{ fontSize: '0.85em', color: 'text.secondary' }}
+                                    >
+                                      {book.seriesName} ({book.seriesPosition})
+                                    </Box>
+                                  )}
+                                </Box>
+                              </TableCell>
+                              <TableCell align="right">{yearBookMetrics.quantity}</TableCell>
+                              <TableCell align="right">{yearBookMetrics.handsold}</TableCell>
+                              <TableCell align="right">
+                                {formatCurrency(yearBookMetrics.unpaidRoyalty)}
+                              </TableCell>
+                              <TableCell align="right">
+                                {formatCurrency(yearBookMetrics.paidRoyalty)}
+                              </TableCell>
+                              <TableCell align="right" sx={{ fontWeight: 600 }}>
+                                {formatCurrency(yearBookMetrics.totalRoyalty)}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+
+                        <TableRow sx={{ '& td': { fontWeight: 700 } }}>
+                          <TableCell>{year} Totals</TableCell>
+                          <TableCell align="right">
+                            {sortedYearQuarters.reduce(
+                              (total, quarter) => total + (quarter.totals?.quantity ?? 0),
+                              0,
+                            )}
+                          </TableCell>
+                          <TableCell align="right">
+                            {sortedYearQuarters.reduce(
+                              (total, quarter) => total + (quarter.totals?.handsold ?? 0),
+                              0,
+                            )}
+                          </TableCell>
+                          <TableCell align="right">
+                            {formatCurrency(
+                              sortedYearQuarters.reduce(
+                                (total, quarter) => total + (quarter.totals?.unpaidRoyalty ?? 0),
+                                0,
+                              ),
+                            )}
+                          </TableCell>
+                          <TableCell align="right">
+                            {formatCurrency(
+                              sortedYearQuarters.reduce(
+                                (total, quarter) => total + (quarter.totals?.paidRoyalty ?? 0),
+                                0,
+                              ),
+                            )}
+                          </TableCell>
+                          <TableCell align="right">
+                            {formatCurrency(
+                              sortedYearQuarters.reduce(
+                                (total, quarter) => total + (quarter.totals?.totalRoyalty ?? 0),
+                                0,
+                              ),
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Box>
               </Box>
             );
           })}
 
-          <Box className="year-section" sx={{ mt: 4, pt: 3, borderTop: 2, borderColor: 'divider' }}>
+          <Box
+            className="year-section year-totals-section"
+            sx={{ mt: 4, pt: 3, borderTop: 2, borderColor: 'divider' }}
+          >
             <Typography variant="subtitle1" className="year-title" sx={{ fontWeight: 600, mb: 1 }}>
               All Years Total
             </Typography>
