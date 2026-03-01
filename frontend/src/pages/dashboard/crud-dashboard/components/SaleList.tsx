@@ -73,7 +73,6 @@ export default function SaleList() {
   const [selectedAuthor, setSelectedAuthor] = React.useState<AuthorResponse | null>(null);
   const [saleSource, setSaleSource] = React.useState<string>('all');
   const [authors, setAuthors] = React.useState<AuthorResponse[]>([]);
-  const [loadingAuthors, setLoadingAuthors] = React.useState(false);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -118,22 +117,18 @@ export default function SaleList() {
   React.useEffect(() => {
     loadData();
   }, [loadData]);
-
-  React.useEffect(() => {
-    loadAuthors();
-  });
-
   const loadAuthors = React.useCallback(async () => {
-    setLoadingAuthors(true);
     try {
       const response = await AuthorsService.getAllAuthors(0, 1000, true);
       setAuthors(response.content ?? []);
     } catch (error) {
       console.error('Failed to load authors:', error);
-    } finally {
-      setLoadingAuthors(false);
     }
   }, []);
+
+  React.useEffect(() => {
+    loadAuthors();
+  }, [loadAuthors]);
 
   const handleRefresh = React.useCallback(() => {
     if (!isLoading) loadData();
@@ -385,8 +380,6 @@ export default function SaleList() {
             )}
             value={selectedAuthor}
             onChange={(_, newValue) => setSelectedAuthor(newValue)}
-            loading={loadingAuthors}
-            disabled={loadingAuthors}
             sx={{ minWidth: 200 }}
           />
 
@@ -403,10 +396,20 @@ export default function SaleList() {
             </Select>
           </FormControl>
 
-          <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={handleCreateClick}
+            startIcon={<AddIcon />}
+          >
             New Sale
           </Button>
-          <Button variant="outlined" onClick={handleImportClick} startIcon={<UploadFileIcon />}>
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={handleImportClick}
+            startIcon={<UploadFileIcon />}
+          >
             Import CSV
           </Button>
         </Stack>

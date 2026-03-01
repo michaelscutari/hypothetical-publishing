@@ -12,7 +12,7 @@ import {
 } from '@mui/material';
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { SalesService, type ReportBookRow, type RoyaltyReportResponse } from '../../../../api';
+import { SalesService, type RoyaltyReportResponse } from '../../../../api';
 import './AuthorRoyaltyReportView.css';
 
 export default function AuthorRoyaltyReportView() {
@@ -55,57 +55,16 @@ export default function AuthorRoyaltyReportView() {
     loadReport();
   }, [loadReport]);
 
-  const formatCurrency = (value?: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value ?? 0);
-  };
-
   const getQuarterLabel = (quarter?: number) => {
     const labels = ['Q1', 'Q2', 'Q3', 'Q4'];
     return labels[(quarter ?? 1) - 1];
   };
 
-  const renderBookRow = (row: ReportBookRow | undefined, periodLabel?: string, key?: string) => {
-    if (!row) return null;
-    return (
-      <TableRow key={key}>
-        <TableCell>
-          {periodLabel ? (
-            periodLabel
-          ) : (
-            <Box>
-              <div style={{ fontWeight: 500 }}>{row.title}</div>
-              {row.seriesName && (
-                <div style={{ fontSize: '0.85em', color: '#666' }}>
-                  {row.seriesName} ({row.seriesPosition})
-                </div>
-              )}
-            </Box>
-          )}
-        </TableCell>
-        <TableCell align="right">{row.quantity ?? 0}</TableCell>
-        <TableCell align="right">{row.handsold ?? 0}</TableCell>
-        <TableCell align="right">{formatCurrency(row.unpaidRoyalty)}</TableCell>
-        <TableCell align="right">{formatCurrency(row.paidRoyalty)}</TableCell>
-        <TableCell align="right">
-          <strong>{formatCurrency(row.totalRoyalty)}</strong>
-        </TableCell>
-      </TableRow>
-    );
-  };
-
-  const getQuarterlyDataForBook = (displayName: string | undefined) => {
-    if (!displayName || !reportData?.quarters) return [];
-    // For each quarter, find the row matching this book's displayName
-    return reportData.quarters
-      .map((quarter) => ({
-        quarter: quarter.quarter,
-        year: quarter.year,
-        bookRow: quarter.books?.find((b) => b.displayName === displayName),
-      }))
-      .filter((q) => q.bookRow);
+  const formatCurrency = (value?: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(value ?? 0);
   };
 
   const getGeneratedDate = () => {
@@ -132,21 +91,122 @@ export default function AuthorRoyaltyReportView() {
     );
   }
 
+  const quarterColumns = reportData.quarters ?? [];
+  const books = reportData.allTime?.books ?? [];
+  const quarterColumnsByYear = quarterColumns.reduce<Record<number, typeof quarterColumns>>(
+    (grouped, quarter) => {
+      const year = quarter.year ?? 0;
+      if (!grouped[year]) {
+        grouped[year] = [];
+      }
+      grouped[year].push(quarter);
+      return grouped;
+    },
+    {},
+  );
+  const sortedYears = Object.keys(quarterColumnsByYear)
+    .map((year) => Number(year))
+    .sort((a, b) => a - b);
+
+  const allYearsBookMap = new Map<
+    string,
+    {
+      title: string;
+      seriesName?: string;
+      seriesPosition?: number;
+      quantity: number;
+      handsold: number;
+      unpaidRoyalty: number;
+      paidRoyalty: number;
+      totalRoyalty: number;
+    }
+  >();
+
+  quarterColumns.forEach((quarter) => {
+    quarter.books?.forEach((book) => {
+      const key = book.displayName ?? book.title ?? '';
+      if (!key) return;
+
+      const existing = allYearsBookMap.get(key);
+      if (existing) {
+        existing.quantity += book.quantity ?? 0;
+        existing.handsold += book.handsold ?? 0;
+        existing.unpaidRoyalty += book.unpaidRoyalty ?? 0;
+        existing.paidRoyalty += book.paidRoyalty ?? 0;
+        existing.totalRoyalty += book.totalRoyalty ?? 0;
+      } else {
+        allYearsBookMap.set(key, {
+          title: book.title ?? 'Unknown Book',
+          seriesName: book.seriesName ?? undefined,
+          seriesPosition: book.seriesPosition ?? undefined,
+          quantity: book.quantity ?? 0,
+          handsold: book.handsold ?? 0,
+          unpaidRoyalty: book.unpaidRoyalty ?? 0,
+          paidRoyalty: book.paidRoyalty ?? 0,
+          totalRoyalty: book.totalRoyalty ?? 0,
+        });
+      }
+    });
+  });
+
+  const allYearsBooks = Array.from(allYearsBookMap.values()).sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
+
+  const allYearsTotals = quarterColumns.reduce(
+    (totals, quarter) => ({
+      quantity: totals.quantity + (quarter.totals?.quantity ?? 0),
+      handsold: totals.handsold + (quarter.totals?.handsold ?? 0),
+      unpaidRoyalty: totals.unpaidRoyalty + (quarter.totals?.unpaidRoyalty ?? 0),
+      paidRoyalty: totals.paidRoyalty + (quarter.totals?.paidRoyalty ?? 0),
+      totalRoyalty: totals.totalRoyalty + (quarter.totals?.totalRoyalty ?? 0),
+    }),
+    {
+      quantity: 0,
+      handsold: 0,
+      unpaidRoyalty: 0,
+      paidRoyalty: 0,
+      totalRoyalty: 0,
+    },
+  );
+
   return (
-    <Box className="report-container">
+    <Box
+      className="report-container"
+      sx={{
+        bgcolor: 'background.default',
+        '@media print': {
+          bgcolor: 'white !important',
+          color: '#000 !important',
+          minHeight: 'auto !important',
+          m: 0,
+          p: 0,
+        },
+      }}
+    >
       {/* PDF Export Instructions (hidden when printing) */}
-      <Box className="no-print" sx={{ mb: 3, p: 2, backgroundColor: '#f5f5f5', borderRadius: 1 }}>
+      <Box
+        className="no-print"
+        sx={{
+          mb: 3,
+          p: 2,
+          bgcolor: 'action.hover',
+          borderRadius: 1,
+          border: 1,
+          borderColor: 'divider',
+        }}
+      >
         <Typography variant="subtitle2" sx={{ fontWeight: 'bold', mb: 1 }}>
           Save as PDF
         </Typography>
-        <Typography variant="body2" sx={{ color: '#555', mb: 1 }}>
+        <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
           To save this report as a PDF document suitable for sharing with the author:
         </Typography>
         <Typography
           variant="body2"
           component="ol"
           sx={{
-            color: '#555',
+            color: 'text.secondary',
             pl: 2,
             m: 0,
             '& li': { mb: 0.5 },
@@ -158,9 +218,18 @@ export default function AuthorRoyaltyReportView() {
         </Typography>
       </Box>
 
-      <Paper className="report-page" elevation={0}>
+      <Paper
+        className="report-page"
+        elevation={3}
+        sx={{
+          bgcolor: 'background.paper',
+          '@media print': {
+            bgcolor: 'white !important',
+          },
+        }}
+      >
         {/* Header */}
-        <Box className="report-header">
+        <Box className="report-header" sx={{ borderBottom: 3, borderColor: 'primary.main' }}>
           <Box
             sx={{
               display: 'flex',
@@ -170,21 +239,21 @@ export default function AuthorRoyaltyReportView() {
             }}
           >
             <Box>
-              <Typography variant="h3" sx={{ fontWeight: 'bold', color: '#1976d2', mb: 0.5 }}>
+              <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 0.5 }}>
                 Hypothetical Publishing
               </Typography>
             </Box>
             <Box sx={{ textAlign: 'right' }}>
-              <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#333' }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'text.primary' }}>
                 Author Royalty Report
               </Typography>
-              <Typography variant="caption" sx={{ color: '#999' }}>
+              <Typography variant="caption" sx={{ color: 'text.disabled' }}>
                 Generated: {getGeneratedDate()}
               </Typography>
             </Box>
           </Box>
 
-          <Box sx={{ borderTop: '2px solid #1976d2', pt: 2 }}>
+          <Box sx={{ borderTop: 2, borderColor: 'primary.main', pt: 2 }}>
             <Typography variant="body1" sx={{ mb: 1 }}>
               <strong>Author Name:</strong> {reportData.author}
             </Typography>
@@ -195,98 +264,238 @@ export default function AuthorRoyaltyReportView() {
           </Box>
         </Box>
 
-        {/* Per-Book Sections */}
-        {reportData.allTime?.books?.map((book) => {
-          const quarterlyData = getQuarterlyDataForBook(book.displayName);
-          return (
-            <Box key={`book-${book.displayName}`} className="report-section book-section">
-              <Typography variant="h5" className="section-title" sx={{ mb: 0.5 }}>
-                {book.title}
-              </Typography>
-              {book.seriesName && (
-                <Typography variant="subtitle1" sx={{ color: '#666', mb: 2 }}>
-                  {book.seriesName} ({book.seriesPosition})
-                </Typography>
-              )}
-
-              <TableContainer sx={{ mb: 2 }}>
-                <Table size="small">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Period</TableCell>
-                      <TableCell align="right">Total Sold</TableCell>
-                      <TableCell align="right">Handsold</TableCell>
-                      <TableCell align="right">Unpaid Royalty</TableCell>
-                      <TableCell align="right">Paid Royalty</TableCell>
-                      <TableCell align="right">Total Royalty</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {quarterlyData.map((qData) =>
-                      renderBookRow(
-                        qData.bookRow,
-                        `${getQuarterLabel(qData.quarter)} ${qData.year}`,
-                        `${book.displayName}-q${qData.quarter}${qData.year}`,
-                      ),
-                    )}
-                    {renderBookRow(book, 'All-Time', `${book.displayName}-alltime`)}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Box>
-          );
-        })}
-
-        {/* All-Book Totals Section */}
+        {/* Pivot Sales Matrix */}
         <Box className="report-section">
-          <Typography variant="h6" className="section-title">
-            All-Book Quarterly Summary
-          </Typography>
-          <TableContainer>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Period</TableCell>
-                  <TableCell align="right">Total Sold</TableCell>
-                  <TableCell align="right">Handsold</TableCell>
-                  <TableCell align="right">Unpaid Royalty</TableCell>
-                  <TableCell align="right">Paid Royalty</TableCell>
-                  <TableCell align="right">Total Royalty</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {reportData.quarters?.map((quarter) =>
-                  renderBookRow(
-                    quarter.totals,
-                    `${getQuarterLabel(quarter.quarter)} ${quarter.year}`,
-                    `allbooks-q${quarter.quarter}${quarter.year}`,
-                  ),
-                )}
-                {renderBookRow(reportData.allTime?.totals, 'All-Time', 'allbooks-alltime')}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
+          {sortedYears.map((year, index) => {
+            const yearQuarters = quarterColumnsByYear[year] ?? [];
+            const sortedYearQuarters = [...yearQuarters].sort(
+              (a, b) => (a.quarter ?? 0) - (b.quarter ?? 0),
+            );
 
-        {/* Footer */}
-        <Box
-          sx={{
-            borderTop: '1px solid #e0e0e0',
-            mt: 4,
-            pt: 2,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="caption" sx={{ color: '#999' }}>
-            © 2026 Hypothetical Publishing. All rights reserved.
-          </Typography>
-          <Typography variant="caption" sx={{ color: '#999' }}>
-            Document ID: {reportData.author?.toLowerCase().replace(/\s+/g, '-')}-
-            {reportData.startYear}-q{reportData.startQuarter}-{reportData.endYear}-q
-            {reportData.endQuarter}
-          </Typography>
+            return (
+              <Box
+                key={`year-section-${year}`}
+                className="year-section"
+                sx={{
+                  mb: 3,
+                  ...(index > 0 && {
+                    pt: 3,
+                    borderTop: 2,
+                    borderColor: 'divider',
+                  }),
+                }}
+              >
+                <Typography
+                  variant="subtitle1"
+                  className="year-title"
+                  sx={{ fontWeight: 600, mb: 1 }}
+                >
+                  {year}
+                </Typography>
+                <TableContainer>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Book</TableCell>
+                        {sortedYearQuarters.map((quarter) => (
+                          <TableCell key={`header-${year}-q${quarter.quarter}`} align="right">
+                            {getQuarterLabel(quarter.quarter)}
+                          </TableCell>
+                        ))}
+                        <TableCell align="right">Quantity Sold</TableCell>
+                        <TableCell align="right">Quantity Handsold</TableCell>
+                        <TableCell align="right">Author Royalty (Unpaid)</TableCell>
+                        <TableCell align="right">Author Royalty (Paid)</TableCell>
+                        <TableCell align="right">Author Royalty (Total)</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {books.map((book) => {
+                        const yearBookMetrics = sortedYearQuarters.reduce(
+                          (accumulated, quarter) => {
+                            const quarterBook = quarter.books?.find(
+                              (candidate) => candidate.displayName === book.displayName,
+                            );
+
+                            return {
+                              quantity: accumulated.quantity + (quarterBook?.quantity ?? 0),
+                              handsold: accumulated.handsold + (quarterBook?.handsold ?? 0),
+                              unpaidRoyalty:
+                                accumulated.unpaidRoyalty + (quarterBook?.unpaidRoyalty ?? 0),
+                              paidRoyalty:
+                                accumulated.paidRoyalty + (quarterBook?.paidRoyalty ?? 0),
+                              totalRoyalty:
+                                accumulated.totalRoyalty + (quarterBook?.totalRoyalty ?? 0),
+                            };
+                          },
+                          {
+                            quantity: 0,
+                            handsold: 0,
+                            unpaidRoyalty: 0,
+                            paidRoyalty: 0,
+                            totalRoyalty: 0,
+                          },
+                        );
+
+                        return (
+                          <TableRow key={`matrix-${year}-book-${book.displayName ?? book.title}`}>
+                            <TableCell>
+                              <Box>
+                                <Box component="div" sx={{ fontWeight: 500 }}>
+                                  {book.title}
+                                </Box>
+                                {book.seriesName && (
+                                  <Box
+                                    component="div"
+                                    sx={{ fontSize: '0.85em', color: 'text.secondary' }}
+                                  >
+                                    {book.seriesName} ({book.seriesPosition})
+                                  </Box>
+                                )}
+                              </Box>
+                            </TableCell>
+                            {sortedYearQuarters.map((quarter) => {
+                              const quarterBook = quarter.books?.find(
+                                (candidate) => candidate.displayName === book.displayName,
+                              );
+
+                              return (
+                                <TableCell
+                                  key={`matrix-${year}-${book.displayName}-q${quarter.quarter}`}
+                                  align="right"
+                                >
+                                  {quarterBook?.quantity ?? 0}
+                                </TableCell>
+                              );
+                            })}
+                            <TableCell align="right">{yearBookMetrics.quantity}</TableCell>
+                            <TableCell align="right">{yearBookMetrics.handsold}</TableCell>
+                            <TableCell align="right">
+                              {formatCurrency(yearBookMetrics.unpaidRoyalty)}
+                            </TableCell>
+                            <TableCell align="right">
+                              {formatCurrency(yearBookMetrics.paidRoyalty)}
+                            </TableCell>
+                            <TableCell align="right" sx={{ fontWeight: 600 }}>
+                              {formatCurrency(yearBookMetrics.totalRoyalty)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+
+                      <TableRow sx={{ '& td': { fontWeight: 700 } }}>
+                        <TableCell>{year} Totals</TableCell>
+                        {sortedYearQuarters.map((quarter) => (
+                          <TableCell key={`year-total-${year}-q${quarter.quarter}`} align="right">
+                            {quarter.totals?.quantity ?? 0}
+                          </TableCell>
+                        ))}
+                        <TableCell align="right">
+                          {sortedYearQuarters.reduce(
+                            (total, quarter) => total + (quarter.totals?.quantity ?? 0),
+                            0,
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          {sortedYearQuarters.reduce(
+                            (total, quarter) => total + (quarter.totals?.handsold ?? 0),
+                            0,
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(
+                            sortedYearQuarters.reduce(
+                              (total, quarter) => total + (quarter.totals?.unpaidRoyalty ?? 0),
+                              0,
+                            ),
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(
+                            sortedYearQuarters.reduce(
+                              (total, quarter) => total + (quarter.totals?.paidRoyalty ?? 0),
+                              0,
+                            ),
+                          )}
+                        </TableCell>
+                        <TableCell align="right">
+                          {formatCurrency(
+                            sortedYearQuarters.reduce(
+                              (total, quarter) => total + (quarter.totals?.totalRoyalty ?? 0),
+                              0,
+                            ),
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Box>
+            );
+          })}
+
+          <Box className="year-section" sx={{ mt: 4, pt: 3, borderTop: 2, borderColor: 'divider' }}>
+            <Typography variant="subtitle1" className="year-title" sx={{ fontWeight: 600, mb: 1 }}>
+              All Years Total
+            </Typography>
+            <TableContainer>
+              <Table size="small">
+                <TableHead>
+                  <TableRow>
+                    <TableCell>Book</TableCell>
+                    <TableCell align="right">Quantity Sold</TableCell>
+                    <TableCell align="right">Quantity Handsold</TableCell>
+                    <TableCell align="right">Author Royalty (Unpaid)</TableCell>
+                    <TableCell align="right">Author Royalty (Paid)</TableCell>
+                    <TableCell align="right">Author Royalty (Total)</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {allYearsBooks.map((book) => (
+                    <TableRow key={`all-years-book-${book.title}`}>
+                      <TableCell>
+                        <Box>
+                          <Box component="div" sx={{ fontWeight: 500 }}>
+                            {book.title}
+                          </Box>
+                          {book.seriesName && (
+                            <Box
+                              component="div"
+                              sx={{ fontSize: '0.85em', color: 'text.secondary' }}
+                            >
+                              {book.seriesName} ({book.seriesPosition})
+                            </Box>
+                          )}
+                        </Box>
+                      </TableCell>
+                      <TableCell align="right">{book.quantity}</TableCell>
+                      <TableCell align="right">{book.handsold}</TableCell>
+                      <TableCell align="right">{formatCurrency(book.unpaidRoyalty)}</TableCell>
+                      <TableCell align="right">{formatCurrency(book.paidRoyalty)}</TableCell>
+                      <TableCell align="right" sx={{ fontWeight: 600 }}>
+                        {formatCurrency(book.totalRoyalty)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  <TableRow sx={{ '& td': { fontWeight: 700 } }}>
+                    <TableCell>Totals</TableCell>
+                    <TableCell align="right">{allYearsTotals.quantity}</TableCell>
+                    <TableCell align="right">{allYearsTotals.handsold}</TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(allYearsTotals.unpaidRoyalty)}
+                    </TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(allYearsTotals.paidRoyalty)}
+                    </TableCell>
+                    <TableCell align="right">
+                      {formatCurrency(allYearsTotals.totalRoyalty)}
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Box>
         </Box>
       </Paper>
     </Box>
