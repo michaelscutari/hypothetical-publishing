@@ -199,7 +199,6 @@ export default function SaleImport() {
               <TableRow>
                 <TableCell width={90}>Row</TableCell>
                 <TableCell width={240}>Message</TableCell>
-                <TableCell>Raw Line</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -207,7 +206,6 @@ export default function SaleImport() {
                 <TableRow key={`${title}-${index}`}>
                   <TableCell>{error.rowNumber ?? '-'}</TableCell>
                   <TableCell>{getFriendlyErrorMessage(error)}</TableCell>
-                  <TableCell>{error.rawLine?.join(' | ') ?? '-'}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -341,6 +339,7 @@ export default function SaleImport() {
                     <TableCell align="right">Quantity</TableCell>
                     <TableCell align="right">Publisher Revenue</TableCell>
                     <TableCell align="right">Author Royalty</TableCell>
+                    <TableCell>Comment</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
@@ -360,6 +359,7 @@ export default function SaleImport() {
                           ? `$${Number(sale.authorRoyalty).toFixed(2)}`
                           : '-'}
                       </TableCell>
+                      <TableCell>{sale.comment ?? '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
