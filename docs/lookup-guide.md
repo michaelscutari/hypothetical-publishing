@@ -38,3 +38,10 @@ Manual book creation is still available for books not in OpenLibrary.
 - Book not found in OpenLibrary: info notification, form stays empty for manual entry.
 - ISBN already exists locally: warning notification with a link to the existing book.
 - OpenLibrary unavailable: error notification, form stays empty for manual entry.
+
+## Cover Art
+
+Cover images can be managed in two ways:
+
+- **Manual upload** during book create or edit. Accepted formats: JPEG, PNG, GIF, and WebP. A thumbnail is auto-generated on upload using Thumbnailator.
+- **Import from OpenLibrary** on the book detail page. The system fetches the cover by ISBN from OpenLibrary's Covers API and stores it the same way as a manual upload.
