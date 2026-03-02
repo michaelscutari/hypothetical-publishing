@@ -3,6 +3,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
+import SortIcon from '@mui/icons-material/Sort';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -11,6 +12,8 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
+import AuthorSortDialog from './AuthorSortDialog';
+
 import {
   DataGrid,
   GridActionsCellItem,
@@ -44,6 +47,7 @@ export default function AuthorList() {
   });
   const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
   const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
+  const [multiSortOpen, setMultiSortOpen] = React.useState(false);
 
   const [searchQuery, setSearchQuery] = React.useState('');
   const [debouncedQuery, setDebouncedQuery] = React.useState('');
@@ -76,16 +80,13 @@ export default function AuthorList() {
     setIsLoading(true);
 
     try {
-      const sortField = sortModel?.[0]?.field;
-      const sortDirection = sortModel?.[0]?.sort ?? 'asc';
-
       const response = await AuthorsService.getAllAuthors(
         showAll ? 0 : paginationModel.page,
         showAll ? SHOW_ALL_PAGE_SIZE : paginationModel.pageSize,
         showAll,
         debouncedQuery || undefined,
-        sortField,
-        sortDirection,
+        sortModel.map((s) => s.field),
+        sortModel.map((s) => s.sort ?? 'asc'),
       );
 
       setRowsState({
@@ -253,7 +254,19 @@ export default function AuthorList() {
               ),
             }}
           />
-
+          <Button
+            variant="outlined"
+            startIcon={<SortIcon />}
+            onClick={() => setMultiSortOpen(true)}
+            sx={{
+              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
+              '&:hover': {
+                boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1)',
+              },
+            }}
+          >
+            Sort
+          </Button>
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             Create
           </Button>
@@ -275,8 +288,7 @@ export default function AuthorList() {
             hideFooter={false}
             paginationModel={paginationModel}
             onPaginationModelChange={setPaginationModel}
-            sortModel={sortModel}
-            onSortModelChange={setSortModel}
+            disableColumnSorting
             disableRowSelectionOnClick
             onRowClick={handleRowClick}
             loading={isLoading}
@@ -318,6 +330,20 @@ export default function AuthorList() {
           />
         )}
       </Box>
+      <AuthorSortDialog
+        open={multiSortOpen}
+        onClose={() => setMultiSortOpen(false)}
+        currentSortModel={sortModel}
+        onApply={setSortModel}
+        sortOptions={[
+          { field: 'name', label: 'Name' },
+          { field: 'email', label: 'Email' },
+          { field: 'bookCount', label: 'Books' },
+          { field: 'totalRoyalty', label: 'Total Royalty' },
+          { field: 'paidRoyalty', label: 'Paid Royalty' },
+          { field: 'unpaidRoyalty', label: 'Unpaid Royalty' },
+        ]}
+      />
     </PageContainer>
   );
 }
