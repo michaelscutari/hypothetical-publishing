@@ -1,4 +1,3 @@
-import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -77,12 +76,6 @@ export default function AuthorSortDialog({
 
   const usedFields = rows.map((r) => r.field);
 
-  const handleAddRow = () => {
-    const available = SORT_OPTIONS.find((o) => !usedFields.includes(o.field));
-    if (!available) return;
-    setRows((prev) => [...prev, { id: nextId++, field: available.field, direction: 'asc' }]);
-  };
-
   const handleRemoveRow = (id: number) => {
     setRows((prev) => prev.filter((r) => r.id !== id));
   };
@@ -131,8 +124,6 @@ export default function AuthorSortDialog({
   const handleReset = () => {
     setRows([{ id: nextId++, field: 'name', direction: 'asc' }]);
   };
-
-  const canAddMore = usedFields.length < SORT_OPTIONS.length;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -257,19 +248,6 @@ export default function AuthorSortDialog({
               </Box>
             );
           })}
-
-          {/* Add sort row */}
-          {canAddMore && (
-            <Button
-              startIcon={<AddIcon />}
-              onClick={handleAddRow}
-              size="small"
-              variant="text"
-              sx={{ alignSelf: 'flex-start', color: 'text.secondary', mt: 0.5 }}
-            >
-              Add sort field
-            </Button>
-          )}
         </Box>
       </DialogContent>
 
