@@ -287,25 +287,25 @@ export default function BookShow() {
             </Paper>
           </Grid>
 
-         <Grid size={{ xs: 12, sm: 6 }}>
-  <Paper sx={{ px: 2, py: 1 }}>
-    <Typography variant="overline">Cover Image</Typography>
-    {book.hasCover ? (
-      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, mb: 1 }}>
-        <Box
-          component="img"
-          src={`/api/books/${book.id}/cover/thumbnail`}
-          alt={`${book.title} cover`}
-          sx={{ maxWidth: '100%', maxHeight: 240, objectFit: 'contain' }}
-        />
-      </Box>
-    ) : (
-      <Typography variant="body1" sx={{ mb: 1 }}>
-        —
-      </Typography>
-    )}
-  </Paper>
-</Grid>
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Cover Image</Typography>
+              {book.hasCover ? (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, mb: 1 }}>
+                  <Box
+                    component="img"
+                    src={`/api/books/${book.id}/cover/thumbnail`}
+                    alt={`${book.title} cover`}
+                    sx={{ maxWidth: '100%', maxHeight: 240, objectFit: 'contain' }}
+                  />
+                </Box>
+              ) : (
+                <Typography variant="body1" sx={{ mb: 1 }}>
+                  —
+                </Typography>
+              )}
+            </Paper>
+          </Grid>
 
           <Grid size={{ xs: 12 }}>
             <FinancialSummary
