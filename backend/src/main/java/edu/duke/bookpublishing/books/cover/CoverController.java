@@ -68,7 +68,7 @@ public class CoverController {
       throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No cover image");
     }
 
-    return buildImageResponse(book.getCoverThumbnail(), book.getCoverContentType());
+    return buildImageResponse(book.getCoverThumbnail(), "image/png");
   }
 
   @Operation(operationId = "deleteCover", summary = "Remove a book cover image")

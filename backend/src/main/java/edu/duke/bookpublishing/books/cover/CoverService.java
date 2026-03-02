@@ -91,15 +91,10 @@ public class CoverService {
 
   private byte[] generateThumbnail(byte[] original, String contentType) {
     try {
-      String formatName = contentType.substring(contentType.indexOf('/') + 1);
-      if ("webp".equals(formatName)) {
-        formatName = "png";
-      }
-
       ByteArrayOutputStream out = new ByteArrayOutputStream();
       Thumbnails.of(new ByteArrayInputStream(original))
           .size(thumbnailWidth, thumbnailHeight)
-          .outputFormat(formatName)
+          .outputFormat("png")
           .toOutputStream(out);
       return out.toByteArray();
     } catch (IOException e) {
