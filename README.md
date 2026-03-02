@@ -153,17 +153,23 @@ The book management module provides CRUD operations for books in the publishing 
 | size | int | 25 | Page size |
 | showAll | boolean | false | Return all records (ignores pagination) |
 | query | string | - | Search across title, author, ISBN (dashes ignored) |
-| sortField | string | - | Field to sort by |
-| sortDirection | string | asc | Sort direction (asc/desc) |
+| authorId | long | - | Filter by author ID |
+| sortField | string[] | - | Fields to sort by (multi-sort) |
+| sortDirection | string[] | asc | Sort directions per field (asc/desc) |
 
 ### Book Fields
 
 | Field | Type | Required | Validation |
 |-------|------|----------|------------|
 | title | string | Yes | Not blank |
-| author | string | Yes | Not blank, whitespace normalized |
+| authorId | long | Yes | Must reference an existing author |
 | isbn13 | string | Yes | Valid ISBN-13 format (unique) |
 | isbn10 | string | No | Valid ISBN-10 format if provided (unique) |
 | publicationYear | int | Yes | 1900-2100 |
 | publicationMonth | int | Yes | 1-12 |
-| royaltyRate | decimal | Yes | 0.0 to 1.0, defaults to 0.50 |
+| distributorAuthorRoyaltyRate | decimal | No | 0.0-1.0, defaults to 0.50 |
+| handsoldAuthorRoyaltyRate | decimal | No | 0.0-1.0, defaults to 0.20 |
+| seriesName | string | No | Series name (max 256 chars) |
+| seriesPosition | int | No | Required if seriesName is set; positive integer |
+| coverPrice | decimal | Yes | >= 0, must be >= printCost |
+| printCost | decimal | Yes | >= 0 |

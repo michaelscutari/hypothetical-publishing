@@ -10,6 +10,17 @@ The system is a full-stack web application for tracking book sales and author ro
 
 The backend is a stateless REST API. Authentication uses JWT tokens stored in HTTP-only cookies; there are no server-side sessions. The frontend is a single-page React app that talks to the backend through the generated API client.
 
+### Ev2 Additions
+
+- **Authors as a first-class entity.** Books now reference an `Author` (name + email) via FK instead of storing an author string. Authors have their own CRUD endpoints and list view.
+- **Series support.** Books can belong to a named series with a position. The default sort groups books by author, then series, then title.
+- **Dual royalty rates.** Each book has separate `distributorAuthorRoyaltyRate` (default 50%) and `handsoldAuthorRoyaltyRate` (default 20%) instead of a single rate.
+- **Cover price and print cost.** Required on every book. Cover price must be >= print cost.
+- **Cover images.** Uploaded manually (JPEG, PNG, GIF, WebP) or imported from OpenLibrary. A PNG thumbnail is auto-generated via Thumbnailator. Images are stored as BLOBs on the `books` table.
+- **CSV import.** Ingram distributor CSVs can be uploaded to create sales in bulk. The import has a preview mode that validates without persisting.
+- **Author payments and royalty reports.** Sales are grouped by author for payment tracking, with a quarterly royalty report view.
+- **Multi-sort.** The book list endpoint accepts arrays of sort fields/directions.
+
 ## Tech Stack
 
 | Layer      | Technology                                      |
@@ -29,9 +40,11 @@ The backend is a stateless REST API. Authentication uses JWT tokens stored in HT
 ├── backend/
 │   └── src/main/java/edu/duke/bookpublishing/
 │       ├── auth/           # Users, JWT, login/logout, security filter
+│       ├── author/         # Author CRUD
 │       ├── books/          # Book CRUD, ISBN validation, OpenLibrary lookup
+│       │   ├── cover/      # Cover image upload, thumbnail generation
 │       │   └── lookup/     # OpenLibrary API client
-│       ├── sales/          # Sales CRUD, royalty calculation, author payments
+│       ├── sales/          # Sales CRUD, CSV import, royalty calculation, author payments
 │       ├── config/         # Spring Security config
 │       ├── exception/      # Global exception handler
 │       └── common/         # Shared DTOs (PagedResponse)
@@ -136,9 +149,16 @@ Available in dev at `http://localhost:8080/swagger-ui.html` (or through Nginx at
   <img src="db-schema.png" alt="Database Schema" />
 </p>
 
+**Tables:** `books`, `authors`, `sales`, `users`
+
 **Relationships:**
+- `books.author_id` -> `authors.id` (many-to-one, cascade delete)
 - `sales.book_id` -> `books.id` (many-to-one, cascade delete)
 - `users` is standalone (no foreign keys)
+
+**Ev2-added columns on `books`:** `series_name`, `series_position`, `cover_price`, `print_cost`, `distributor_author_royalty_rate`, `handsold_author_royalty_rate`, `cover_image` (LOB), `cover_thumbnail` (LOB), `cover_content_type`.
+
+**`authors` table (Ev2):** `id`, `name`, `email`. Book count and royalty totals are computed via `@Formula` (not stored columns).
 
 The schema is managed by Hibernate with `ddl-auto=update`. There are no migration files. Hibernate creates and modifies tables automatically based on the JPA entity definitions.
 
