@@ -2,6 +2,48 @@ name: Quality Check
 on: [push, pull_request]
 
 jobs:
+  check-api-schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install frontend dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Start backend
+        working-directory: ./backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:h2:mem:testdb
+          SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.h2.Driver
+          SPRING_DATASOURCE_USERNAME: sa
+          SPRING_DATASOURCE_PASSWORD: ""
+          SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+        run: |
+          chmod +x gradlew
+          ./gradlew bootRun &
+          npx wait-on http://localhost:8080/api-docs --timeout 120000
+
+      - name: Verify schema is up-to-date
+        working-directory: ./frontend
+        run: |
+          API_DOCS_URL=http://localhost:8080/api-docs npm run api:generate
+          git diff --exit-code src/api/generated || {
+            echo "generated api client is outdated. Run 'just api' and commit the changes."
+            exit 1
+          }
+
   check-frontend:
     runs-on: ubuntu-latest
     steps:

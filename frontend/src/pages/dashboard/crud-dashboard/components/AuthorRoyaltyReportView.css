@@ -1,0 +1,253 @@
+.report-container {
+  min-height: 100vh;
+  padding: 2rem;
+}
+
+.report-page {
+  max-width: 8.5in;
+  margin: 0 auto;
+  padding: 0.75in;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.report-header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  page-break-after: avoid;
+}
+
+.report-branding {
+  margin-bottom: 1rem;
+}
+
+.report-title {
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.report-subtitle {
+  font-weight: 500;
+}
+
+.report-info {
+  margin-top: 1rem;
+}
+
+.report-section {
+  margin-bottom: 2rem;
+  page-break-inside: avoid;
+}
+
+.section-title {
+  margin-bottom: 1rem;
+  font-weight: 600;
+  padding-bottom: 0.5rem;
+}
+
+.book-section {
+  padding-left: 1rem;
+  break-inside: avoid;
+}
+
+.report-footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+@media print {
+  @page {
+    size: letter landscape;
+    margin: 0.4in;
+  }
+
+  html,
+  body,
+  #root {
+    color-scheme: light;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: white !important;
+    background-color: white !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .report-container {
+    background: white !important;
+    background-color: white !important;
+    padding: 0;
+    margin: 0;
+    min-height: auto !important;
+  }
+
+  .report-page {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+    page-break-after: auto;
+    background: white !important;
+    color: #000 !important;
+  }
+
+  .report-page * {
+    color: inherit;
+  }
+
+  .report-header {
+    page-break-after: avoid;
+    margin-bottom: 1rem;
+    border-bottom: 3px solid #1976d2 !important;
+  }
+
+  .report-page .MuiTypography-h3 {
+    font-size: 1.5rem !important;
+  }
+
+  .report-page .MuiTypography-h6 {
+    font-size: 1rem !important;
+  }
+
+  .report-page .MuiTypography-body1 {
+    font-size: 0.85rem !important;
+  }
+
+  .report-page .MuiTypography-subtitle1 {
+    font-size: 0.9rem !important;
+  }
+
+  .report-section {
+    page-break-inside: auto;
+    margin-bottom: 1.5rem;
+  }
+
+  .year-section {
+    page-break-inside: auto;
+    page-break-before: auto;
+  }
+
+  /* Quarterly breakdown table - try to keep together */
+  .quarterly-table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-before: auto;
+  }
+
+  .year-title {
+    page-break-after: avoid;
+  }
+
+  .book-section {
+    page-break-inside: avoid;
+    page-break-before: auto;
+    border-left: 4px solid #1976d2 !important;
+  }
+
+  .section-title {
+    color: #1976d2 !important;
+    border-bottom: 1px solid #ddd !important;
+  }
+
+  .report-page .MuiTypography-root {
+    color: #000 !important;
+  }
+
+  .report-page .MuiTypography-h3,
+  .report-page .MuiTypography-h5,
+  .report-page .MuiTypography-h6 {
+    color: #1976d2 !important;
+  }
+
+  table {
+    page-break-inside: auto;
+    break-inside: auto;
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Prevent quarter headers from orphaning at bottom of page */
+  .quarter-header {
+    page-break-after: avoid;
+  }
+
+  /* Try to keep each quarter table together on one page */
+  .quarter-table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Keep quarter totals with their data */
+  .quarter-totals {
+    page-break-before: avoid;
+  }
+
+  /* Keep year totals table together */
+  .year-totals-table {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Keep year totals section together */
+  .year-totals-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    page-break-before: auto;
+  }
+
+  /* Keep year totals with their data */
+  .year-totals {
+    page-break-before: avoid;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  tfoot {
+    display: table-footer-group;
+  }
+
+  .MuiTableCell-root {
+    color: #000 !important;
+    padding: 3px 4px !important;
+    border: 1px solid #ddd;
+    font-size: 0.7rem !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    max-width: 100px;
+  }
+
+  .MuiTableHead-root .MuiTableCell-root {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    font-size: 0.65rem !important;
+    padding: 3px 4px !important;
+    word-break: normal;
+  }
+}
+
+@media screen {
+  .report-container {
+    padding: 2rem;
+  }
+
+  .report-page {
+    page-break-inside: auto;
+  }
+}

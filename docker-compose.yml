@@ -2,10 +2,13 @@ services:
   backend:
     build: ./backend
     environment:
-      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-dev}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/book_publishing
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET:-change-this-in-production}
+      - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
     depends_on:
       db:
         condition: service_healthy
@@ -32,6 +35,8 @@ services:
       context: ./frontend
       target: dev
     profiles: [dev]
+    environment:
+      - API_DOCS_URL=http://nginx/api-docs
     volumes:
       - ./frontend:/app
       - /app/node_modules

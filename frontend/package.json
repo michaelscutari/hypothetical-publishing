@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "prepare": "husky",
+    "api:generate": "curl -sf ${API_DOCS_URL:-http://localhost/api-docs} > /dev/null || (echo '\\033[0;31m❌ Error: Backend not reachable at '${API_DOCS_URL:-http://localhost/api-docs}'\\033[0m' && exit 1) && openapi --input ${API_DOCS_URL:-http://localhost/api-docs} --output src/api/generated --client fetch && node -e \"const fs=require('fs');const p='src/api/generated/core/OpenAPI.ts';fs.writeFileSync(p,fs.readFileSync(p,'utf8').replace(/BASE: '.*?',/,\\\"BASE: '',\\\"))\" && echo '\\033[0;32m✨ API Client generated successfully!\\033[0m'",
+    "predev": "wait-on ${API_DOCS_URL:-http://localhost/api-docs} && npm run api:generate || true",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
@@ -12,7 +14,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx,js,jsx}\"",
     "lint:fix": "eslint \"src/**/*.{ts,tsx,js,jsx}\" --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
-    "test": "vitest",
+    "test": "NODE_OPTIONS= vitest",
     "clean:all": "npm run format && npm run lint:fix && npm run type-check"
   },
   "dependencies": {
@@ -53,10 +55,12 @@
     "husky": "^9.1.7",
     "jsdom": "^27.4.0",
     "lint-staged": "^16.2.7",
-    "prettier": "^3.7.4",
+    "openapi-typescript-codegen": "^0.29.0",
+    "prettier": "^3.8.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.17",
+    "wait-on": "^9.0.3"
   }
 }

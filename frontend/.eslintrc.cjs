@@ -8,9 +8,10 @@ module.exports = {
   },
   settings: { react: { version: "detect" } },
   env: { browser: true, es2022: true, node: true },
-    ignorePatterns: [
+  ignorePatterns: [
     "node_modules/",
     "dist/",
+    "src/api/generated/",
     ".vscode/",
     ".idea/",
   ],
@@ -28,7 +29,14 @@ module.exports = {
     "prettier/prettier": "error",
     "react/react-in-jsx-scope": "off",
     "@typescript-eslint/explicit-module-boundary-types": "off",
-    "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ],
     "react/prop-types": "off"
   }
 };

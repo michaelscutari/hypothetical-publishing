@@ -1,4 +1,3 @@
-// src/main.tsx
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
@@ -7,6 +6,7 @@ import App from './App';
 import { getTheme } from './theme/getTheme';
 import React from 'react';
 import { ColorSchemeProvider, useColorScheme } from './context/ColorSchemeContext';
+import { AuthProvider } from './context/AuthContext';
 
 // eslint-disable-next-line react-refresh/only-export-components
 function ThemedApp() {
@@ -25,7 +25,9 @@ function ThemedApp() {
 function Root() {
   return (
     <ColorSchemeProvider>
-      <ThemedApp />
+      <AuthProvider>
+        <ThemedApp />
+      </AuthProvider>
     </ColorSchemeProvider>
   );
 }
