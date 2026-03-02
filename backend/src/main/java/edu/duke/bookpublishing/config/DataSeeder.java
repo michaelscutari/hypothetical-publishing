@@ -5,6 +5,7 @@ import edu.duke.bookpublishing.author.Author;
 import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.books.cover.CoverService;
 import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.sales.Sale;
 import edu.duke.bookpublishing.sales.SaleRepository;
@@ -30,6 +31,7 @@ public class DataSeeder implements CommandLineRunner {
   private final AuthorRepository authorRepository;
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
+  private final CoverService coverService;
 
   @Override
   public void run(String... args) throws Exception {
@@ -68,11 +70,6 @@ public class DataSeeder implements CommandLineRunner {
         BigDecimal printCost = parseBigDecimal(getValue(line, 10), BigDecimal.ZERO);
         String coverImageFilename = emptyToNull(getValue(line, 11));
 
-        byte[] coverImageBytes = null;
-        if (coverImageFilename != null) {
-          coverImageBytes = loadCoverImage(coverImageFilename);
-        }
-
         Author author =
             authorCache.computeIfAbsent(
                 authorName,
@@ -101,10 +98,24 @@ public class DataSeeder implements CommandLineRunner {
                 .seriesPosition(seriesPosition)
                 .coverPrice(coverPrice)
                 .printCost(printCost)
-                .coverImage(coverImageBytes)
                 .build();
 
         book = bookRepository.save(book);
+
+        // Load and process cover image if specified
+        if (coverImageFilename != null) {
+          try {
+            byte[] imageBytes = loadCoverImage(coverImageFilename);
+            if (imageBytes != null) {
+              String contentType = getContentTypeFromFilename(coverImageFilename);
+              coverService.processAndStore(book, imageBytes, contentType);
+              book = bookRepository.save(book);
+            }
+          } catch (Exception e) {
+            log.warn("Failed to process cover image for {}: {}", title, e.getMessage());
+          }
+        }
+
         isbnToBook.put(isbn13, book);
         if (isbn10 != null && !isbn10.isBlank()) {
           isbnToBook.put(isbn10, book);
@@ -228,25 +239,33 @@ public class DataSeeder implements CommandLineRunner {
 
   private static byte[] loadCoverImage(String filename) {
     try {
-      ClassPathResource resource = new ClassPathResource("ev2-sample-data/" + filename);
+      // JXL (JPEG XL) is not supported by CoverService, so use JPG fallback
+      String actualFilename = filename;
+
+      ClassPathResource resource = new ClassPathResource("ev2-sample-data/" + actualFilename);
       if (!resource.exists()) {
-        // If JXL file doesn't exist, try fallback to JPG
-        if (filename.endsWith(".jxl")) {
-          String jpgFilename = filename.replace(".jxl", ".jpg");
-          resource = new ClassPathResource("ev2-sample-data/" + jpgFilename);
-          if (!resource.exists()) {
-            log.warn("Cover image not found: {} (tried JXL and JPG fallback)", filename);
-            return null;
-          }
-        } else {
-          log.warn("Cover image not found: {}", filename);
-          return null;
-        }
+        log.warn("Cover image not found: {}", actualFilename);
+        return null;
       }
       return resource.getInputStream().readAllBytes();
     } catch (Exception e) {
       log.warn("Failed to load cover image {}: {}", filename, e.getMessage());
       return null;
     }
+  }
+
+  private static String getContentTypeFromFilename(String filename) {
+
+    String lowerFilename = filename.toLowerCase();
+    if (lowerFilename.endsWith(".jpg") || lowerFilename.endsWith(".jpeg")) {
+      return "image/jpeg";
+    } else if (lowerFilename.endsWith(".png")) {
+      return "image/png";
+    } else if (lowerFilename.endsWith(".gif")) {
+      return "image/gif";
+    } else if (lowerFilename.endsWith(".webp")) {
+      return "image/webp";
+    }
+    throw new IllegalArgumentException("Unsupported image type: " + filename);
   }
 }
