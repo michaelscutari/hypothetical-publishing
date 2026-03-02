@@ -21,7 +21,6 @@ import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
 import edu.duke.bookpublishing.sales.parser.ParsingError;
-import jakarta.transaction.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -38,6 +37,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
@@ -244,6 +244,7 @@ public class SaleService {
     return saleRepository.markAllPaidByAuthorId(authorId);
   }
 
+  @Transactional(readOnly = true)
   public RoyaltyReportResponse generateRoyaltyReport(
       Long authorId,
       int startQuarter,
