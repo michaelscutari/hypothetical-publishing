@@ -1,14 +1,5 @@
 package edu.duke.bookpublishing.config;
 
-import java.io.InputStreamReader;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.Map;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
 import com.opencsv.CSVReader;
 import edu.duke.bookpublishing.author.Author;
 import edu.duke.bookpublishing.author.AuthorRepository;
@@ -18,8 +9,17 @@ import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.sales.Sale;
 import edu.duke.bookpublishing.sales.SaleRepository;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
 
 @Component
 @RequiredArgsConstructor
@@ -73,20 +73,36 @@ public class DataSeeder implements CommandLineRunner {
           coverImageBytes = loadCoverImage(coverImageFilename);
         }
 
-        Author author = authorCache.computeIfAbsent(authorName,
-            name -> authorRepository.save(Author.builder().name(name)
-                .email(name.toLowerCase().replaceAll("[^a-z0-9]", "") + "@placeholder.com")
-                .build()));
+        Author author =
+            authorCache.computeIfAbsent(
+                authorName,
+                name ->
+                    authorRepository.save(
+                        Author.builder()
+                            .name(name)
+                            .email(
+                                name.toLowerCase().replaceAll("[^a-z0-9]", "") + "@placeholder.com")
+                            .build()));
 
         String[] dateParts = publicationDate.split(" ");
         int month = parseMonth(dateParts[0]);
         int year = Integer.parseInt(dateParts[1]);
-        Book book = Book.builder().title(title).author(author).isbn13(isbn13).isbn10(isbn10)
-            .publicationMonth(month).publicationYear(year)
-            .distributorAuthorRoyaltyRate(distributorRoyaltyRate)
-            .handsoldAuthorRoyaltyRate(handsoldRoyaltyRate).seriesName(seriesName)
-            .seriesPosition(seriesPosition).coverPrice(coverPrice).printCost(printCost)
-            .coverImage(coverImageBytes).build();
+        Book book =
+            Book.builder()
+                .title(title)
+                .author(author)
+                .isbn13(isbn13)
+                .isbn10(isbn10)
+                .publicationMonth(month)
+                .publicationYear(year)
+                .distributorAuthorRoyaltyRate(distributorRoyaltyRate)
+                .handsoldAuthorRoyaltyRate(handsoldRoyaltyRate)
+                .seriesName(seriesName)
+                .seriesPosition(seriesPosition)
+                .coverPrice(coverPrice)
+                .printCost(printCost)
+                .coverImage(coverImageBytes)
+                .build();
 
         book = bookRepository.save(book);
         isbnToBook.put(isbn13, book);
@@ -127,22 +143,33 @@ public class DataSeeder implements CommandLineRunner {
 
         BigDecimal publisherRevenue;
         if (saleSource == SaleSource.HAND_SOLD || totalRevenueStr == null) {
-          publisherRevenue = book.getCoverPrice().subtract(book.getPrintCost())
-              .multiply(BigDecimal.valueOf(unitsSold));
+          publisherRevenue =
+              book.getCoverPrice()
+                  .subtract(book.getPrintCost())
+                  .multiply(BigDecimal.valueOf(unitsSold));
         } else {
           publisherRevenue = new BigDecimal(totalRevenueStr);
         }
 
         BigDecimal authorRate =
-            saleSource == SaleSource.HAND_SOLD ? book.getHandsoldAuthorRoyaltyRate()
+            saleSource == SaleSource.HAND_SOLD
+                ? book.getHandsoldAuthorRoyaltyRate()
                 : book.getDistributorAuthorRoyaltyRate();
         BigDecimal authorRoyalty =
             publisherRevenue.multiply(authorRate).setScale(2, RoundingMode.HALF_UP);
 
-        Sale sale = Sale.builder().book(book)
-            .saleSource(saleSource != null ? saleSource : SaleSource.DISTRIBUTOR).saleMonth(month)
-            .saleYear(year).quantitySold(unitsSold).publisherRevenue(publisherRevenue)
-            .authorRoyalty(authorRoyalty).hasAuthorBeenPaid(royaltyPaid).comment(comment).build();
+        Sale sale =
+            Sale.builder()
+                .book(book)
+                .saleSource(saleSource != null ? saleSource : SaleSource.DISTRIBUTOR)
+                .saleMonth(month)
+                .saleYear(year)
+                .quantitySold(unitsSold)
+                .publisherRevenue(publisherRevenue)
+                .authorRoyalty(authorRoyalty)
+                .hasAuthorBeenPaid(royaltyPaid)
+                .comment(comment)
+                .build();
 
         saleRepository.save(sale);
         count++;
