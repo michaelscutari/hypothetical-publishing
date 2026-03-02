@@ -106,6 +106,9 @@ public class Book {
   @Formula("(SELECT COALESCE(SUM(s.quantity_sold), 0) FROM sales s WHERE s.book_id = id)")
   private Long totalSalesToDate;
 
+  @Formula("CASE WHEN series_name IS NULL THEN 1 ELSE 0 END")
+  private Integer seriesNullOrder;
+
   @PrePersist
   @PreUpdate
   public void normalizeFields() {
