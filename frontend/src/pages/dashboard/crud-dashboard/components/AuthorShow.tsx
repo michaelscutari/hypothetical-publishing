@@ -17,8 +17,6 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
-
 import { useNavigate, useParams } from 'react-router-dom';
 import {
   AuthorsService,
@@ -45,15 +43,7 @@ export default function AuthorShow() {
     try {
       const authorData = await AuthorsService.getAuthorById(Number(authorId));
       setAuthor(authorData);
-      const booksResponse = await BooksService.getAllBooks(
-        authorData.id,
-        0,
-        1000,
-        true,
-        undefined,
-        ['seriesName', 'seriesPosition', 'title'],
-        ['asc', 'asc', 'asc'],
-      );
+      const booksResponse = await BooksService.getAllBooks(authorData.id, 0, 1000, true);
       const bookList = booksResponse.content ?? [];
       const bookDetails = await Promise.all(bookList.map((b) => BooksService.getBookById(b.id!)));
       setBooks(bookDetails);
@@ -181,10 +171,8 @@ export default function AuthorShow() {
                   <TableHead>
                     <TableRow>
                       <TableCell>Title</TableCell>
-                      <TableCell>Series</TableCell>
-                      <TableCell>Publication</TableCell>
-                      <TableCell align="right">Distributor Royalty</TableCell>
-                      <TableCell align="right">Handsold Royalty</TableCell>
+                      <TableCell>ISBN-13</TableCell>
+                      <TableCell align="right">Total Sales</TableCell>
                       <TableCell align="right">Total Royalty</TableCell>
                       <TableCell align="right">Paid Royalty</TableCell>
                       <TableCell align="right">Unpaid Royalty</TableCell>
@@ -199,26 +187,8 @@ export default function AuthorShow() {
                         onClick={() => navigate(`/books/${book.id}`)}
                       >
                         <TableCell>{book.title}</TableCell>
-                        <TableCell>
-                          {book.seriesName
-                            ? `${book.seriesName}${book.seriesPosition ? ` (#${book.seriesPosition})` : ''}`
-                            : '—'}
-                        </TableCell>
-                        <TableCell>
-                          {book.publicationYear && book.publicationMonth
-                            ? `${MONTH_NAMES[book.publicationMonth - 1]} ${book.publicationYear}`
-                            : '—'}
-                        </TableCell>
-                        <TableCell align="right">
-                          {book.distributorAuthorRoyaltyRate != null
-                            ? `${(Number(book.distributorAuthorRoyaltyRate) * 100).toFixed(0)}%`
-                            : '—'}
-                        </TableCell>
-                        <TableCell align="right">
-                          {book.handsoldAuthorRoyaltyRate != null
-                            ? `${(Number(book.handsoldAuthorRoyaltyRate) * 100).toFixed(0)}%`
-                            : '—'}
-                        </TableCell>
+                        <TableCell>{book.isbn13}</TableCell>
+                        <TableCell align="right">{book.totalSalesToDate ?? 0}</TableCell>
                         <TableCell align="right">{formatCurrency(book.totalRoyalty)}</TableCell>
                         <TableCell align="right">{formatCurrency(book.paidRoyalty)}</TableCell>
                         <TableCell align="right">{formatCurrency(book.unpaidRoyalty)}</TableCell>
