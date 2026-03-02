@@ -28,6 +28,8 @@ const SORT_OPTIONS: SortOption[] = [
   { field: 'author', label: 'Author' },
   { field: 'title', label: 'Title' },
   { field: 'publicationDate', label: 'Publication Date' },
+  { field: 'seriesName', label: 'Series Name' },
+  { field: 'seriesPosition', label: 'Series Position' },
   { field: 'distributorAuthorRoyaltyRate', label: 'Distributor Royalty' },
   { field: 'handsoldAuthorRoyaltyRate', label: 'Handsold Royalty' },
 ];
@@ -69,7 +71,12 @@ export default function MultiSortDialog({
           })),
         );
       } else {
-        setRows([{ id: nextId++, field: 'author', direction: 'asc' }]);
+        setRows([
+          { id: nextId++, field: 'author', direction: 'asc' },
+          { id: nextId++, field: 'seriesName', direction: 'asc' },
+          { id: nextId++, field: 'seriesPosition', direction: 'asc' },
+          { id: nextId++, field: 'title', direction: 'asc' },
+        ]);
       }
     }
   }, [open, currentSortModel]);

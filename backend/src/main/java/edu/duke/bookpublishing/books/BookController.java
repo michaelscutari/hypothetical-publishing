@@ -116,7 +116,12 @@ public class BookController {
           orders.add(new Sort.Order(dir, "publicationMonth"));
         } else if ("author".equals(field)) {
           orders.add(new Sort.Order(dir, "author.name"));
-        } else {
+        } else if ("seriesName".equals(field) || "seriesPosition".equals(field)) {
+          boolean alreadyHasNullOrder =
+              orders.stream().anyMatch(o -> "seriesNullOrder".equals(o.getProperty()));
+          if (!alreadyHasNullOrder) {
+            orders.add(new Sort.Order(Sort.Direction.ASC, "seriesNullOrder"));
+          }
           orders.add(new Sort.Order(dir, field));
         }
       }
