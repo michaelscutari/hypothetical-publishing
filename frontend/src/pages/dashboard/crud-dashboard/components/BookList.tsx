@@ -22,7 +22,7 @@ import { useNavigate } from 'react-router-dom';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import { useServerDataGrid } from '../../../../hooks/useServerDataGrid';
-import { deleteOne as deleteBook, getMany as getBooks, type Book } from '../data/books';
+import { BooksService, type BookResponse, type PagedResponseBookResponse } from '../../../../api';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
@@ -58,13 +58,20 @@ export default function BookList() {
 
   const fetchFn = React.useCallback(
     async (params: { page: number; pageSize: number; showAll: boolean }) => {
-      const listData = await getBooks({
-        paginationModel: { page: params.page, pageSize: params.pageSize },
-        sortModel,
-        query: debouncedQuery || undefined,
-        showAll: params.showAll,
-      });
-      return { content: listData.items, totalElements: listData.itemCount };
+      const sortFields = sortModel?.map((s) => s.field);
+      const sortDirections = sortModel?.map((s) => s.sort ?? 'asc');
+
+      const response: PagedResponseBookResponse = await BooksService.getAllBooks(
+        undefined,
+        params.showAll ? 0 : params.page,
+        params.showAll ? 1000 : params.pageSize,
+        params.showAll,
+        debouncedQuery || undefined,
+        sortFields.length ? sortFields : undefined,
+        sortDirections.length ? sortDirections : undefined,
+      );
+
+      return { content: response.content ?? [], totalElements: response.totalElements ?? 0 };
     },
     [sortModel, debouncedQuery],
   );
@@ -78,7 +85,7 @@ export default function BookList() {
     onPaginationModelChange,
     refresh,
     setIsLoading,
-  } = useServerDataGrid<Book>({ fetchFn });
+  } = useServerDataGrid<BookResponse>({ fetchFn });
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }) => navigate(`/books/${row.id}`),
@@ -88,12 +95,12 @@ export default function BookList() {
   const handleCreateClick = React.useCallback(() => navigate('/books/new'), [navigate]);
 
   const handleRowEdit = React.useCallback(
-    (book: Book) => () => navigate(`/books/${book.id}/edit`),
+    (book: BookResponse) => () => navigate(`/books/${book.id}/edit`),
     [navigate],
   );
 
   const handleRowDelete = React.useCallback(
-    (book: Book) => async () => {
+    (book: BookResponse) => async () => {
       const confirmed = await dialogs.confirm(
         `Do you wish to delete ${book.title} by ${book.author}? By doing so, you will also be deleting ${book.totalSalesToDate} sales.`,
         {
@@ -107,7 +114,7 @@ export default function BookList() {
       if (confirmed) {
         setIsLoading(true);
         try {
-          await deleteBook(Number(book.id));
+          await BooksService.deleteBook(Number(book.id));
           notifications.show('Book deleted successfully.', {
             severity: 'success',
             autoHideDuration: 3000,

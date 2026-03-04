@@ -4,15 +4,15 @@ import CircularProgress from '@mui/material/CircularProgress';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FullPageLoader from '../../../../components/FullPageLoader';
-import { BookCoversService } from '../../../../api/generated';
 import {
-  getOne as getBook,
-  updateOne as updateBook,
-  validate as validateBook,
-  parseFieldErrors,
-  type Book,
-} from '../data/books';
-import { AuthorsService, type AuthorResponse } from '../../../../api';
+  AuthorsService,
+  BooksService,
+  BookCoversService,
+  type AuthorResponse,
+  type BookRequest,
+  type BookResponse,
+} from '../../../../api';
+import { validate as validateBook, parseFieldErrors } from './bookValidation';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from './PageContainer';
@@ -152,7 +152,7 @@ function BookEditForm({
 export default function BookEdit() {
   const { bookId } = useParams();
 
-  const [book, setBook] = React.useState<Book | null>(null);
+  const [book, setBook] = React.useState<BookResponse | null>(null);
   const [authorForBook, setAuthorForBook] = React.useState<AuthorResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
@@ -162,7 +162,7 @@ export default function BookEdit() {
     setIsLoading(true);
 
     try {
-      const showData = await getBook(Number(bookId));
+      const showData = await BooksService.getBookById(Number(bookId));
       setBook(showData);
       if (showData.authorId) {
         try {
@@ -185,7 +185,21 @@ export default function BookEdit() {
 
   const handleSubmit = React.useCallback(
     async (formValues: Partial<BookFormState['values']>) => {
-      const updatedData = await updateBook(Number(bookId), formValues);
+      const request: BookRequest = {
+        title: formValues.title ?? '',
+        authorId: formValues.authorId ?? 0,
+        isbn13: formValues.isbn13 ?? '',
+        isbn10: formValues.isbn10 ?? undefined,
+        publicationYear: formValues.publicationYear ?? new Date().getFullYear(),
+        publicationMonth: formValues.publicationMonth ?? 1,
+        distributorAuthorRoyaltyRate: formValues.distributorAuthorRoyaltyRate ?? 0.5,
+        handsoldAuthorRoyaltyRate: formValues.handsoldAuthorRoyaltyRate ?? 0.2,
+        seriesName: formValues.seriesName ?? undefined,
+        seriesPosition: formValues.seriesPosition ?? undefined,
+        coverPrice: formValues.coverPrice ?? 0,
+        printCost: formValues.printCost ?? 0,
+      };
+      const updatedData = await BooksService.updateBook(Number(bookId), request);
       setBook(updatedData);
     },
     [bookId],

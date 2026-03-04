@@ -16,8 +16,13 @@ import FullPageLoader from '../../../../components/FullPageLoader';
 import { MONTH_NAMES } from '../../../../constants/months';
 import BookSalesList from '../components/BookSalesList';
 import FinancialSummary from '../components/FinancialSummary';
-import { deleteOne as deleteBook, getOne as getBook, type BookDetail } from '../data/books';
-import * as salesData from '../data/sales';
+import {
+  BooksService,
+  SalesService,
+  type BookDetailResponse,
+  type SaleResponse,
+  type PagedResponseSaleResponse,
+} from '../../../../api';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
@@ -31,18 +36,18 @@ export default function BookShow() {
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
-  const [book, setBook] = React.useState<BookDetail | null>(null);
+  const [book, setBook] = React.useState<BookDetailResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
 
-  const [sales, setSales] = React.useState<salesData.Sale[]>([]);
+  const [sales, setSales] = React.useState<SaleResponse[]>([]);
 
   const loadData = React.useCallback(async () => {
     setError(null);
     setIsLoading(true);
 
     try {
-      const showData = await getBook(Number(bookId));
+      const showData = await BooksService.getBookById(Number(bookId));
       setBook(showData);
     } catch (showDataError) {
       setError(showDataError as Error);
@@ -61,7 +66,15 @@ export default function BookShow() {
       return;
     }
     try {
-      const s = await salesData.getForBook(Number(bookId));
+      // TODO: replace with a backend endpoint that filters by bookId server-side
+      const response: PagedResponseSaleResponse = await SalesService.getSales(
+        0,
+        1000,
+        true,
+        'saleYear',
+        'desc',
+      );
+      const s = (response.content ?? []).filter((sale) => sale.bookId === Number(bookId));
       const sorted = (s ?? []).sort((a, b) => {
         const aKey = (a.saleYear ?? 0) * 100 + (a.saleMonth ?? 0);
         const bKey = (b.saleYear ?? 0) * 100 + (b.saleMonth ?? 0);
@@ -99,7 +112,7 @@ export default function BookShow() {
     if (confirmed) {
       setIsLoading(true);
       try {
-        await deleteBook(Number(bookId));
+        await BooksService.deleteBook(Number(bookId));
         navigate('/books');
         notifications.show('Book deleted successfully.', {
           severity: 'success',

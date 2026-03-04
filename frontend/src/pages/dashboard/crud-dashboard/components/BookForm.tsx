@@ -21,12 +21,15 @@ import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthorsService, BooksService, type AuthorResponse } from '../../../../api';
-import type { Book } from '../data/books';
-import { searchSeries } from '../data/books';
+import {
+  AuthorsService,
+  BooksService,
+  type AuthorResponse,
+  type BookResponse,
+} from '../../../../api';
 import { MONTH_NAMES } from '../../../../constants/months';
 
-type BookFormValues = Partial<Omit<Book, 'id' | 'totalSalesToDate'>> & {
+type BookFormValues = Partial<Omit<BookResponse, 'id' | 'totalSalesToDate'>> & {
   coverImageFile?: File | null;
 };
 
@@ -326,7 +329,7 @@ export default function BookForm(props: BookFormProps) {
     if (seriesDebounceRef.current) window.clearTimeout(seriesDebounceRef.current);
     seriesDebounceRef.current = window.setTimeout(async () => {
       try {
-        const results = await searchSeries(seriesInputValue || undefined);
+        const results = await BooksService.searchSeries(seriesInputValue || undefined);
         setSeriesOptions(results);
       } catch {
         setSeriesOptions([]);

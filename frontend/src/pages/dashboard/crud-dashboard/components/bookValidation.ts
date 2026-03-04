@@ -1,109 +1,8 @@
-import type { GridPaginationModel, GridSortModel } from '@mui/x-data-grid';
-import {
-  ApiError,
-  BooksService,
-  type BookDetailResponse,
-  type BookRequest,
-  type BookResponse,
-  type PagedResponseBookResponse,
-} from '../../../../api';
-import { OpenAPI } from '../../../../api/generated/core/OpenAPI';
-import { request as __request } from '../../../../api/generated/core/request';
+import { ApiError, type BookResponse } from '../../../../api';
 
-export type Book = BookResponse;
-export type BookDetail = BookDetailResponse;
+type ValidationResult = { issues: { message: string; path: (keyof BookResponse)[] }[] };
 
-export async function getMany({
-  paginationModel,
-  sortModel,
-  query,
-  authorId,
-  showAll = false,
-}: {
-  paginationModel: GridPaginationModel;
-  sortModel: GridSortModel;
-  authorId?: number;
-  query?: string;
-  showAll?: boolean;
-}): Promise<{ items: Book[]; itemCount: number }> {
-  const sortFields = sortModel?.map((s) => s.field);
-  const sortDirections = sortModel?.map((s) => s.sort ?? 'asc');
-
-  const response: PagedResponseBookResponse = await BooksService.getAllBooks(
-    authorId,
-    showAll ? 0 : paginationModel.page,
-    showAll ? 1000 : paginationModel.pageSize,
-    showAll,
-    query || undefined,
-    sortFields.length ? sortFields : undefined,
-    sortDirections.length ? sortDirections : undefined,
-  );
-
-  return {
-    items: response.content ?? [],
-    itemCount: response.totalElements ?? 0,
-  };
-}
-
-export async function getOne(bookId: number): Promise<BookDetail> {
-  return BooksService.getBookById(bookId);
-}
-
-export async function createOne(data: Omit<Book, 'id' | 'totalSalesToDate'>): Promise<Book> {
-  const request: BookRequest = {
-    title: data.title ?? '',
-    authorId: data.authorId ?? 0,
-    isbn13: data.isbn13 ?? '',
-    isbn10: data.isbn10 ?? undefined,
-    publicationYear: data.publicationYear ?? new Date().getFullYear(),
-    publicationMonth: data.publicationMonth ?? 1,
-    distributorAuthorRoyaltyRate: data.distributorAuthorRoyaltyRate ?? 0.5,
-    handsoldAuthorRoyaltyRate: data.handsoldAuthorRoyaltyRate ?? 0.2,
-    seriesName: data.seriesName ?? undefined,
-    seriesPosition: data.seriesPosition ?? undefined,
-    coverPrice: data.coverPrice ?? 0,
-    printCost: data.printCost ?? 0,
-    coverImage: data.coverImage ?? undefined,
-  };
-  return BooksService.createBook(request);
-}
-
-export async function updateOne(
-  bookId: number,
-  data: Partial<Omit<Book, 'id' | 'totalSalesToDate'>>,
-): Promise<Book> {
-  const request: BookRequest = {
-    title: data.title ?? '',
-    authorId: data.authorId ?? 0,
-    isbn13: data.isbn13 ?? '',
-    isbn10: data.isbn10 ?? undefined,
-    publicationYear: data.publicationYear ?? new Date().getFullYear(),
-    publicationMonth: data.publicationMonth ?? 1,
-    distributorAuthorRoyaltyRate: data.distributorAuthorRoyaltyRate ?? 0.5,
-    handsoldAuthorRoyaltyRate: data.handsoldAuthorRoyaltyRate ?? 0.2,
-    seriesName: data.seriesName ?? undefined,
-    seriesPosition: data.seriesPosition ?? undefined,
-    coverPrice: data.coverPrice ?? 0,
-    printCost: data.printCost ?? 0,
-  };
-  return BooksService.updateBook(bookId, request);
-}
-
-export async function deleteOne(bookId: number): Promise<void> {
-  return BooksService.deleteBook(bookId);
-}
-
-export async function searchSeries(query?: string): Promise<string[]> {
-  return __request(OpenAPI, {
-    method: 'GET',
-    url: '/api/books/series',
-    query: { query },
-  });
-}
-
-type ValidationResult = { issues: { message: string; path: (keyof Book)[] }[] };
-
-export function validate(book: Partial<Book>): ValidationResult {
+export function validate(book: Partial<BookResponse>): ValidationResult {
   let issues: ValidationResult['issues'] = [];
 
   if (!book.title) {
@@ -208,7 +107,7 @@ export function validate(book: Partial<Book>): ValidationResult {
  * Returns a partial record suitable for setFormErrors, or null if the error
  * isn't a field-level validation error.
  */
-export function parseFieldErrors(err: unknown): Partial<Record<keyof Book, string>> | null {
+export function parseFieldErrors(err: unknown): Partial<Record<keyof BookResponse, string>> | null {
   if (!(err instanceof ApiError)) return null;
   if (err.status !== 400 && err.status !== 409) return null;
   const body = err.body;

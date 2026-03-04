@@ -5,13 +5,10 @@ import {
   BookCoversService,
   BooksService,
   type BookLookupResponse,
+  type BookRequest,
+  type BookResponse,
 } from '../../../../api/generated';
-import {
-  createOne as createBook,
-  validate as validateBook,
-  type Book,
-  parseFieldErrors,
-} from '../data/books';
+import { validate as validateBook, parseFieldErrors } from './bookValidation';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from './PageContainer';
@@ -167,7 +164,22 @@ export default function BookCreate() {
     setFormErrors({});
 
     try {
-      const book = await createBook(formValues as Omit<Book, 'id' | 'totalSalesToDate'>);
+      const request: BookRequest = {
+        title: formValues.title ?? '',
+        authorId: formValues.authorId ?? 0,
+        isbn13: formValues.isbn13 ?? '',
+        isbn10: formValues.isbn10 ?? undefined,
+        publicationYear: formValues.publicationYear ?? new Date().getFullYear(),
+        publicationMonth: formValues.publicationMonth ?? 1,
+        distributorAuthorRoyaltyRate: formValues.distributorAuthorRoyaltyRate ?? 0.5,
+        handsoldAuthorRoyaltyRate: formValues.handsoldAuthorRoyaltyRate ?? 0.2,
+        seriesName: formValues.seriesName ?? undefined,
+        seriesPosition: formValues.seriesPosition ?? undefined,
+        coverPrice: formValues.coverPrice ?? 0,
+        printCost: formValues.printCost ?? 0,
+        coverImage: formValues.coverImage ?? undefined,
+      };
+      const book: BookResponse = await BooksService.createBook(request);
 
       const coverFile =
         formValues.coverImageFile instanceof File ? formValues.coverImageFile : null;

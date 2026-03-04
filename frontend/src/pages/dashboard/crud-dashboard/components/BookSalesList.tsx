@@ -25,7 +25,7 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import * as salesData from '../data/sales';
+import { SalesService, type SaleResponse, type PagedResponseSaleResponse } from '../../../../api';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import { MONTH_NAMES } from '../../../../constants/months';
@@ -33,7 +33,7 @@ import { MONTH_NAMES } from '../../../../constants/months';
 type Props = {
   bookId?: number;
   onChange?: () => void;
-  sales?: salesData.Sale[];
+  sales?: SaleResponse[];
   reloadSales?: () => Promise<void>;
 };
 
@@ -54,7 +54,7 @@ export default function BookSalesList({
   const navigate = useNavigate();
   const notifications = useNotifications();
   const dialogs = useDialogs();
-  const [sales, setSales] = React.useState<salesData.Sale[]>([]);
+  const [sales, setSales] = React.useState<SaleResponse[]>([]);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [startMonth, setStartMonth] = React.useState<Dayjs | null>(null);
   const [endMonth, setEndMonth] = React.useState<Dayjs | null>(null);
@@ -69,7 +69,15 @@ export default function BookSalesList({
         setLoading(false);
         return;
       }
-      const s = await salesData.getForBook(bookId);
+      // TODO: replace with a backend endpoint that filters by bookId server-side
+      const response: PagedResponseSaleResponse = await SalesService.getSales(
+        0,
+        1000,
+        true,
+        'saleYear',
+        'desc',
+      );
+      const s = (response.content ?? []).filter((sale) => sale.bookId === bookId);
       setSales(s ?? []);
     } catch (e) {
       notifications.show(`Failed to load sales: ${(e as Error).message}`, {
@@ -111,7 +119,7 @@ export default function BookSalesList({
       if (!confirmed) return;
 
       try {
-        await salesData.deleteOne(saleId);
+        await SalesService.deleteSale(saleId);
         notifications.show('Sale deleted', { severity: 'success', autoHideDuration: 3000 });
 
         if (reloadSales) {
@@ -136,17 +144,17 @@ export default function BookSalesList({
     [],
   );
 
-  const saleToKey = React.useCallback((s: salesData.Sale) => {
+  const saleToKey = React.useCallback((s: SaleResponse) => {
     const y = Number(s.saleYear ?? 0);
     const m = Number(s.saleMonth ?? 0);
     return y * 100 + m;
   }, []);
 
   const stableSort = (
-    array: salesData.Sale[],
-    comparator: (a: salesData.Sale, b: salesData.Sale) => number,
+    array: SaleResponse[],
+    comparator: (a: SaleResponse, b: SaleResponse) => number,
   ) => {
-    const stabilized = array.map((el, index) => [el, index] as [salesData.Sale, number]);
+    const stabilized = array.map((el, index) => [el, index] as [SaleResponse, number]);
     stabilized.sort((a, b) => {
       const orderRes = comparator(a[0], b[0]);
       if (orderRes !== 0) return orderRes;
@@ -183,7 +191,7 @@ export default function BookSalesList({
       return 0;
     };
 
-    const comparator = (a: salesData.Sale, b: salesData.Sale) => {
+    const comparator = (a: SaleResponse, b: SaleResponse) => {
       let cmp = 0;
       switch (orderBy) {
         case 'saleDate':
