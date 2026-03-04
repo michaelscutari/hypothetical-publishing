@@ -13,7 +13,12 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import FullPageLoader from '../../../../components/FullPageLoader';
-import { MONTH_NAMES } from '../../../../constants/months';
+import {
+  formatCurrency,
+  formatMonthYear,
+  formatPercent,
+  truncate,
+} from '../../../../utils/formatting';
 import BookSalesList from '../components/BookSalesList';
 import FinancialSummary from '../components/FinancialSummary';
 import {
@@ -132,16 +137,6 @@ export default function BookShow() {
     navigate(backPath);
   }, [navigate, backPath]);
 
-  const formatPublicationDate = (year?: number, month?: number) => {
-    if (!year || !month) return '—';
-    return `${MONTH_NAMES[month - 1]} ${year}`;
-  };
-
-  const formatRoyaltyRate = (rate?: number) => {
-    if (rate == null) return '—';
-    return `${(rate * 100).toFixed(0)}%`;
-  };
-
   const renderShow = React.useMemo(() => {
     if (isLoading) {
       return (
@@ -248,7 +243,9 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Publication Date</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {formatPublicationDate(book.publicationYear, book.publicationMonth)}
+                {book.publicationYear && book.publicationMonth
+                  ? formatMonthYear(book.publicationMonth, book.publicationYear)
+                  : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -257,7 +254,9 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Distributor Royalty Rate</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {formatRoyaltyRate(book.distributorAuthorRoyaltyRate)}
+                {book.distributorAuthorRoyaltyRate != null
+                  ? formatPercent(book.distributorAuthorRoyaltyRate)
+                  : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -266,7 +265,9 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Handsold Royalty Rate</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {formatRoyaltyRate(book.handsoldAuthorRoyaltyRate)}
+                {book.handsoldAuthorRoyaltyRate != null
+                  ? formatPercent(book.handsoldAuthorRoyaltyRate)
+                  : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -286,7 +287,7 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Cover Price</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.coverPrice != null ? `$${Number(book.coverPrice).toFixed(2)}` : '—'}
+                {book.coverPrice != null ? formatCurrency(Number(book.coverPrice)) : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -295,7 +296,7 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Print Cost</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.printCost != null ? `$${Number(book.printCost).toFixed(2)}` : '—'}
+                {book.printCost != null ? formatCurrency(Number(book.printCost)) : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -355,12 +356,7 @@ export default function BookShow() {
     navigate,
   ]);
 
-  const truncate = React.useCallback((value: string | undefined, maxLength = 30) => {
-    if (!value) return value;
-    return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
-  }, []);
-
-  const breadcrumbTitle = truncate(book?.title, 30) ?? 'Book';
+  const breadcrumbTitle = book?.title ? truncate(book.title, 30) : 'Book';
 
   if (isLoading) {
     return <FullPageLoader />;

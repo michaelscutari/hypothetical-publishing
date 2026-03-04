@@ -34,6 +34,10 @@ import * as React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { BooksService, SaleRequest, SalesService, type BookResponse } from '../../../../api';
 import { isValidMonetaryInput } from '../../../../utils/monetary';
+import {
+  computeHandsoldRevenue,
+  computeRoyalty as computeRoyaltyUtil,
+} from '../../../../utils/royalty';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 
@@ -55,9 +59,11 @@ function computePublisherRevenue(
     return publisherRevenue;
   }
   if (!book || quantity == null) return null;
-  const coverPrice = Number(book.coverPrice ?? 0);
-  const printCost = Number(book.printCost ?? 0);
-  return Number(((coverPrice - printCost) * quantity).toFixed(2));
+  return computeHandsoldRevenue(
+    Number(book.coverPrice ?? 0),
+    Number(book.printCost ?? 0),
+    quantity,
+  );
 }
 
 function computeRoyalty(
@@ -70,7 +76,7 @@ function computeRoyalty(
     saleSource === SaleRequest.saleSource.HAND_SOLD
       ? (book.handsoldAuthorRoyaltyRate ?? 0)
       : (book.distributorAuthorRoyaltyRate ?? 0);
-  return Number((revenue * rate).toFixed(2));
+  return computeRoyaltyUtil(revenue, rate);
 }
 
 interface SaleRecordInput {
@@ -618,7 +624,7 @@ export default function SaleCreate() {
                         onError={handleDateError(index)}
                         views={['year', 'month']}
                         openTo="year"
-                        format="MM/YYYY"
+                        format="MMM YYYY"
                         minDate={dayjs('1900-01-01')}
                         maxDate={dayjs()}
                         slotProps={{
@@ -626,7 +632,7 @@ export default function SaleCreate() {
                             size: 'small',
                             fullWidth: true,
                             error: !!record.errors.saleDate || !!record.dateError,
-                            placeholder: 'MM/YYYY',
+                            placeholder: 'MMM YYYY',
                             onFocus: () => activateRow(index),
                           },
                           field: { clearable: true },

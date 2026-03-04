@@ -1,11 +1,8 @@
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import PendingIcon from '@mui/icons-material/Pending';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import IconButton from '@mui/material/IconButton';
 import Paper from '@mui/material/Paper';
@@ -26,9 +23,10 @@ import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SalesService, type SaleResponse, type PagedResponseSaleResponse } from '../../../../api';
+import { formatCurrency, formatMonthYear } from '../../../../utils/formatting';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import { MONTH_NAMES } from '../../../../constants/months';
+import PaidStatusChip from './PaidStatusChip';
 
 type Props = {
   bookId?: number;
@@ -137,11 +135,6 @@ export default function BookSalesList({
       }
     },
     [dialogs, load, notifications, onChange, reloadSales],
-  );
-
-  const currency = React.useMemo(
-    () => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
-    [],
   );
 
   const saleToKey = React.useCallback((s: SaleResponse) => {
@@ -378,7 +371,7 @@ export default function BookSalesList({
             <TableBody>
               {filteredSortedSales.map((s) => {
                 const monthLabel =
-                  s.saleMonth && s.saleYear ? `${MONTH_NAMES[s.saleMonth - 1]} ${s.saleYear}` : '—';
+                  s.saleMonth && s.saleYear ? formatMonthYear(s.saleMonth, s.saleYear) : '—';
                 const computedAuthorRoyalty = s.authorRoyalty != null ? s.authorRoyalty : null;
                 return (
                   <TableRow
@@ -396,20 +389,16 @@ export default function BookSalesList({
 
                     <TableCell align="right">{s.quantitySold ?? 0}</TableCell>
                     <TableCell align="right">
-                      {currency.format(Number(s.publisherRevenue ?? 0))}
+                      {s.publisherRevenue != null
+                        ? formatCurrency(Number(s.publisherRevenue))
+                        : '—'}
                     </TableCell>
                     <TableCell align="right">
-                      {computedAuthorRoyalty != null ? currency.format(computedAuthorRoyalty) : '—'}
+                      {computedAuthorRoyalty != null ? formatCurrency(computedAuthorRoyalty) : '—'}
                     </TableCell>
 
                     <TableCell align="center">
-                      <Chip
-                        icon={s.hasAuthorBeenPaid ? <CheckCircleIcon /> : <PendingIcon />}
-                        label={s.hasAuthorBeenPaid ? 'Paid' : 'Unpaid'}
-                        color={s.hasAuthorBeenPaid ? 'success' : 'warning'}
-                        size="small"
-                        variant={s.hasAuthorBeenPaid ? 'filled' : 'outlined'}
-                      />
+                      <PaidStatusChip paid={s.hasAuthorBeenPaid} />
                     </TableCell>
 
                     <TableCell align="center" onClick={(e) => e.stopPropagation()}>

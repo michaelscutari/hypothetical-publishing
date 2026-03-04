@@ -20,6 +20,7 @@ import {
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthorsService, type AuthorResponse } from '../../../../api';
+import { formatCurrency } from '../../../../utils/formatting';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import { useServerDataGrid } from '../../../../hooks/useServerDataGrid';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
@@ -27,8 +28,6 @@ import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 import SortDialog, { type SortOption } from './SortDialog';
 import StandardDataGrid from './StandardDataGrid';
-
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 
 const AUTHOR_SORT_OPTIONS: SortOption[] = [
   { field: 'name', label: 'Name' },
@@ -136,21 +135,21 @@ export default function AuthorList() {
         headerName: 'Total Royalty',
         type: 'number',
         width: 140,
-        valueFormatter: (value) => (value != null ? currencyFormatter.format(Number(value)) : ''),
+        valueFormatter: (value) => (value != null ? formatCurrency(Number(value)) : '—'),
       },
       {
         field: 'paidRoyalty',
         headerName: 'Paid Royalty',
         type: 'number',
         width: 130,
-        valueFormatter: (value) => (value != null ? currencyFormatter.format(Number(value)) : ''),
+        valueFormatter: (value) => (value != null ? formatCurrency(Number(value)) : '—'),
       },
       {
         field: 'unpaidRoyalty',
         headerName: 'Unpaid Royalty',
         type: 'number',
         width: 130,
-        valueFormatter: (value) => (value != null ? currencyFormatter.format(Number(value)) : ''),
+        valueFormatter: (value) => (value != null ? formatCurrency(Number(value)) : '—'),
       },
       {
         field: 'actions',

@@ -17,7 +17,12 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
+import {
+  formatCurrency,
+  formatMonthYear,
+  formatPercent,
+  truncate,
+} from '../../../../utils/formatting';
 
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -108,8 +113,6 @@ export default function AuthorShow() {
     }
   }, [author?.id, navigate]);
 
-  const formatCurrency = (value?: number) =>
-    value != null ? value.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) : '$0.00';
   if (isLoading) {
     return <FullPageLoader />;
   }
@@ -206,22 +209,28 @@ export default function AuthorShow() {
                         </TableCell>
                         <TableCell>
                           {book.publicationYear && book.publicationMonth
-                            ? `${MONTH_NAMES[book.publicationMonth - 1]} ${book.publicationYear}`
+                            ? formatMonthYear(book.publicationMonth, book.publicationYear)
                             : '—'}
                         </TableCell>
                         <TableCell align="right">
                           {book.distributorAuthorRoyaltyRate != null
-                            ? `${(Number(book.distributorAuthorRoyaltyRate) * 100).toFixed(0)}%`
+                            ? formatPercent(Number(book.distributorAuthorRoyaltyRate))
                             : '—'}
                         </TableCell>
                         <TableCell align="right">
                           {book.handsoldAuthorRoyaltyRate != null
-                            ? `${(Number(book.handsoldAuthorRoyaltyRate) * 100).toFixed(0)}%`
+                            ? formatPercent(Number(book.handsoldAuthorRoyaltyRate))
                             : '—'}
                         </TableCell>
-                        <TableCell align="right">{formatCurrency(book.totalRoyalty)}</TableCell>
-                        <TableCell align="right">{formatCurrency(book.paidRoyalty)}</TableCell>
-                        <TableCell align="right">{formatCurrency(book.unpaidRoyalty)}</TableCell>
+                        <TableCell align="right">
+                          {book.totalRoyalty != null ? formatCurrency(book.totalRoyalty) : '—'}
+                        </TableCell>
+                        <TableCell align="right">
+                          {book.paidRoyalty != null ? formatCurrency(book.paidRoyalty) : '—'}
+                        </TableCell>
+                        <TableCell align="right">
+                          {book.unpaidRoyalty != null ? formatCurrency(book.unpaidRoyalty) : '—'}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -233,14 +242,12 @@ export default function AuthorShow() {
       </Box>
     );
   };
-  const truncate = (value: string | undefined, maxLength = 30) =>
-    value && value.length > maxLength ? `${value.slice(0, maxLength)}…` : (value ?? '');
   return (
     <PageContainer
       title={author?.name}
       breadcrumbs={[
         { title: 'Authors', path: '/authors' },
-        { title: truncate(author?.name) || 'Author' },
+        { title: author?.name ? truncate(author.name) : 'Author' },
       ]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow()}</Box>

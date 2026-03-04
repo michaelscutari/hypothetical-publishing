@@ -12,6 +12,7 @@ import {
   type BookRequest,
   type BookResponse,
 } from '../../../../api';
+import { truncate } from '../../../../utils/formatting';
 import { validate as validateBook, parseFieldErrors } from './bookValidation';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
@@ -242,9 +243,6 @@ export default function BookEdit() {
     ) : null;
   }, [isLoading, error, book, bookId, handleSubmit, authorForBook]);
 
-  const truncate = (value: string | undefined, maxLength = 30) =>
-    value && value.length > maxLength ? `${value.slice(0, maxLength)}…` : (value ?? '');
-
   if (isLoading) {
     return <FullPageLoader />;
   }
@@ -253,7 +251,7 @@ export default function BookEdit() {
       title={book?.title ?? 'Edit Book'}
       breadcrumbs={[
         { title: 'Books', path: '/books' },
-        { title: truncate(book?.title) || 'Book', path: `/books/${bookId}` },
+        { title: book?.title ? truncate(book.title) : 'Book', path: `/books/${bookId}` },
         { title: 'Edit' },
       ]}
     >

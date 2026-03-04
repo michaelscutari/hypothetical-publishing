@@ -503,6 +503,7 @@ export default function BookForm(props: BookFormProps) {
               helperText={formErrors.publicationYear ?? ' '}
               fullWidth
               inputProps={{ min: 1900, max: 2100 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
@@ -534,6 +535,7 @@ export default function BookForm(props: BookFormProps) {
               helperText={formErrors.distributorAuthorRoyaltyRate ?? ' '}
               fullWidth
               inputProps={{ step: '0.01', min: 0, max: 1 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
@@ -547,6 +549,7 @@ export default function BookForm(props: BookFormProps) {
               helperText={formErrors.handsoldAuthorRoyaltyRate ?? ' '}
               fullWidth
               inputProps={{ step: '0.01', min: 0, max: 1 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
@@ -597,6 +600,7 @@ export default function BookForm(props: BookFormProps) {
               helperText={formErrors.seriesPosition ?? ' '}
               fullWidth
               inputProps={{ min: 1, step: 1 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
@@ -610,6 +614,7 @@ export default function BookForm(props: BookFormProps) {
               helperText={formErrors.coverPrice ?? ' '}
               fullWidth
               inputProps={{ step: '0.01', min: 0 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
@@ -623,6 +628,7 @@ export default function BookForm(props: BookFormProps) {
               helperText={formErrors.printCost ?? ' '}
               fullWidth
               inputProps={{ step: '0.01', min: 0 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
 

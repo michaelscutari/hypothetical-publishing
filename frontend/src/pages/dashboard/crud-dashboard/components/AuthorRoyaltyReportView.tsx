@@ -15,6 +15,7 @@ import {
 import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SalesService, type RoyaltyReportResponse } from '../../../../api';
+import { formatCurrency } from '../../../../utils/formatting';
 import './AuthorRoyaltyReportView.css';
 
 export default function AuthorRoyaltyReportView() {
@@ -62,13 +63,6 @@ export default function AuthorRoyaltyReportView() {
   const getQuarterLabel = (quarter?: number) => {
     const labels = ['Q1', 'Q2', 'Q3', 'Q4'];
     return labels[(quarter ?? 1) - 1];
-  };
-
-  const formatCurrency = (value?: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-    }).format(value ?? 0);
   };
 
   const getGeneratedDate = () => {

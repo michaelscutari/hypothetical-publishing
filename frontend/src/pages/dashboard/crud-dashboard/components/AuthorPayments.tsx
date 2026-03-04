@@ -36,6 +36,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import PaidStatusChip from './PaidStatusChip';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import PageContainer from './PageContainer';
@@ -44,28 +45,17 @@ import {
   BooksService,
   SalesService,
   type AuthorPaymentGroupResponse,
-  type AuthorPaymentSaleResponse,
   type MarkAllPaidRequest,
   type MarkAllPaidResponse,
   type PagedResponseAuthorPaymentGroupResponse,
   type AuthorResponse,
 } from '../../../../api';
 import { useDebounce } from '../../../../hooks/useDebounce';
+import { formatCurrency, formatMonthYear } from '../../../../utils/formatting';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 const INITIAL_PAGE_SIZE = 10;
 const SHOW_ALL_SIZE = -1;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
-
-const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
-function formatCurrency(n?: number) {
-  if (n == null) return '';
-  return currencyFormatter.format(n);
-}
-function formatMonthYear(s: AuthorPaymentSaleResponse) {
-  if (s.saleYear && s.saleMonth) return `${MONTH_NAMES[(s.saleMonth ?? 1) - 1]} ${s.saleYear}`;
-  return '';
-}
 
 function unwrap<T>(r: unknown): T {
   if (r && typeof r === 'object') {
@@ -410,20 +400,20 @@ export default function AuthorPaymentsView() {
                                 </Typography>
                               </TableCell>
 
-                              <TableCell>{formatMonthYear(s)}</TableCell>
+                              <TableCell>
+                                {s.saleYear && s.saleMonth
+                                  ? formatMonthYear(s.saleMonth, s.saleYear)
+                                  : '—'}
+                              </TableCell>
 
                               <TableCell align="right">{s.quantitySold ?? '-'}</TableCell>
 
-                              <TableCell align="right">{formatCurrency(s.authorRoyalty)}</TableCell>
+                              <TableCell align="right">
+                                {s.authorRoyalty != null ? formatCurrency(s.authorRoyalty) : '—'}
+                              </TableCell>
 
                               <TableCell>
-                                <Chip
-                                  icon={s.hasAuthorBeenPaid ? <CheckCircleIcon /> : <PendingIcon />}
-                                  label={s.hasAuthorBeenPaid ? 'Paid' : 'Unpaid'}
-                                  color={s.hasAuthorBeenPaid ? 'success' : 'warning'}
-                                  size="small"
-                                  variant={s.hasAuthorBeenPaid ? 'filled' : 'outlined'}
-                                />
+                                <PaidStatusChip paid={s.hasAuthorBeenPaid} />
                               </TableCell>
                             </TableRow>
                           ))}

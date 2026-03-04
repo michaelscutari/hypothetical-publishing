@@ -1,12 +1,9 @@
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import PendingIcon from '@mui/icons-material/Pending';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
@@ -16,10 +13,11 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { BooksService, SalesService, type BookResponse, type SaleResponse } from '../../../../api';
-import { MONTH_NAMES } from '../../../../constants/months';
+import { formatCurrency, formatMonthYear } from '../../../../utils/formatting';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
+import PaidStatusChip from './PaidStatusChip';
 
 export default function SaleShow() {
   const { saleId } = useParams();
@@ -106,11 +104,6 @@ export default function SaleShow() {
     navigate(backPath);
   }, [navigate, backPath]);
 
-  const formatDate = (year?: number, month?: number) => {
-    if (!year || !month) return '—';
-    return `${MONTH_NAMES[month - 1]} ${year}`;
-  };
-
   const renderShow = React.useMemo(() => {
     if (isLoading) {
       return (
@@ -194,7 +187,9 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Sale Period</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {formatDate(sale.saleYear, sale.saleMonth)}
+                {sale.saleYear && sale.saleMonth
+                  ? formatMonthYear(sale.saleMonth, sale.saleYear)
+                  : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -222,7 +217,9 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Publisher Revenue</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                ${Number(sale.publisherRevenue || 0).toFixed(2)}
+                {sale.publisherRevenue != null
+                  ? formatCurrency(Number(sale.publisherRevenue))
+                  : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -230,7 +227,7 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Author Royalty</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                ${Number(sale.authorRoyalty || 0).toFixed(2)}
+                {sale.authorRoyalty != null ? formatCurrency(Number(sale.authorRoyalty)) : '—'}
               </Typography>
             </Paper>
           </Grid>
@@ -246,13 +243,7 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Payment Status</Typography>
               <Box sx={{ mb: 1 }}>
-                <Chip
-                  icon={sale.hasAuthorBeenPaid ? <CheckCircleIcon /> : <PendingIcon />}
-                  label={sale.hasAuthorBeenPaid ? 'Paid' : 'Unpaid'}
-                  color={sale.hasAuthorBeenPaid ? 'success' : 'warning'}
-                  size="small"
-                  variant={sale.hasAuthorBeenPaid ? 'filled' : 'outlined'}
-                />
+                <PaidStatusChip paid={sale.hasAuthorBeenPaid} />
               </Box>
             </Paper>
           </Grid>

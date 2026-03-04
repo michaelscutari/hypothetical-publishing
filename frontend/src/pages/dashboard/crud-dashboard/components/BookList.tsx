@@ -19,7 +19,7 @@ import {
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
+import { formatMonthYear } from '../../../../utils/formatting';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import { useServerDataGrid } from '../../../../hooks/useServerDataGrid';
 import { BooksService, type BookResponse, type PagedResponseBookResponse } from '../../../../api';
@@ -193,7 +193,7 @@ export default function BookList() {
           const year = row.publicationYear;
           const month = row.publicationMonth;
           if (year && month) {
-            return `${MONTH_NAMES[month - 1]} ${year}`;
+            return formatMonthYear(month, year);
           }
           return '';
         },

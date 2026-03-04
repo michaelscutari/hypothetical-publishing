@@ -31,14 +31,9 @@ import {
   type ParsingError,
   type SaleResponse,
 } from '../../../../api';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
+import { formatCurrency, formatMonthYear } from '../../../../utils/formatting';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-
-function formatMonthYear(sale: SaleResponse) {
-  if (!sale.saleMonth || !sale.saleYear) return '';
-  return `${MONTH_NAMES[sale.saleMonth - 1]} ${sale.saleYear}`;
-}
 
 type ErrorState = {
   csvErrors: ParsingError[];
@@ -265,14 +260,14 @@ export default function SaleImport() {
                   value={saleDate}
                   onChange={(v) => setSaleDate(v)}
                   views={['year', 'month']}
-                  format="MM/YYYY"
+                  format="MMM YYYY"
                   openTo="year"
                   minDate={dayjs('1900-01-01')}
                   maxDate={dayjs()}
                   slotProps={{
                     textField: {
                       size: 'small',
-                      placeholder: 'MM/YYYY',
+                      placeholder: 'MMM YYYY',
                       InputLabelProps: { shrink: true },
                     },
                     toolbar: { hidden: true },
@@ -346,20 +341,24 @@ export default function SaleImport() {
                   {previewSales.map((sale, index) => (
                     <TableRow key={`${sale.bookId ?? 'book'}-${index}`}>
                       <TableCell>{sale.bookTitle ?? `Book ${sale.bookId ?? ''}`}</TableCell>
-                      <TableCell>{sale.bookAuthor ?? '-'}</TableCell>
-                      <TableCell>{formatMonthYear(sale)}</TableCell>
+                      <TableCell>{sale.bookAuthor ?? '—'}</TableCell>
+                      <TableCell>
+                        {sale.saleMonth && sale.saleYear
+                          ? formatMonthYear(sale.saleMonth, sale.saleYear)
+                          : '—'}
+                      </TableCell>
                       <TableCell align="right">{sale.quantitySold ?? 0}</TableCell>
                       <TableCell align="right">
                         {sale.publisherRevenue != null
-                          ? `$${Number(sale.publisherRevenue).toFixed(2)}`
-                          : '-'}
+                          ? formatCurrency(Number(sale.publisherRevenue))
+                          : '—'}
                       </TableCell>
                       <TableCell align="right">
                         {sale.authorRoyalty != null
-                          ? `$${Number(sale.authorRoyalty).toFixed(2)}`
-                          : '-'}
+                          ? formatCurrency(Number(sale.authorRoyalty))
+                          : '—'}
                       </TableCell>
-                      <TableCell>{sale.comment ?? '-'}</TableCell>
+                      <TableCell>{sale.comment ?? '—'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

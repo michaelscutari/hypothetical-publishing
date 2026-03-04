@@ -26,6 +26,10 @@ import {
 } from '../../../../api';
 import { MONTH_NAMES } from '../../../../constants/months';
 import { isValidMonetaryInput } from '../../../../utils/monetary';
+import {
+  computeHandsoldRevenue,
+  computeRoyalty as computeRoyaltyUtil,
+} from '../../../../utils/royalty';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
 
@@ -57,9 +61,11 @@ export default function SaleEdit() {
     if (saleSource === SaleRequest.saleSource.DISTRIBUTOR) {
       return parseFloat(publisherRevenue) || 0;
     }
-    const coverPrice = Number(selectedBook?.coverPrice ?? 0);
-    const printCost = Number(selectedBook?.printCost ?? 0);
-    return Number(((coverPrice - printCost) * quantitySold).toFixed(2));
+    return computeHandsoldRevenue(
+      Number(selectedBook?.coverPrice ?? 0),
+      Number(selectedBook?.printCost ?? 0),
+      quantitySold,
+    );
   }, [publisherRevenue, saleSource, selectedBook, quantitySold]);
 
   const computedRoyalty = React.useMemo(() => {
@@ -67,7 +73,7 @@ export default function SaleEdit() {
       saleSource === SaleRequest.saleSource.HAND_SOLD
         ? (selectedBook?.handsoldAuthorRoyaltyRate ?? 0)
         : (selectedBook?.distributorAuthorRoyaltyRate ?? 0);
-    return Number((computedRevenue * rate).toFixed(2));
+    return computeRoyaltyUtil(computedRevenue, rate);
   }, [computedRevenue, saleSource, selectedBook]);
 
   // Load sale and books
@@ -235,6 +241,7 @@ export default function SaleEdit() {
               label="Sale Year"
               fullWidth
               inputProps={{ min: 1900, max: 2100 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
 
@@ -290,6 +297,7 @@ export default function SaleEdit() {
               label="Quantity Sold"
               fullWidth
               inputProps={{ min: 0 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
 
@@ -330,6 +338,7 @@ export default function SaleEdit() {
               label="Comment"
               fullWidth
               inputProps={{ maxLength: 256 }}
+              helperText={`${comment.length}/256 characters`}
             />
           </Grid>
 

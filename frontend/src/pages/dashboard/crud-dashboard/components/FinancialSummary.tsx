@@ -1,12 +1,12 @@
-import React from 'react';
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import MoneyOffIcon from '@mui/icons-material/MoneyOff';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
-import CircularProgress from '@mui/material/CircularProgress';
-import Box from '@mui/material/Box';
-import MoneyOffIcon from '@mui/icons-material/MoneyOff';
-import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
+import { formatCurrency } from '../../../../utils/formatting';
 
 type Props = {
   isLoading?: boolean;
@@ -33,11 +33,6 @@ export default function FinancialSummary({ isLoading, summary }: Props) {
     totalQuantitySold: toNumber(summary.totalSalesToDate),
   };
 
-  const currency = React.useMemo(
-    () => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }),
-    [],
-  );
-
   if (isLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
@@ -54,7 +49,7 @@ export default function FinancialSummary({ isLoading, summary }: Props) {
         <Grid size={{ xs: 12, sm: 6, md: 2 }} sx={{ display: 'flex' }}>
           <Paper sx={{ p: 2, width: '100%' }}>
             <Typography variant="caption">Publisher Revenue</Typography>
-            <Typography variant="h6">{currency.format(totals.publisherRevenue)}</Typography>
+            <Typography variant="h6">{formatCurrency(totals.publisherRevenue)}</Typography>
           </Paper>
         </Grid>
 
@@ -62,7 +57,7 @@ export default function FinancialSummary({ isLoading, summary }: Props) {
           <Paper sx={{ p: 2, width: '100%' }}>
             <Typography variant="caption">Author Royalty (Unpaid)</Typography>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="h6">{currency.format(totals.unpaidAuthorRoyalty)}</Typography>
+              <Typography variant="h6">{formatCurrency(totals.unpaidAuthorRoyalty)}</Typography>
               {totals.unpaidAuthorRoyalty > 0 ? <MoneyOffIcon color="warning" /> : null}
             </Stack>
           </Paper>
@@ -72,7 +67,7 @@ export default function FinancialSummary({ isLoading, summary }: Props) {
           <Paper sx={{ p: 2, width: '100%' }}>
             <Typography variant="caption">Author Royalty (Paid)</Typography>
             <Stack direction="row" alignItems="center" spacing={1}>
-              <Typography variant="h6">{currency.format(totals.paidAuthorRoyalty)}</Typography>
+              <Typography variant="h6">{formatCurrency(totals.paidAuthorRoyalty)}</Typography>
               <CheckCircleOutlineIcon color="success" />
             </Stack>
           </Paper>
@@ -81,7 +76,7 @@ export default function FinancialSummary({ isLoading, summary }: Props) {
         <Grid size={{ xs: 12, sm: 6, md: 2 }} sx={{ display: 'flex' }}>
           <Paper sx={{ p: 2, width: '100%' }}>
             <Typography variant="caption">Author Royalty (Total)</Typography>
-            <Typography variant="h6">{currency.format(totals.totalAuthorRoyalty)}</Typography>
+            <Typography variant="h6">{formatCurrency(totals.totalAuthorRoyalty)}</Typography>
           </Paper>
         </Grid>
 

@@ -1,14 +1,11 @@
 import AddIcon from '@mui/icons-material/Add';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import Chip from '@mui/material/Chip';
 import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
@@ -36,11 +33,12 @@ import {
   type SaleResponse,
   SalesService,
 } from '../../../../api';
-import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
+import { formatCurrency, formatMonthYear } from '../../../../utils/formatting';
 import { useServerDataGrid } from '../../../../hooks/useServerDataGrid';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
+import PaidStatusChip from './PaidStatusChip';
 import StandardDataGrid from './StandardDataGrid';
 
 export default function SaleList() {
@@ -217,9 +215,8 @@ export default function SaleList() {
         headerName: 'Month/Year',
         width: 120,
         valueGetter: (_value, row) => {
-          if (row.saleYear && row.saleMonth)
-            return `${MONTH_NAMES[row.saleMonth - 1]} ${row.saleYear}`;
-          return '';
+          if (row.saleYear && row.saleMonth) return formatMonthYear(row.saleMonth, row.saleYear);
+          return '—';
         },
       },
       {
@@ -233,31 +230,20 @@ export default function SaleList() {
         headerName: 'Publisher Revenue',
         type: 'number',
         width: 160,
-        valueFormatter: (value) => (value != null ? `$${Number(value).toFixed(2)}` : ''),
+        valueFormatter: (value) => (value != null ? formatCurrency(Number(value)) : '—'),
       },
       {
         field: 'authorRoyalty',
         headerName: 'Author Royalty',
         type: 'number',
         width: 150,
-        valueFormatter: (value) => (value != null ? `$${Number(value).toFixed(2)}` : ''),
+        valueFormatter: (value) => (value != null ? formatCurrency(Number(value)) : '—'),
       },
       {
         field: 'hasAuthorBeenPaid',
         headerName: 'Paid Status',
         width: 140,
-        renderCell: (params) => {
-          const isPaid = params.row.hasAuthorBeenPaid;
-          return (
-            <Chip
-              icon={isPaid ? <CheckCircleIcon /> : <PendingIcon />}
-              label={isPaid ? 'Paid' : 'Unpaid'}
-              color={isPaid ? 'success' : 'warning'}
-              size="small"
-              variant={isPaid ? 'filled' : 'outlined'}
-            />
-          );
-        },
+        renderCell: (params) => <PaidStatusChip paid={params.row.hasAuthorBeenPaid} />,
       },
       {
         field: 'actions',
@@ -304,14 +290,14 @@ export default function SaleList() {
               value={startDate}
               onChange={(v) => setStartDate(v)}
               views={['year', 'month']}
-              format="MM/YYYY"
+              format="MMM YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
               maxDate={dayjs()}
               slotProps={{
                 textField: {
                   size: 'small',
-                  placeholder: 'MM/YYYY',
+                  placeholder: 'MMM YYYY',
                   InputLabelProps: { shrink: true },
                 },
                 toolbar: { hidden: true },
@@ -325,14 +311,14 @@ export default function SaleList() {
               value={endDate}
               onChange={(v) => setEndDate(v)}
               views={['year', 'month']}
-              format="MM/YYYY"
+              format="MMM YYYY"
               openTo="year"
               minDate={dayjs('1900-01-01')}
               maxDate={dayjs()}
               slotProps={{
                 textField: {
                   size: 'small',
-                  placeholder: 'MM/YYYY',
+                  placeholder: 'MMM YYYY',
                   InputLabelProps: { shrink: true },
                 },
                 toolbar: { hidden: true },
