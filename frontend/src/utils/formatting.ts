@@ -1,4 +1,4 @@
-import { MONTH_NAMES } from '../constants/months';
+import { MONTH_NAMES } from '@/constants/months';
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 

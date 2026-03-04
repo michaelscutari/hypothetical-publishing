@@ -8,8 +8,8 @@ import {
   useRef,
   type ReactNode,
 } from 'react';
-import { AuthService } from '../api';
-import { setOnUnauthorized } from '../api/fetchInterceptor';
+import { AuthService } from '@/api';
+import { setOnUnauthorized } from '@/api/fetchInterceptor';
 
 interface AuthContextType {
   isAuthenticated: boolean;
