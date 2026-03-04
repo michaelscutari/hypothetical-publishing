@@ -4,7 +4,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import SearchIcon from '@mui/icons-material/Search';
 import SortIcon from '@mui/icons-material/Sort';
-import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import IconButton from '@mui/material/IconButton';
@@ -13,118 +12,83 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import {
-  DataGrid,
   GridActionsCellItem,
-  gridClasses,
   type GridColDef,
   type GridEventListener,
-  type GridPaginationModel,
   type GridSortModel,
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
+import { useDebounce } from '../../../../hooks/useDebounce';
+import { useServerDataGrid } from '../../../../hooks/useServerDataGrid';
 import { deleteOne as deleteBook, getMany as getBooks, type Book } from '../data/books';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
-import MultiSortDialog from './MultiSortDialog';
 import PageContainer from './PageContainer';
+import SortDialog, { type SortOption } from './SortDialog';
+import StandardDataGrid from './StandardDataGrid';
 
-const INITIAL_PAGE_SIZE = 10;
-const SHOW_ALL_SIZE = -1;
+const BOOK_SORT_OPTIONS: SortOption[] = [
+  { field: 'author', label: 'Author' },
+  { field: 'title', label: 'Title' },
+  { field: 'publicationDate', label: 'Publication Date' },
+  { field: 'seriesName', label: 'Series Name' },
+  { field: 'seriesPosition', label: 'Series Position' },
+  { field: 'distributorAuthorRoyaltyRate', label: 'Distributor Royalty' },
+  { field: 'handsoldAuthorRoyaltyRate', label: 'Handsold Royalty' },
+];
+
+const BOOK_DEFAULT_SORT: GridSortModel = [
+  { field: 'author', sort: 'asc' },
+  { field: 'seriesName', sort: 'asc' },
+  { field: 'seriesPosition', sort: 'asc' },
+  { field: 'title', sort: 'asc' },
+];
 
 export default function BookList() {
   const navigate = useNavigate();
-
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
-  const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
-    page: 0,
-    pageSize: INITIAL_PAGE_SIZE,
-  });
-
-  const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
   const [sortModel, setSortModel] = React.useState<GridSortModel>([]);
-
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [debouncedQuery, setDebouncedQuery] = React.useState('');
-  const debounceRef = React.useRef<number | null>(null);
+  const [debouncedQuery, flush] = useDebounce(searchQuery, 300);
   const [multiSortOpen, setMultiSortOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => {
-      setDebouncedQuery(searchQuery.trim());
-    }, 300);
-    return () => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    };
-  }, [searchQuery]);
-
-  React.useEffect(() => {
-    setPaginationModel((p) => ({ ...p, page: 0 }));
-  }, [debouncedQuery]);
-
-  const [rowsState, setRowsState] = React.useState<{
-    rows: Book[];
-    rowCount: number;
-  }>({
-    rows: [],
-    rowCount: 0,
-  });
-
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
-
-  const loadData = React.useCallback(async () => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
+  const fetchFn = React.useCallback(
+    async (params: { page: number; pageSize: number; showAll: boolean }) => {
       const listData = await getBooks({
-        paginationModel,
+        paginationModel: { page: params.page, pageSize: params.pageSize },
         sortModel,
         query: debouncedQuery || undefined,
-        showAll,
+        showAll: params.showAll,
       });
+      return { content: listData.items, totalElements: listData.itemCount };
+    },
+    [sortModel, debouncedQuery],
+  );
 
-      setRowsState({
-        rows: listData.items,
-        rowCount: listData.itemCount,
-      });
-    } catch (listDataError) {
-      setError(listDataError as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [paginationModel, sortModel, debouncedQuery, showAll]);
-
-  React.useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const handleRefresh = React.useCallback(() => {
-    if (!isLoading) {
-      loadData();
-    }
-  }, [isLoading, loadData]);
+  const {
+    rows,
+    rowCount,
+    isLoading,
+    error,
+    paginationModel,
+    onPaginationModelChange,
+    refresh,
+    setIsLoading,
+  } = useServerDataGrid<Book>({ fetchFn });
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
-    ({ row }) => {
-      navigate(`/books/${row.id}`);
-    },
+    ({ row }) => navigate(`/books/${row.id}`),
     [navigate],
   );
 
-  const handleCreateClick = React.useCallback(() => {
-    navigate('/books/new');
-  }, [navigate]);
+  const handleCreateClick = React.useCallback(() => navigate('/books/new'), [navigate]);
 
   const handleRowEdit = React.useCallback(
-    (book: Book) => () => {
-      navigate(`/books/${book.id}/edit`);
-    },
+    (book: Book) => () => navigate(`/books/${book.id}/edit`),
     [navigate],
   );
 
@@ -144,12 +108,11 @@ export default function BookList() {
         setIsLoading(true);
         try {
           await deleteBook(Number(book.id));
-
           notifications.show('Book deleted successfully.', {
             severity: 'success',
             autoHideDuration: 3000,
           });
-          loadData();
+          refresh();
         } catch (deleteError) {
           notifications.show(`Failed to delete book. Reason: ${(deleteError as Error).message}`, {
             severity: 'error',
@@ -159,14 +122,7 @@ export default function BookList() {
         setIsLoading(false);
       }
     },
-    [dialogs, notifications, loadData],
-  );
-
-  const initialState = React.useMemo(
-    () => ({
-      pagination: { paginationModel: { pageSize: INITIAL_PAGE_SIZE } },
-    }),
-    [],
+    [dialogs, notifications, refresh, setIsLoading],
   );
 
   const columns = React.useMemo<GridColDef[]>(
@@ -282,7 +238,7 @@ export default function BookList() {
         <Stack direction="row" alignItems="center" spacing={1}>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <div>
-              <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
+              <IconButton size="small" aria-label="refresh" onClick={refresh}>
                 <RefreshIcon />
               </IconButton>
             </div>
@@ -294,10 +250,7 @@ export default function BookList() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                if (debounceRef.current) window.clearTimeout(debounceRef.current);
-                setDebouncedQuery(searchQuery.trim());
-              }
+              if (e.key === 'Enter') flush();
             }}
             sx={{ minWidth: 280 }}
             InputProps={{
@@ -329,71 +282,26 @@ export default function BookList() {
       }
     >
       <Box sx={{ flex: 1, width: '100%' }}>
-        {error ? (
-          <Box sx={{ flexGrow: 1 }}>
-            <Alert severity="error">{error.message}</Alert>
-          </Box>
-        ) : (
-          <DataGrid
-            rows={rowsState.rows}
-            rowCount={rowsState.rowCount}
-            columns={columns}
-            sortingMode="server"
-            paginationMode="server"
-            hideFooter={false}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            //sortModel={sortModel}
-            //onSortModelChange={setSortModel}
-            disableColumnSorting
-            disableRowSelectionOnClick
-            onRowClick={handleRowClick}
-            rowHeight={60}
-            loading={isLoading}
-            initialState={initialState}
-            pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}
-            slotProps={{
-              loadingOverlay: {
-                variant: 'circular-progress',
-                noRowsVariant: 'circular-progress',
-              },
-              baseIconButton: {
-                size: 'small',
-              },
-            }}
-            sx={{
-              '--DataGrid-rowBorderColor': (theme) => theme.palette.divider,
-              '--DataGrid-containerBackground': (theme) => theme.palette.background.paper,
-              borderColor: 'divider',
-              borderRadius: 2,
-              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
-              '& .MuiDataGrid-footerContainer': {
-                borderColor: 'divider',
-              },
-              [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
-                outline: 'transparent',
-              },
-              [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]:
-                {
-                  outline: 'none',
-                },
-              //if you liked the old header more
-              // [`& .${gridClasses.row}:hover`]: {
-              //   cursor: 'pointer',
-              // },
-              [`& .${gridClasses.columnHeaderTitle}`]: {
-                fontWeight: 700,
-                color: '#5C4033',
-              },
-            }}
-          />
-        )}
+        <StandardDataGrid
+          rows={rows}
+          rowCount={rowCount}
+          columns={columns}
+          error={error}
+          disableColumnSorting
+          onRowClick={handleRowClick}
+          rowHeight={60}
+          loading={isLoading}
+          paginationModel={paginationModel}
+          onPaginationModelChange={onPaginationModelChange}
+        />
       </Box>
-      <MultiSortDialog
+      <SortDialog
         open={multiSortOpen}
         onClose={() => setMultiSortOpen(false)}
         currentSortModel={sortModel}
         onApply={setSortModel}
+        sortOptions={BOOK_SORT_OPTIONS}
+        defaultSort={BOOK_DEFAULT_SORT}
       />
     </PageContainer>
   );

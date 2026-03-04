@@ -50,10 +50,11 @@ import {
   type PagedResponseAuthorPaymentGroupResponse,
   type AuthorResponse,
 } from '../../../../api';
+import { useDebounce } from '../../../../hooks/useDebounce';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
 const INITIAL_PAGE_SIZE = 10;
-const SHOW_ALL_SIZE = 10000;
+const SHOW_ALL_SIZE = -1;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 
 const currencyFormatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
@@ -93,8 +94,7 @@ export default function AuthorPaymentsView() {
   const [error, setError] = React.useState<Error | null>(null);
 
   const [searchQuery, setSearchQuery] = React.useState<string>('');
-  const [debouncedQuery, setDebouncedQuery] = React.useState<string>('');
-  const debounceRef = React.useRef<number | null>(null);
+  const [debouncedQuery, flush] = useDebounce(searchQuery, 300);
 
   const [authorOptions, setAuthorOptions] = React.useState<AuthorResponse[]>([]);
   const authorDebounceRef = React.useRef<number | null>(null);
@@ -105,16 +105,6 @@ export default function AuthorPaymentsView() {
   const [confirmingUnpaidCount, setConfirmingUnpaidCount] = React.useState<number>(0);
   const [confirmingUnpaidTotal, setConfirmingUnpaidTotal] = React.useState<number>(0);
   const [processing, setProcessing] = React.useState<boolean>(false);
-
-  React.useEffect(() => {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    debounceRef.current = window.setTimeout(() => {
-      setDebouncedQuery(searchQuery.trim());
-    }, 300);
-    return () => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    };
-  }, [searchQuery]);
 
   React.useEffect(() => {
     setPage(0);
@@ -245,11 +235,10 @@ export default function AuthorPaymentsView() {
   const handleSearchEnter = React.useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === 'Enter') {
-        if (debounceRef.current) window.clearTimeout(debounceRef.current);
-        setDebouncedQuery(searchQuery.trim());
+        flush();
       }
     },
-    [searchQuery],
+    [flush],
   );
 
   const effectiveGroups = groups;
@@ -284,9 +273,7 @@ export default function AuthorPaymentsView() {
             onChange={(_e, v) => {
               const q = typeof v === 'string' ? v : (v ?? '');
               setSearchQuery(q);
-
-              if (debounceRef.current) window.clearTimeout(debounceRef.current);
-              setDebouncedQuery((q ?? '').trim());
+              flush(q);
             }}
             sx={{ minWidth: 280 }}
             renderInput={(params) => (
