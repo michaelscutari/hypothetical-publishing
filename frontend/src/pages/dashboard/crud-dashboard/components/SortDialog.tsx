@@ -1,3 +1,4 @@
+import AddIcon from '@mui/icons-material/Add';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
@@ -23,58 +24,55 @@ export interface SortOption {
   label: string;
 }
 
-const SORT_OPTIONS: SortOption[] = [
-  { field: 'name', label: 'Name' },
-  { field: 'email', label: 'Email' },
-  { field: 'bookCount', label: 'Books' },
-  { field: 'totalRoyalty', label: 'Total Royalty' },
-  { field: 'paidRoyalty', label: 'Paid Royalty' },
-  { field: 'unpaidRoyalty', label: 'Unpaid Royalty' },
-];
-
 interface SortRow {
   id: number;
   field: string;
   direction: 'asc' | 'desc';
 }
 
-interface AuthorSortDialogProps {
+interface SortDialogProps {
   open: boolean;
   onClose: () => void;
   currentSortModel: GridSortModel;
   onApply: (sortModel: GridSortModel) => void;
+  sortOptions: SortOption[];
+  defaultSort: GridSortModel;
 }
 
 let nextId = 1;
 
-export default function AuthorSortDialog({
+export default function SortDialog({
   open,
   onClose,
   currentSortModel,
   onApply,
-}: AuthorSortDialogProps) {
+  sortOptions,
+  defaultSort,
+}: SortDialogProps) {
   const [rows, setRows] = React.useState<SortRow[]>([]);
   const dragIndex = React.useRef<number | null>(null);
   const dragOverIndex = React.useRef<number | null>(null);
 
-  // Sync with current sort model when dialog opens
   React.useEffect(() => {
     if (open) {
-      if (currentSortModel.length > 0) {
-        setRows(
-          currentSortModel.map((s) => ({
-            id: nextId++,
-            field: s.field,
-            direction: s.sort ?? 'asc',
-          })),
-        );
-      } else {
-        setRows([{ id: nextId++, field: 'name', direction: 'asc' }]);
-      }
+      const model = currentSortModel.length > 0 ? currentSortModel : defaultSort;
+      setRows(
+        model.map((s) => ({
+          id: nextId++,
+          field: s.field,
+          direction: s.sort ?? 'asc',
+        })),
+      );
     }
-  }, [open, currentSortModel]);
+  }, [open, currentSortModel, defaultSort]);
 
   const usedFields = rows.map((r) => r.field);
+
+  const handleAddRow = () => {
+    const available = sortOptions.find((o) => !usedFields.includes(o.field));
+    if (!available) return;
+    setRows((prev) => [...prev, { id: nextId++, field: available.field, direction: 'asc' }]);
+  };
 
   const handleRemoveRow = (id: number) => {
     setRows((prev) => prev.filter((r) => r.id !== id));
@@ -122,8 +120,16 @@ export default function AuthorSortDialog({
   };
 
   const handleReset = () => {
-    setRows([{ id: nextId++, field: 'name', direction: 'asc' }]);
+    setRows(
+      defaultSort.map((s) => ({
+        id: nextId++,
+        field: s.field,
+        direction: s.sort ?? 'asc',
+      })),
+    );
   };
+
+  const canAddMore = usedFields.length < sortOptions.length;
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
@@ -142,7 +148,7 @@ export default function AuthorSortDialog({
       <DialogContent sx={{ pt: 1, pb: 0 }}>
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
           {rows.map((row, index) => {
-            const availableOptions = SORT_OPTIONS.filter(
+            const availableOptions = sortOptions.filter(
               (o) => o.field === row.field || !usedFields.includes(o.field),
             );
 
@@ -169,7 +175,6 @@ export default function AuthorSortDialog({
                   transition: 'border-color 0.15s, background-color 0.15s',
                 }}
               >
-                {/* Priority badge */}
                 <Box
                   sx={{
                     width: 20,
@@ -193,7 +198,6 @@ export default function AuthorSortDialog({
                   sx={{ color: 'text.disabled', flexShrink: 0 }}
                 />
 
-                {/* Field selector */}
                 <Select
                   value={row.field}
                   onChange={(e) => handleFieldChange(row.id, e.target.value)}
@@ -209,7 +213,6 @@ export default function AuthorSortDialog({
                   ))}
                 </Select>
 
-                {/* Asc/Desc toggle */}
                 <Tooltip title={row.direction === 'asc' ? 'Ascending' : 'Descending'}>
                   <Chip
                     size="small"
@@ -236,7 +239,6 @@ export default function AuthorSortDialog({
                   />
                 </Tooltip>
 
-                {/* Remove button */}
                 <IconButton
                   size="small"
                   onClick={() => handleRemoveRow(row.id)}
@@ -248,6 +250,18 @@ export default function AuthorSortDialog({
               </Box>
             );
           })}
+
+          {canAddMore && (
+            <Button
+              startIcon={<AddIcon />}
+              onClick={handleAddRow}
+              size="small"
+              variant="text"
+              sx={{ alignSelf: 'flex-start', color: 'text.secondary', mt: 0.5 }}
+            >
+              Add sort field
+            </Button>
+          )}
         </Box>
       </DialogContent>
 
