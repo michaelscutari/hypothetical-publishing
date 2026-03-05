@@ -5,7 +5,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import PendingIcon from '@mui/icons-material/Pending';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
-import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -20,13 +19,10 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 
 import {
-  DataGrid,
   GridActionsCellItem,
   type GridColDef,
   type GridEventListener,
-  type GridPaginationModel,
   type GridSortModel,
-  gridClasses,
 } from '@mui/x-data-grid';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -41,49 +37,34 @@ import {
   SalesService,
 } from '../../../../api';
 import { MONTH_NAMES_SHORT as MONTH_NAMES } from '../../../../constants/months';
+import { useServerDataGrid } from '../../../../hooks/useServerDataGrid';
 import { useDialogs } from '../hooks/useDialogs/useDialogs';
 import useNotifications from '../hooks/useNotifications/useNotifications';
 import PageContainer from './PageContainer';
-const INITIAL_PAGE_SIZE = 10;
-const SHOW_ALL_SIZE = -1;
+import StandardDataGrid from './StandardDataGrid';
 
 export default function SaleList() {
   const navigate = useNavigate();
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
-  const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
-    page: 0,
-    pageSize: INITIAL_PAGE_SIZE,
-  });
-
-  const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
-
   // Default sort: descending by date (newest first) - requirement 3.1.1
   const [sortModel, setSortModel] = React.useState<GridSortModel>([
     { field: 'saleYear', sort: 'desc' },
   ]);
 
-  const [sales, setSales] = React.useState<SaleResponse[]>([]);
-  const [totalCount, setTotalCount] = React.useState(0);
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
   const [startDate, setStartDate] = React.useState<Dayjs | null>(null);
   const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
   const [selectedAuthor, setSelectedAuthor] = React.useState<AuthorResponse | null>(null);
   const [saleSource, setSaleSource] = React.useState<string>('all');
   const [authors, setAuthors] = React.useState<AuthorResponse[]>([]);
 
-  const loadData = React.useCallback(async () => {
-    setError(null);
-    setIsLoading(true);
-
-    try {
+  const fetchFn = React.useCallback(
+    async (params: { page: number; pageSize: number; showAll: boolean }) => {
       const sortField = sortModel?.[0]?.field;
       const sortDirection = sortModel?.[0]?.sort ?? 'desc';
 
       // Date range filter - requirement 3.1.2
-      // Convert to first day of month for start, last day of month for end
       const startDateParam = startDate
         ? startDate.startOf('month').format('YYYY-MM-DD')
         : undefined;
@@ -93,10 +74,10 @@ export default function SaleList() {
       const authorIdParam = selectedAuthor?.id;
       const saleSourceParam = saleSource === 'all' ? undefined : saleSource.toUpperCase();
 
-      const response = await SalesService.getSales(
-        showAll ? 0 : paginationModel.page,
-        showAll ? 1000 : paginationModel.pageSize, // Use large number for showAll
-        showAll,
+      return SalesService.getSales(
+        params.page,
+        params.pageSize,
+        params.showAll,
         sortField,
         sortDirection,
         startDateParam,
@@ -104,19 +85,21 @@ export default function SaleList() {
         authorIdParam,
         saleSourceParam,
       );
+    },
+    [sortModel, startDate, endDate, selectedAuthor, saleSource],
+  );
 
-      setSales(response.content ?? []);
-      setTotalCount(response.totalElements ?? 0);
-    } catch (loadError) {
-      setError(loadError as Error);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [paginationModel, sortModel, showAll, startDate, endDate, selectedAuthor, saleSource]);
+  const {
+    rows,
+    rowCount,
+    isLoading,
+    error,
+    paginationModel,
+    onPaginationModelChange,
+    refresh,
+    setIsLoading,
+  } = useServerDataGrid<SaleResponse>({ fetchFn });
 
-  React.useEffect(() => {
-    loadData();
-  }, [loadData]);
   const loadAuthors = React.useCallback(async () => {
     try {
       const response = await AuthorsService.getAllAuthors(0, 1000, true);
@@ -130,31 +113,19 @@ export default function SaleList() {
     loadAuthors();
   }, [loadAuthors]);
 
-  const handleRefresh = React.useCallback(() => {
-    if (!isLoading) loadData();
-  }, [isLoading, loadData]);
-
   // Requirement 3.1.3 - Navigate to detail/modify view
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
-    ({ row }) => {
-      navigate(`/sales/${row.id}`);
-    },
+    ({ row }) => navigate(`/sales/${row.id}`),
     [navigate],
   );
 
   // Requirement 3.1.4 - Navigate to sales input tool
-  const handleCreateClick = React.useCallback(() => {
-    navigate('/sales/new');
-  }, [navigate]);
+  const handleCreateClick = React.useCallback(() => navigate('/sales/new'), [navigate]);
 
-  const handleImportClick = React.useCallback(() => {
-    navigate('/sales/import');
-  }, [navigate]);
+  const handleImportClick = React.useCallback(() => navigate('/sales/import'), [navigate]);
 
   const handleRowEdit = React.useCallback(
-    (sale: SaleResponse) => () => {
-      navigate(`/sales/${sale.id}/edit`);
-    },
+    (sale: SaleResponse) => () => navigate(`/sales/${sale.id}/edit`),
     [navigate],
   );
 
@@ -178,7 +149,7 @@ export default function SaleList() {
             severity: 'success',
             autoHideDuration: 3000,
           });
-          loadData();
+          refresh();
         } catch (deleteError) {
           notifications.show(
             `Failed to delete sale record. Reason: ${(deleteError as Error).message}`,
@@ -191,7 +162,7 @@ export default function SaleList() {
         setIsLoading(false);
       }
     },
-    [dialogs, notifications, loadData],
+    [dialogs, notifications, refresh, setIsLoading],
   );
 
   const columns = React.useMemo<GridColDef<SaleResponse>[]>(
@@ -321,7 +292,7 @@ export default function SaleList() {
         <Stack direction="row" alignItems="center" spacing={1}>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <span>
-              <IconButton size="small" aria-label="refresh" onClick={handleRefresh}>
+              <IconButton size="small" aria-label="refresh" onClick={refresh}>
                 <RefreshIcon />
               </IconButton>
             </span>
@@ -416,58 +387,18 @@ export default function SaleList() {
       }
     >
       <Box sx={{ flex: 1, width: '100%' }}>
-        {error ? (
-          <Box sx={{ flexGrow: 1 }}>
-            <Alert severity="error">{error.message}</Alert>
-          </Box>
-        ) : (
-          <DataGrid
-            rows={sales}
-            rowCount={totalCount}
-            columns={columns}
-            sortingMode="server"
-            paginationMode="server"
-            hideFooter={false}
-            paginationModel={paginationModel}
-            onPaginationModelChange={setPaginationModel}
-            sortModel={sortModel}
-            onSortModelChange={setSortModel}
-            disableRowSelectionOnClick
-            onRowClick={handleRowClick}
-            loading={isLoading}
-            pageSizeOptions={[10, 25, 50, 100, { value: SHOW_ALL_SIZE, label: 'All' }]}
-            sx={{
-              '--DataGrid-rowBorderColor': (theme) => theme.palette.divider,
-              '--DataGrid-containerBackground': (theme) => theme.palette.background.paper,
-              borderColor: 'divider',
-              borderRadius: 2,
-              boxShadow: '0 1px 3px 0 rgba(0,0,0,0.1), 0 1px 2px -1px rgba(0,0,0,0.1)',
-              '& .MuiDataGrid-footerContainer': {
-                borderColor: 'divider',
-              },
-              [`& .${gridClasses.columnHeader}, & .${gridClasses.cell}`]: {
-                outline: 'transparent',
-              },
-              [`& .${gridClasses.columnHeader}:focus-within, & .${gridClasses.cell}:focus-within`]:
-                {
-                  outline: 'none',
-                },
-              [`& .${gridClasses.row}:hover`]: {
-                cursor: 'pointer',
-              },
-              [`& .${gridClasses.columnHeaderTitle}`]: {
-                fontWeight: 700,
-                color: '#5C4033',
-              },
-            }}
-            slotProps={{
-              loadingOverlay: {
-                variant: 'circular-progress',
-                noRowsVariant: 'circular-progress',
-              },
-            }}
-          />
-        )}
+        <StandardDataGrid
+          rows={rows}
+          rowCount={rowCount}
+          columns={columns}
+          error={error}
+          onRowClick={handleRowClick}
+          loading={isLoading}
+          paginationModel={paginationModel}
+          onPaginationModelChange={onPaginationModelChange}
+          sortModel={sortModel}
+          onSortModelChange={setSortModel}
+        />
       </Box>
     </PageContainer>
   );
