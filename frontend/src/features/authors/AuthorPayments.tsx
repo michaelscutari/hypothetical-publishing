@@ -123,13 +123,13 @@ export default function AuthorPayments() {
       );
 
       const normalized: AuthorPaymentGroupResponse[] = (response.content ?? []).map((g) => {
-        const sales = (g.sales ?? []).slice().sort((a, b) => {
-          const yearDiff = (b.saleYear ?? 0) - (a.saleYear ?? 0);
+        const sales = g.sales.slice().sort((a, b) => {
+          const yearDiff = b.saleYear - a.saleYear;
           if (yearDiff !== 0) return yearDiff;
-          return (b.saleMonth ?? 0) - (a.saleMonth ?? 0);
+          return b.saleMonth - a.saleMonth;
         });
         const unpaidTotal = sales.reduce(
-          (sum, sale) => sum + (sale.hasAuthorBeenPaid ? 0 : (sale.authorRoyalty ?? 0)),
+          (sum, sale) => sum + (sale.hasAuthorBeenPaid ? 0 : sale.authorRoyalty),
           0,
         );
         return { ...g, sales, unpaidTotal };
@@ -164,7 +164,7 @@ export default function AuthorPayments() {
 
   const handleBeginPayAuthor = React.useCallback(
     (group: AuthorPaymentGroupResponse) => {
-      const unpaidCount = (group.sales ?? []).filter((sale) => !sale.hasAuthorBeenPaid).length;
+      const unpaidCount = group.sales.filter((sale) => !sale.hasAuthorBeenPaid).length;
       if (unpaidCount === 0) {
         notifications.show('No unpaid records for this author', {
           severity: 'error',
@@ -186,7 +186,7 @@ export default function AuthorPayments() {
     try {
       const req: MarkAllPaidRequest = { authorId: confirmingGroup.authorId };
       const resp = await SalesService.markAuthorPaymentsPaid(req);
-      const updatedCount = resp?.updatedCount ?? 0;
+      const updatedCount = resp.updatedCount;
       notifications.show(
         `Marked ${updatedCount} record(s) for ${confirmingGroup.author} as paid.`,
         {
@@ -242,7 +242,7 @@ export default function AuthorPayments() {
 
           <Autocomplete
             freeSolo
-            options={authorOptions.map((a) => a.name ?? '')}
+            options={authorOptions.map((a) => a.name)}
             inputValue={searchQuery}
             onInputChange={(_e, v) => setSearchQuery(typeof v === 'string' ? v : '')}
             onChange={(_e, v) => {
@@ -292,7 +292,7 @@ export default function AuthorPayments() {
               const unpaidTotal = group.unpaidTotal ?? 0;
               return (
                 <Accordion
-                  key={`${group.author ?? 'author'}-${idx}`}
+                  key={`${group.author}-${idx}`}
                   defaultExpanded={false}
                   sx={{
                     mb: 1,
@@ -360,7 +360,7 @@ export default function AuthorPayments() {
                         </TableHead>
 
                         <TableBody>
-                          {(group.sales ?? []).map((sale) => (
+                          {group.sales.map((sale) => (
                             <TableRow
                               key={sale.id}
                               hover
@@ -383,22 +383,18 @@ export default function AuthorPayments() {
                                     });
                                   }}
                                 >
-                                  {sale.bookTitle ?? `Book ${sale.bookId}`}
+                                  {sale.bookTitle}
                                 </Typography>
                               </TableCell>
 
                               <TableCell>
-                                {sale.saleYear && sale.saleMonth
-                                  ? formatMonthYear(sale.saleMonth, sale.saleYear)
-                                  : '—'}
+                                {formatMonthYear(sale.saleMonth, sale.saleYear)}
                               </TableCell>
 
-                              <TableCell align="right">{sale.quantitySold ?? '-'}</TableCell>
+                              <TableCell align="right">{sale.quantitySold}</TableCell>
 
                               <TableCell align="right">
-                                {sale.authorRoyalty != null
-                                  ? formatCurrency(sale.authorRoyalty)
-                                  : '—'}
+                                {formatCurrency(sale.authorRoyalty)}
                               </TableCell>
 
                               <TableCell>

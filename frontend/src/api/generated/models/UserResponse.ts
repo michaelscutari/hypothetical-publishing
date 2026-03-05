@@ -9,6 +9,6 @@ export type UserResponse = {
     /**
      * Username
      */
-    username?: string;
+    username: string;
 };
 

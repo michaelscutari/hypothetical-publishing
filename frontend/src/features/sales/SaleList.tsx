@@ -54,8 +54,8 @@ export default function SaleList() {
 
   const fetchFn = React.useCallback(
     async (params: { page: number; pageSize: number; showAll: boolean }) => {
-      const sortField = sortModel?.[0]?.field;
-      const sortDirection = sortModel?.[0]?.sort ?? 'desc';
+      const sortFields = sortModel?.map((col) => col.field);
+      const sortDirections = sortModel?.map((col) => col.sort ?? 'desc');
 
       // Date range filter - requirement 3.1.2
       const startDateParam = startDate
@@ -71,8 +71,8 @@ export default function SaleList() {
         params.page,
         params.pageSize,
         params.showAll,
-        sortField,
-        sortDirection,
+        sortFields,
+        sortDirections,
         startDateParam,
         endDateParam,
         authorIdParam,
@@ -166,7 +166,7 @@ export default function SaleList() {
         width: 200,
         renderCell: (params) => {
           const bookId = params.row.bookId;
-          const title = params.row.bookTitle ?? `Book ${bookId}`;
+          const title = params.row.bookTitle;
 
           return (
             <Link
@@ -209,10 +209,7 @@ export default function SaleList() {
         field: 'saleYear',
         headerName: 'Month/Year',
         width: 120,
-        valueGetter: (_value, row) => {
-          if (row.saleYear && row.saleMonth) return formatMonthYear(row.saleMonth, row.saleYear);
-          return '—';
-        },
+        valueGetter: (_value, row) => formatMonthYear(row.saleMonth, row.saleYear),
       },
       {
         field: 'quantitySold',
@@ -225,14 +222,14 @@ export default function SaleList() {
         headerName: 'Publisher Revenue',
         type: 'number',
         width: 160,
-        valueFormatter: (value) => (value != null ? formatCurrency(Number(value)) : '—'),
+        valueFormatter: (value) => formatCurrency(Number(value)),
       },
       {
         field: 'authorRoyalty',
         headerName: 'Author Royalty',
         type: 'number',
         width: 150,
-        valueFormatter: (value) => (value != null ? formatCurrency(Number(value)) : '—'),
+        valueFormatter: (value) => formatCurrency(Number(value)),
       },
       {
         field: 'hasAuthorBeenPaid',
@@ -264,14 +261,15 @@ export default function SaleList() {
     [handleRowEdit, handleRowDelete],
   );
 
-  const pageTitle = 'Sales Records';
+  const pageTitle = 'Records';
 
   return (
     <PageContainer
+      maxWidth="xl"
       title={pageTitle}
       breadcrumbs={[{ title: pageTitle }]}
       actions={
-        <Stack direction="row" alignItems="center" spacing={1}>
+        <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <div>
               <IconButton size="small" aria-label="refresh" onClick={refresh}>
@@ -301,6 +299,7 @@ export default function SaleList() {
                   clearable: true,
                 },
               }}
+              sx={{ width: 160 }}
             />
             <DatePicker
               label="End"
@@ -322,12 +321,13 @@ export default function SaleList() {
                   clearable: true,
                 },
               }}
+              sx={{ width: 160 }}
             />
           </LocalizationProvider>
 
           <Autocomplete
             options={authors}
-            getOptionLabel={(author) => author.name ?? ''}
+            getOptionLabel={(author) => author.name}
             renderInput={(params) => (
               <TextField {...params} label="Author" size="small" placeholder="All Authors" />
             )}
@@ -349,20 +349,10 @@ export default function SaleList() {
             </Select>
           </FormControl>
 
-          <Button
-            variant="contained"
-            size="small"
-            onClick={handleCreateClick}
-            startIcon={<AddIcon />}
-          >
+          <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             New Sale
           </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={handleImportClick}
-            startIcon={<UploadFileIcon />}
-          >
+          <Button variant="outlined" onClick={handleImportClick} startIcon={<UploadFileIcon />}>
             Import CSV
           </Button>
         </Stack>

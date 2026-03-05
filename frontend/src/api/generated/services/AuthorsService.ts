@@ -80,8 +80,8 @@ export class AuthorsService {
         size: number = 25,
         showAll: boolean = false,
         query?: string,
-        sortField?: string,
-        sortDirection: string = 'asc',
+        sortField?: Array<string>,
+        sortDirection?: Array<string>,
     ): CancelablePromise<PagedResponseAuthorResponse> {
         return __request(OpenAPI, {
             method: 'GET',

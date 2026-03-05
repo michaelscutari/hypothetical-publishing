@@ -2,6 +2,7 @@ package edu.duke.bookpublishing.author;
 
 import edu.duke.bookpublishing.author.dto.AuthorRequest;
 import edu.duke.bookpublishing.author.dto.AuthorResponse;
+import edu.duke.bookpublishing.common.SortUtils;
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -41,16 +42,11 @@ public class AuthorController {
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll,
       @RequestParam(required = false) String query,
-      @RequestParam(required = false) String sortField,
-      @RequestParam(defaultValue = "asc") String sortDirection) {
+      @RequestParam(required = false) List<String> sortField,
+      @RequestParam(required = false) List<String> sortDirection) {
 
-    Sort sort;
-    if (sortField != null) {
-      Sort.Direction dir = Sort.Direction.fromString(sortDirection);
-      sort = Sort.by(new Sort.Order(dir, sortField));
-    } else {
-      sort = Sort.by(Sort.Order.asc("name").ignoreCase());
-    }
+    Sort sort =
+        SortUtils.buildSort(sortField, sortDirection, Sort.by(Sort.Order.asc("name").ignoreCase()));
 
     if (showAll) {
       List<Author> all = authorService.findAll(query, sort);

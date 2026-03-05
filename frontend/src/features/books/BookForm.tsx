@@ -31,6 +31,10 @@ type BookFormValues = Partial<Omit<BookResponse, 'id' | 'totalSalesToDate'>> & {
 const CREATE_NEW_SENTINEL: AuthorResponse = {
   id: -1,
   name: '+ Create new author',
+  bookCount: 0,
+  totalRoyalty: 0,
+  paidRoyalty: 0,
+  unpaidRoyalty: 0,
 };
 
 export interface BookFormState {
@@ -207,11 +211,11 @@ export default function BookForm(props: BookFormProps) {
     if (authorOptions.length === 0) return;
     processedLookupRef.current = lookupAuthorName;
     const term = lookupAuthorName.toLowerCase();
-    const match = authorOptions.find((a) => (a.name ?? '').toLowerCase() === term);
+    const match = authorOptions.find((a) => a.name.toLowerCase() === term);
     if (match) {
       setSelectedAuthor(match);
-      onFieldChange('authorId', match.id ?? null);
-      onFieldChange('author', match.name ?? null);
+      onFieldChange('authorId', match.id);
+      onFieldChange('author', match.name);
     } else {
       setAuthorSearchInput(lookupAuthorName);
     }
@@ -253,8 +257,8 @@ export default function BookForm(props: BookFormProps) {
       });
       setAuthorOptions((prev) => [...prev, created]);
       setSelectedAuthor(created);
-      onFieldChange('authorId', created.id ?? null);
-      onFieldChange('author', created.name ?? null);
+      onFieldChange('authorId', created.id);
+      onFieldChange('author', created.name);
       setCreateAuthorOpen(false);
     } catch (err) {
       setNewAuthorErrors({ name: (err as Error).message });
@@ -376,16 +380,14 @@ export default function BookForm(props: BookFormProps) {
               onChange={handleAuthorChange}
               inputValue={authorSearchInput}
               onInputChange={(_e, v) => setAuthorSearchInput(v)}
-              getOptionLabel={(option) =>
-                option.id === CREATE_NEW_SENTINEL.id ? '' : (option.name ?? '')
-              }
+              getOptionLabel={(option) => (option.id === CREATE_NEW_SENTINEL.id ? '' : option.name)}
               isOptionEqualToValue={(option, value) => option.id === value.id}
               filterOptions={(options, { inputValue }) => {
                 const term = inputValue.toLowerCase();
                 return options.filter(
                   (o) =>
                     o.id === CREATE_NEW_SENTINEL.id ||
-                    (o.name ?? '').toLowerCase().includes(term) ||
+                    o.name.toLowerCase().includes(term) ||
                     (o.email ?? '').toLowerCase().includes(term),
                 );
               }}

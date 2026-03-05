@@ -16,13 +16,7 @@ import FullPageLoader from '@/components/FullPageLoader';
 import { formatCurrency, formatMonthYear, formatPercent, truncate } from '@/utils/formatting';
 import BookSalesTable from './BookSalesTable';
 import FinancialSummary from './FinancialSummary';
-import {
-  BooksService,
-  SalesService,
-  type BookDetailResponse,
-  type SaleResponse,
-  type PagedResponseSaleResponse,
-} from '@/api';
+import { BooksService, type BookDetailResponse } from '@/api';
 import { useDialogs } from '@/hooks/useDialogs/useDialogs';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import PageContainer from '@/components/PageContainer';
@@ -39,8 +33,6 @@ export default function BookShow() {
   const [book, setBook] = React.useState<BookDetailResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<Error | null>(null);
-
-  const [sales, setSales] = React.useState<SaleResponse[]>([]);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -59,36 +51,6 @@ export default function BookShow() {
   React.useEffect(() => {
     void loadData();
   }, [loadData]);
-
-  const reloadSales = React.useCallback(async () => {
-    if (!bookId) {
-      setSales([]);
-      return;
-    }
-    try {
-      // TODO: replace with a backend endpoint that filters by bookId server-side
-      const response: PagedResponseSaleResponse = await SalesService.getSales(
-        0,
-        1000,
-        true,
-        'saleYear',
-        'desc',
-      );
-      const bookSales = (response.content ?? []).filter((sale) => sale.bookId === Number(bookId));
-      const sorted = bookSales.sort((a, b) => {
-        const aKey = (a.saleYear ?? 0) * 100 + (a.saleMonth ?? 0);
-        const bKey = (b.saleYear ?? 0) * 100 + (b.saleMonth ?? 0);
-        return bKey - aKey;
-      });
-      setSales(sorted);
-    } catch {
-      setSales([]);
-    }
-  }, [bookId]);
-
-  React.useEffect(() => {
-    void reloadSales();
-  }, [reloadSales]);
 
   const handleBookEdit = React.useCallback(() => {
     navigate(`/books/${bookId}/edit`);
@@ -238,9 +200,7 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Publication Date</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.publicationYear && book.publicationMonth
-                  ? formatMonthYear(book.publicationMonth, book.publicationYear)
-                  : '—'}
+                {formatMonthYear(book.publicationMonth, book.publicationYear)}
               </Typography>
             </Paper>
           </Grid>
@@ -249,9 +209,7 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Distributor Royalty Rate</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.distributorAuthorRoyaltyRate != null
-                  ? formatPercent(book.distributorAuthorRoyaltyRate)
-                  : '—'}
+                {formatPercent(book.distributorAuthorRoyaltyRate)}
               </Typography>
             </Paper>
           </Grid>
@@ -260,9 +218,7 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Handsold Royalty Rate</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.handsoldAuthorRoyaltyRate != null
-                  ? formatPercent(book.handsoldAuthorRoyaltyRate)
-                  : '—'}
+                {formatPercent(book.handsoldAuthorRoyaltyRate)}
               </Typography>
             </Paper>
           </Grid>
@@ -282,7 +238,7 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Cover Price</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.coverPrice != null ? formatCurrency(Number(book.coverPrice)) : '—'}
+                {formatCurrency(Number(book.coverPrice))}
               </Typography>
             </Paper>
           </Grid>
@@ -291,7 +247,7 @@ export default function BookShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Print Cost</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {book.printCost != null ? formatCurrency(Number(book.printCost)) : '—'}
+                {formatCurrency(Number(book.printCost))}
               </Typography>
             </Paper>
           </Grid>
@@ -330,28 +286,13 @@ export default function BookShow() {
         </Grid>
 
         <Box sx={{ mt: 3 }}>
-          <BookSalesTable
-            bookId={book.id}
-            sales={sales}
-            reloadSales={reloadSales}
-            onChange={() => void reloadSales()}
-          />
+          <BookSalesTable bookId={book.id} onChange={loadData} />
         </Box>
       </Box>
     ) : null;
-  }, [
-    isLoading,
-    error,
-    book,
-    handleBack,
-    handleBookEdit,
-    handleBookDelete,
-    sales,
-    reloadSales,
-    navigate,
-  ]);
+  }, [isLoading, error, book, handleBack, handleBookEdit, handleBookDelete, loadData, navigate]);
 
-  const breadcrumbTitle = book?.title ? truncate(book.title, 30) : 'Book';
+  const breadcrumbTitle = book ? truncate(book.title, 30) : 'Book';
 
   if (isLoading) {
     return <FullPageLoader />;

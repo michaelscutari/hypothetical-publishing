@@ -22,6 +22,11 @@ public final class SaleSpecifications {
     return (root, query, cb) -> cb.equal(root.get("book").get("author").get("id"), authorId);
   }
 
+  /** Filters sales by book ID. */
+  public static Specification<Sale> byBook(Long bookId) {
+    return (root, query, cb) -> cb.equal(root.get("book").get("id"), bookId);
+  }
+
   /** Filters sales by sale source (DISTRIBUTOR or HAND_SOLD). */
   public static Specification<Sale> bySaleSource(SaleSource saleSource) {
     return (root, query, cb) -> cb.equal(root.get("saleSource"), saleSource);

@@ -45,11 +45,7 @@ function computePublisherRevenue(
     return publisherRevenue;
   }
   if (!book || quantity == null) return null;
-  return computeHandsoldRevenue(
-    Number(book.coverPrice ?? 0),
-    Number(book.printCost ?? 0),
-    quantity,
-  );
+  return computeHandsoldRevenue(Number(book.coverPrice), Number(book.printCost), quantity);
 }
 
 function computeSaleRoyalty(
@@ -60,8 +56,8 @@ function computeSaleRoyalty(
   if (!book || revenue == null) return null;
   const rate =
     saleSource === SaleRequest.saleSource.HAND_SOLD
-      ? (book.handsoldAuthorRoyaltyRate ?? 0)
-      : (book.distributorAuthorRoyaltyRate ?? 0);
+      ? book.handsoldAuthorRoyaltyRate
+      : book.distributorAuthorRoyaltyRate;
   return computeRoyalty(revenue, rate);
 }
 

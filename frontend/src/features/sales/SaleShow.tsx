@@ -41,11 +41,8 @@ export default function SaleShow() {
       const saleData = await SalesService.getSaleById(Number(saleId));
       setSale(saleData);
 
-      // Load book details
-      if (saleData.bookId) {
-        const bookData = await BooksService.getBookById(saleData.bookId);
-        setBook(bookData);
-      }
+      const bookData = await BooksService.getBookById(saleData.bookId);
+      setBook(bookData);
     } catch (loadError) {
       setError(loadError as Error);
     } finally {
@@ -187,9 +184,7 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Sale Period</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {sale.saleYear && sale.saleMonth
-                  ? formatMonthYear(sale.saleMonth, sale.saleYear)
-                  : '—'}
+                {formatMonthYear(sale.saleMonth, sale.saleYear)}
               </Typography>
             </Paper>
           </Grid>
@@ -209,7 +204,7 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Quantity Sold</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {sale.quantitySold ?? 0}
+                {sale.quantitySold}
               </Typography>
             </Paper>
           </Grid>
@@ -217,9 +212,7 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Publisher Revenue</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {sale.publisherRevenue != null
-                  ? formatCurrency(Number(sale.publisherRevenue))
-                  : '—'}
+                {formatCurrency(Number(sale.publisherRevenue))}
               </Typography>
             </Paper>
           </Grid>
@@ -227,7 +220,7 @@ export default function SaleShow() {
             <Paper sx={{ px: 2, py: 1 }}>
               <Typography variant="overline">Author Royalty</Typography>
               <Typography variant="body1" sx={{ mb: 1 }}>
-                {sale.authorRoyalty != null ? formatCurrency(Number(sale.authorRoyalty)) : '—'}
+                {formatCurrency(Number(sale.authorRoyalty))}
               </Typography>
             </Paper>
           </Grid>

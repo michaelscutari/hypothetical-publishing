@@ -50,7 +50,7 @@ export default function AuthorShow() {
         ['asc', 'asc', 'asc'],
       );
       const bookList = booksResponse.content ?? [];
-      const bookDetails = await Promise.all(bookList.map((b) => BooksService.getBookById(b.id!)));
+      const bookDetails = await Promise.all(bookList.map((b) => BooksService.getBookById(b.id)));
       setBooks(bookDetails);
     } catch (loadError) {
       setError(loadError as Error);
@@ -196,29 +196,17 @@ export default function AuthorShow() {
                             : '—'}
                         </TableCell>
                         <TableCell>
-                          {book.publicationYear && book.publicationMonth
-                            ? formatMonthYear(book.publicationMonth, book.publicationYear)
-                            : '—'}
+                          {formatMonthYear(book.publicationMonth, book.publicationYear)}
                         </TableCell>
                         <TableCell align="right">
-                          {book.distributorAuthorRoyaltyRate != null
-                            ? formatPercent(Number(book.distributorAuthorRoyaltyRate))
-                            : '—'}
+                          {formatPercent(Number(book.distributorAuthorRoyaltyRate))}
                         </TableCell>
                         <TableCell align="right">
-                          {book.handsoldAuthorRoyaltyRate != null
-                            ? formatPercent(Number(book.handsoldAuthorRoyaltyRate))
-                            : '—'}
+                          {formatPercent(Number(book.handsoldAuthorRoyaltyRate))}
                         </TableCell>
-                        <TableCell align="right">
-                          {book.totalRoyalty != null ? formatCurrency(book.totalRoyalty) : '—'}
-                        </TableCell>
-                        <TableCell align="right">
-                          {book.paidRoyalty != null ? formatCurrency(book.paidRoyalty) : '—'}
-                        </TableCell>
-                        <TableCell align="right">
-                          {book.unpaidRoyalty != null ? formatCurrency(book.unpaidRoyalty) : '—'}
-                        </TableCell>
+                        <TableCell align="right">{formatCurrency(book.totalRoyalty)}</TableCell>
+                        <TableCell align="right">{formatCurrency(book.paidRoyalty)}</TableCell>
+                        <TableCell align="right">{formatCurrency(book.unpaidRoyalty)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -249,7 +237,7 @@ export default function AuthorShow() {
       title={author?.name}
       breadcrumbs={[
         { title: 'Authors', path: '/authors' },
-        { title: author?.name ? truncate(author.name) : 'Author' },
+        { title: author ? truncate(author.name) : 'Author' },
       ]}
     >
       <Box sx={{ display: 'flex', flex: 1, width: '100%' }}>{renderShow}</Box>

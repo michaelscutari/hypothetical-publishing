@@ -84,13 +84,13 @@ export default function SaleEdit() {
       setSale(saleData);
 
       // Set form values
-      setSaleMonth(saleData.saleMonth ?? 1);
-      setSaleYear(saleData.saleYear ?? new Date().getFullYear());
-      setQuantitySold(saleData.quantitySold ?? 0);
-      setPublisherRevenue(String(saleData.publisherRevenue ?? 0));
-      setAuthorRoyalty(String(saleData.authorRoyalty ?? 0));
-      setSaleSource(saleData.saleSource ?? SaleRequest.saleSource.DISTRIBUTOR);
-      setHasAuthorBeenPaid(saleData.hasAuthorBeenPaid ?? false);
+      setSaleMonth(saleData.saleMonth);
+      setSaleYear(saleData.saleYear);
+      setQuantitySold(saleData.quantitySold);
+      setPublisherRevenue(String(saleData.publisherRevenue));
+      setAuthorRoyalty(String(saleData.authorRoyalty));
+      setSaleSource(saleData.saleSource as unknown as SaleRequest.saleSource);
+      setHasAuthorBeenPaid(saleData.hasAuthorBeenPaid);
       setComment(saleData.comment ?? '');
 
       // Load all books for dropdown

@@ -1,5 +1,6 @@
 package edu.duke.bookpublishing.sales;
 
+import edu.duke.bookpublishing.common.SortUtils;
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
@@ -56,30 +57,29 @@ public class SaleController {
       @RequestParam(defaultValue = "0") int page,
       @RequestParam(defaultValue = "25") int size,
       @RequestParam(defaultValue = "false") boolean showAll,
-      @RequestParam(required = false) String sortField,
-      @RequestParam(defaultValue = "asc") String sortDirection,
+      @RequestParam(required = false) List<String> sortField,
+      @RequestParam(required = false) List<String> sortDirection,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate startDate,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate endDate,
       @RequestParam(required = false) Long authorId,
       @RequestParam(required = false) String saleSource,
-      @RequestParam(required = false) String query) {
+      @RequestParam(required = false) String query,
+      @RequestParam(required = false) Long bookId) {
 
-    Sort sort =
-        sortField != null
-            ? Sort.by(new Sort.Order(Sort.Direction.fromString(sortDirection), sortField))
-            : Sort.unsorted();
+    Sort sort = SortUtils.buildSort(sortField, sortDirection, Sort.unsorted());
 
     if (showAll) {
       List<Sale> sales =
-          saleService.getAllSales(startDate, endDate, authorId, saleSource, query, sort);
+          saleService.getAllSales(startDate, endDate, authorId, bookId, saleSource, query, sort);
       return PagedResponse.unpaged(sales, SaleResponse::from);
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
     Page<Sale> sales =
-        saleService.getPagedSales(startDate, endDate, authorId, saleSource, query, pageable);
+        saleService.getPagedSales(
+            startDate, endDate, authorId, bookId, saleSource, query, pageable);
     return PagedResponse.paged(sales, SaleResponse::from);
   }
 

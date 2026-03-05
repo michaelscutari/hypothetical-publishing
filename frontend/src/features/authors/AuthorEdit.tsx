@@ -31,7 +31,7 @@ export default function AuthorEdit() {
     try {
       const authorData = await AuthorsService.getAuthorById(Number(authorId));
       setAuthor(authorData);
-      setForm({ name: authorData.name ?? '', email: authorData.email ?? '', errors: {} });
+      setForm({ name: authorData.name, email: authorData.email ?? '', errors: {} });
     } catch (loadError) {
       setError(loadError as Error);
     } finally {
@@ -91,7 +91,7 @@ export default function AuthorEdit() {
       title={author?.name ?? 'Edit Author'}
       breadcrumbs={[
         { title: 'Authors', path: '/authors' },
-        { title: truncate(author?.name ?? '') || 'Author', path: `/authors/${authorId}` },
+        { title: author ? truncate(author.name) : 'Author', path: `/authors/${authorId}` },
         { title: 'Edit' },
       ]}
     >

@@ -87,11 +87,11 @@ export default function AuthorRoyaltyReportView() {
     );
   }
 
-  const quarterColumns = reportData.quarters ?? [];
-  const books = reportData.allTime?.books ?? [];
+  const quarterColumns = reportData.quarters;
+  const books = reportData.allTime.books;
   const quarterColumnsByYear = quarterColumns.reduce<Record<number, typeof quarterColumns>>(
     (grouped, quarter) => {
-      const year = quarter.year ?? 0;
+      const year = quarter.year;
       if (!grouped[year]) {
         grouped[year] = [];
       }
@@ -119,27 +119,26 @@ export default function AuthorRoyaltyReportView() {
   >();
 
   quarterColumns.forEach((quarter) => {
-    quarter.books?.forEach((book) => {
-      const key = book.displayName ?? book.title ?? '';
-      if (!key) return;
+    quarter.books.forEach((book) => {
+      const key = book.displayName;
 
       const existing = allYearsBookMap.get(key);
       if (existing) {
-        existing.quantity += book.quantity ?? 0;
-        existing.handsold += book.handsold ?? 0;
-        existing.unpaidRoyalty += book.unpaidRoyalty ?? 0;
-        existing.paidRoyalty += book.paidRoyalty ?? 0;
-        existing.totalRoyalty += book.totalRoyalty ?? 0;
+        existing.quantity += book.quantity;
+        existing.handsold += book.handsold;
+        existing.unpaidRoyalty += book.unpaidRoyalty;
+        existing.paidRoyalty += book.paidRoyalty;
+        existing.totalRoyalty += book.totalRoyalty;
       } else {
         allYearsBookMap.set(key, {
           title: book.title ?? 'Unknown Book',
           seriesName: book.seriesName ?? undefined,
           seriesPosition: book.seriesPosition ?? undefined,
-          quantity: book.quantity ?? 0,
-          handsold: book.handsold ?? 0,
-          unpaidRoyalty: book.unpaidRoyalty ?? 0,
-          paidRoyalty: book.paidRoyalty ?? 0,
-          totalRoyalty: book.totalRoyalty ?? 0,
+          quantity: book.quantity,
+          handsold: book.handsold,
+          unpaidRoyalty: book.unpaidRoyalty,
+          paidRoyalty: book.paidRoyalty,
+          totalRoyalty: book.totalRoyalty,
         });
       }
     });
@@ -151,11 +150,11 @@ export default function AuthorRoyaltyReportView() {
 
   const allYearsTotals = quarterColumns.reduce(
     (totals, quarter) => ({
-      quantity: totals.quantity + (quarter.totals?.quantity ?? 0),
-      handsold: totals.handsold + (quarter.totals?.handsold ?? 0),
-      unpaidRoyalty: totals.unpaidRoyalty + (quarter.totals?.unpaidRoyalty ?? 0),
-      paidRoyalty: totals.paidRoyalty + (quarter.totals?.paidRoyalty ?? 0),
-      totalRoyalty: totals.totalRoyalty + (quarter.totals?.totalRoyalty ?? 0),
+      quantity: totals.quantity + quarter.totals.quantity,
+      handsold: totals.handsold + quarter.totals.handsold,
+      unpaidRoyalty: totals.unpaidRoyalty + quarter.totals.unpaidRoyalty,
+      paidRoyalty: totals.paidRoyalty + quarter.totals.paidRoyalty,
+      totalRoyalty: totals.totalRoyalty + quarter.totals.totalRoyalty,
     }),
     {
       quantity: 0,
@@ -276,9 +275,7 @@ export default function AuthorRoyaltyReportView() {
         <Box className="report-section">
           {sortedYears.map((year, index) => {
             const yearQuarters = quarterColumnsByYear[year] ?? [];
-            const sortedYearQuarters = [...yearQuarters].sort(
-              (a, b) => (a.quarter ?? 0) - (b.quarter ?? 0),
-            );
+            const sortedYearQuarters = [...yearQuarters].sort((a, b) => a.quarter - b.quarter);
 
             return (
               <Box
@@ -361,7 +358,7 @@ export default function AuthorRoyaltyReportView() {
                     <TableBody>
                       {books.map((book) => {
                         return (
-                          <TableRow key={`matrix-${year}-book-${book.displayName ?? book.title}`}>
+                          <TableRow key={`matrix-${year}-book-${book.displayName}`}>
                             <TableCell>
                               <Box>
                                 <Box component="div" sx={{ fontWeight: 500 }}>
@@ -378,7 +375,7 @@ export default function AuthorRoyaltyReportView() {
                               </Box>
                             </TableCell>
                             {sortedYearQuarters.map((quarter) => {
-                              const quarterBook = quarter.books?.find(
+                              const quarterBook = quarter.books.find(
                                 (candidate) => candidate.displayName === book.displayName,
                               );
 
@@ -431,31 +428,31 @@ export default function AuthorRoyaltyReportView() {
                               align="right"
                               sx={{ borderLeft: 2, borderColor: 'divider' }}
                             >
-                              {quarter.totals?.quantity ?? 0}
+                              {quarter.totals.quantity}
                             </TableCell>
                             <TableCell
                               key={`year-total-${year}-q${quarter.quarter}-hand`}
                               align="right"
                             >
-                              {quarter.totals?.handsold ?? 0}
+                              {quarter.totals.handsold}
                             </TableCell>
                             <TableCell
                               key={`year-total-${year}-q${quarter.quarter}-unpaid`}
                               align="right"
                             >
-                              {formatCurrency(quarter.totals?.unpaidRoyalty ?? 0)}
+                              {formatCurrency(quarter.totals.unpaidRoyalty)}
                             </TableCell>
                             <TableCell
                               key={`year-total-${year}-q${quarter.quarter}-paid`}
                               align="right"
                             >
-                              {formatCurrency(quarter.totals?.paidRoyalty ?? 0)}
+                              {formatCurrency(quarter.totals.paidRoyalty)}
                             </TableCell>
                             <TableCell
                               key={`year-total-${year}-q${quarter.quarter}-total`}
                               align="right"
                             >
-                              {formatCurrency(quarter.totals?.totalRoyalty ?? 0)}
+                              {formatCurrency(quarter.totals.totalRoyalty)}
                             </TableCell>
                           </>
                         ))}
@@ -485,7 +482,7 @@ export default function AuthorRoyaltyReportView() {
                         {books.map((book) => {
                           const yearBookMetrics = sortedYearQuarters.reduce(
                             (accumulated, quarter) => {
-                              const quarterBook = quarter.books?.find(
+                              const quarterBook = quarter.books.find(
                                 (candidate) => candidate.displayName === book.displayName,
                               );
 
@@ -545,20 +542,20 @@ export default function AuthorRoyaltyReportView() {
                           <TableCell>{year} Totals</TableCell>
                           <TableCell align="right">
                             {sortedYearQuarters.reduce(
-                              (total, quarter) => total + (quarter.totals?.quantity ?? 0),
+                              (total, quarter) => total + quarter.totals.quantity,
                               0,
                             )}
                           </TableCell>
                           <TableCell align="right">
                             {sortedYearQuarters.reduce(
-                              (total, quarter) => total + (quarter.totals?.handsold ?? 0),
+                              (total, quarter) => total + quarter.totals.handsold,
                               0,
                             )}
                           </TableCell>
                           <TableCell align="right">
                             {formatCurrency(
                               sortedYearQuarters.reduce(
-                                (total, quarter) => total + (quarter.totals?.unpaidRoyalty ?? 0),
+                                (total, quarter) => total + quarter.totals.unpaidRoyalty,
                                 0,
                               ),
                             )}
@@ -566,7 +563,7 @@ export default function AuthorRoyaltyReportView() {
                           <TableCell align="right">
                             {formatCurrency(
                               sortedYearQuarters.reduce(
-                                (total, quarter) => total + (quarter.totals?.paidRoyalty ?? 0),
+                                (total, quarter) => total + quarter.totals.paidRoyalty,
                                 0,
                               ),
                             )}
@@ -574,7 +571,7 @@ export default function AuthorRoyaltyReportView() {
                           <TableCell align="right">
                             {formatCurrency(
                               sortedYearQuarters.reduce(
-                                (total, quarter) => total + (quarter.totals?.totalRoyalty ?? 0),
+                                (total, quarter) => total + quarter.totals.totalRoyalty,
                                 0,
                               ),
                             )}

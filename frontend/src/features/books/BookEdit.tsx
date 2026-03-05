@@ -170,7 +170,14 @@ export default function BookEdit() {
           const author = await AuthorsService.getAuthorById(bookData.authorId);
           setAuthorForBook(author);
         } catch {
-          setAuthorForBook({ id: bookData.authorId, name: bookData.author });
+          setAuthorForBook({
+            id: bookData.authorId,
+            name: bookData.author,
+            bookCount: 0,
+            totalRoyalty: 0,
+            paidRoyalty: 0,
+            unpaidRoyalty: 0,
+          });
         }
       }
     } catch (loadError) {
@@ -251,7 +258,7 @@ export default function BookEdit() {
       title={book?.title ?? 'Edit Book'}
       breadcrumbs={[
         { title: 'Books', path: '/books' },
-        { title: book?.title ? truncate(book.title) : 'Book', path: `/books/${bookId}` },
+        { title: book ? truncate(book.title) : 'Book', path: `/books/${bookId}` },
         { title: 'Edit' },
       ]}
     >

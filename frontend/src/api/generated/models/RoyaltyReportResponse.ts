@@ -11,27 +11,27 @@ export type RoyaltyReportResponse = {
     /**
      * Author name
      */
-    author?: string;
+    author: string;
     /**
      * Start quarter (1-4)
      */
-    startQuarter?: number;
+    startQuarter: number;
     /**
      * Start year
      */
-    startYear?: number;
+    startYear: number;
     /**
      * End quarter (1-4)
      */
-    endQuarter?: number;
+    endQuarter: number;
     /**
      * End year
      */
-    endYear?: number;
+    endYear: number;
     /**
      * Quarter-by-quarter sections
      */
-    quarters?: Array<QuarterSection>;
-    allTime?: AllTimeTotals;
+    quarters: Array<QuarterSection>;
+    allTime: AllTimeTotals;
 };
 

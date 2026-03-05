@@ -9,51 +9,51 @@ export type SaleResponse = {
     /**
      * Unique sale identifier id
      */
-    id?: number;
+    id: number;
     /**
      * Unique identifier for the sold book
      */
-    bookId?: number;
+    bookId: number;
     /**
      * Title of the sold book
      */
-    bookTitle?: string;
+    bookTitle: string;
     /**
      * Author of the sold book
      */
-    bookAuthor?: string;
+    bookAuthor: string;
     /**
      * Sale source (distributor or handsold)
      */
-    saleSource?: SaleResponse.saleSource;
+    saleSource: SaleResponse.saleSource;
     /**
      * Author ID of the sold book
      */
-    authorId?: number;
+    authorId: number;
     /**
      * Month of the sale
      */
-    saleMonth?: number;
+    saleMonth: number;
     /**
      * Year of the sale
      */
-    saleYear?: number;
+    saleYear: number;
     /**
      * Quantity of books sold
      */
-    quantitySold?: number;
+    quantitySold: number;
     /**
      * Revenue of the publisher
      */
-    publisherRevenue?: number;
+    publisherRevenue: number;
     /**
      * The amount the author was paid
      */
-    authorRoyalty?: number;
+    authorRoyalty: number;
     /**
      * Indicates whether the author has been paid or not
      */
-    hasAuthorBeenPaid?: boolean;
+    hasAuthorBeenPaid: boolean;
     /**
      * Optional comment
      */
