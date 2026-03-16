@@ -1,5 +1,7 @@
 package edu.duke.bookpublishing.sales.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
+
 import edu.duke.bookpublishing.sales.Sale;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -12,18 +14,24 @@ import java.math.BigDecimal;
  */
 @Schema(description = "Sale response data")
 public record SaleResponse(
-    @Schema(description = "Unique sale identifier id") Long id,
-    @Schema(description = "Unique identifier for the sold book") Long bookId,
-    @Schema(description = "Title of the sold book") String bookTitle,
-    @Schema(description = "Author of the sold book") String bookAuthor,
-    @Schema(description = "Sale source (distributor or handsold)") SaleSource saleSource,
-    @Schema(description = "Author ID of the sold book") Long authorId,
-    @Schema(description = "Month of the sale") Integer saleMonth,
-    @Schema(description = "Year of the sale") Integer saleYear,
-    @Schema(description = "Quantity of books sold") Integer quantitySold,
-    @Schema(description = "Revenue of the publisher") BigDecimal publisherRevenue,
-    @Schema(description = "The amount the author was paid") BigDecimal authorRoyalty,
-    @Schema(description = "Indicates whether the author has been paid or not")
+    @Schema(description = "Unique sale identifier id", requiredMode = REQUIRED) Long id,
+    @Schema(description = "Unique identifier for the sold book", requiredMode = REQUIRED)
+        Long bookId,
+    @Schema(description = "Title of the sold book", requiredMode = REQUIRED) String bookTitle,
+    @Schema(description = "Author of the sold book", requiredMode = REQUIRED) String bookAuthor,
+    @Schema(description = "Sale source (distributor or handsold)", requiredMode = REQUIRED)
+        SaleSource saleSource,
+    @Schema(description = "Author ID of the sold book", requiredMode = REQUIRED) Long authorId,
+    @Schema(description = "Month of the sale", requiredMode = REQUIRED) Integer saleMonth,
+    @Schema(description = "Year of the sale", requiredMode = REQUIRED) Integer saleYear,
+    @Schema(description = "Quantity of books sold", requiredMode = REQUIRED) Integer quantitySold,
+    @Schema(description = "Revenue of the publisher", requiredMode = REQUIRED)
+        BigDecimal publisherRevenue,
+    @Schema(description = "The amount the author was paid", requiredMode = REQUIRED)
+        BigDecimal authorRoyalty,
+    @Schema(
+            description = "Indicates whether the author has been paid or not",
+            requiredMode = REQUIRED)
         boolean hasAuthorBeenPaid,
     @Schema(description = "Optional comment") String comment) {
 

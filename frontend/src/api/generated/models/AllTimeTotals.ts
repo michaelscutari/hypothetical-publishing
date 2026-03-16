@@ -10,7 +10,7 @@ export type AllTimeTotals = {
     /**
      * Per-book all-time rows
      */
-    books?: Array<ReportBookRow>;
-    totals?: ReportBookRow;
+    books: Array<ReportBookRow>;
+    totals: ReportBookRow;
 };
 

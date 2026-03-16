@@ -6,8 +6,8 @@
  * List of errors when mapping rows to Sale objects
  */
 export type ParsingError = {
-    rowNumber?: number;
-    rawLine?: Array<string>;
-    errorMessage?: string;
+    rowNumber: number;
+    rawLine: Array<string>;
+    errorMessage: string;
 };
 

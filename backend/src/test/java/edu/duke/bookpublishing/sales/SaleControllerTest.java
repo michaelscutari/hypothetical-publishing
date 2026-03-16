@@ -480,6 +480,56 @@ class SaleControllerTest {
   }
 
   @Test
+  void getAllSalesFiltersByBookId() throws Exception {
+    Cookie token = login();
+    Book bookA = createBook("Book A", "Author A", "9780000000010");
+    Book bookB = createBook("Book B", "Author B", "9780000000011");
+    createSale(
+        token,
+        new SaleRequest(
+            bookA.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("10.00"),
+            false,
+            null));
+    createSale(
+        token,
+        new SaleRequest(
+            bookA.getId(),
+            SaleSource.DISTRIBUTOR,
+            2,
+            2024,
+            5,
+            new BigDecimal("10.00"),
+            false,
+            null));
+    createSale(
+        token,
+        new SaleRequest(
+            bookB.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            5,
+            new BigDecimal("10.00"),
+            false,
+            null));
+
+    mockMvc
+        .perform(
+            get("/api/sales")
+                .cookie(token)
+                .param("showAll", "true")
+                .param("bookId", String.valueOf(bookA.getId())))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.content", hasSize(2)))
+        .andExpect(jsonPath("$.content[0].bookId").value(bookA.getId()));
+  }
+
+  @Test
   void getAuthorPaymentsGroupsByAuthorAndTotalsUnpaid() throws Exception {
     Cookie token = login();
     Book alpha = createBook("Alpha Book", "Author Alpha", "9780000000001");

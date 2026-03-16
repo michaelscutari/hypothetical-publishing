@@ -9,42 +9,42 @@ export type AuthorPaymentSaleResponse = {
     /**
      * Unique sale identifier
      */
-    id?: number;
+    id: number;
     /**
      * Unique identifier for the sold book
      */
-    bookId?: number;
+    bookId: number;
     /**
      * Book title
      */
-    bookTitle?: string;
+    bookTitle: string;
     /**
      * Book author
      */
-    bookAuthor?: string;
+    bookAuthor: string;
     /**
      * Month of the sale
      */
-    saleMonth?: number;
+    saleMonth: number;
     /**
      * Year of the sale
      */
-    saleYear?: number;
+    saleYear: number;
     /**
      * Quantity of books sold
      */
-    quantitySold?: number;
+    quantitySold: number;
     /**
      * Revenue of the publisher
      */
-    publisherRevenue?: number;
+    publisherRevenue: number;
     /**
      * The amount the author was paid
      */
-    authorRoyalty?: number;
+    authorRoyalty: number;
     /**
      * Indicates whether the author has been paid or not
      */
-    hasAuthorBeenPaid?: boolean;
+    hasAuthorBeenPaid: boolean;
 };
 

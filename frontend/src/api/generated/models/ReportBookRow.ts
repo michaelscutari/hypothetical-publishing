@@ -9,7 +9,7 @@ export type ReportBookRow = {
     /**
      * Display name — series name (position) or standalone title
      */
-    displayName?: string;
+    displayName: string;
     /**
      * Book title
      */
@@ -25,22 +25,22 @@ export type ReportBookRow = {
     /**
      * Total quantity sold
      */
-    quantity?: number;
+    quantity: number;
     /**
      * Quantity from handsold source
      */
-    handsold?: number;
+    handsold: number;
     /**
      * Unpaid author royalty
      */
-    unpaidRoyalty?: number;
+    unpaidRoyalty: number;
     /**
      * Paid author royalty
      */
-    paidRoyalty?: number;
+    paidRoyalty: number;
     /**
      * Total author royalty (paid + unpaid)
      */
-    totalRoyalty?: number;
+    totalRoyalty: number;
 };
 

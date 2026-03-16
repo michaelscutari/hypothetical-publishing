@@ -10,15 +10,15 @@ export type QuarterSection = {
     /**
      * Quarter number (1-4)
      */
-    quarter?: number;
+    quarter: number;
     /**
      * Year
      */
-    year?: number;
+    year: number;
     /**
      * Book rows for this quarter
      */
-    books?: Array<ReportBookRow>;
-    totals?: ReportBookRow;
+    books: Array<ReportBookRow>;
+    totals: ReportBookRow;
 };
 

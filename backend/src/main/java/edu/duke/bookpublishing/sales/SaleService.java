@@ -62,11 +62,12 @@ public class SaleService {
       LocalDate startDate,
       LocalDate endDate,
       Long authorId,
+      Long bookId,
       String saleSource,
       String query,
       Sort sort) {
     Specification<Sale> spec =
-        buildSaleSpecification(startDate, endDate, authorId, saleSource, query);
+        buildSaleSpecification(startDate, endDate, authorId, bookId, saleSource, query);
     return saleRepository.findAll(spec, sort);
   }
 
@@ -74,16 +75,22 @@ public class SaleService {
       LocalDate startDate,
       LocalDate endDate,
       Long authorId,
+      Long bookId,
       String saleSource,
       String query,
       Pageable pageable) {
     Specification<Sale> spec =
-        buildSaleSpecification(startDate, endDate, authorId, saleSource, query);
+        buildSaleSpecification(startDate, endDate, authorId, bookId, saleSource, query);
     return saleRepository.findAll(spec, pageable);
   }
 
   private Specification<Sale> buildSaleSpecification(
-      LocalDate startDate, LocalDate endDate, Long authorId, String saleSource, String query) {
+      LocalDate startDate,
+      LocalDate endDate,
+      Long authorId,
+      Long bookId,
+      String saleSource,
+      String query) {
     Specification<Sale> spec = Specification.where(null);
 
     if (startDate != null || endDate != null) {
@@ -94,6 +101,10 @@ public class SaleService {
 
     if (authorId != null) {
       spec = spec.and(SaleSpecifications.byAuthor(authorId));
+    }
+
+    if (bookId != null) {
+      spec = spec.and(SaleSpecifications.byBook(bookId));
     }
 
     if (saleSource != null && !saleSource.isBlank()) {

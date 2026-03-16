@@ -9,23 +9,23 @@ export type BookResponse = {
     /**
      * Unique book identifier
      */
-    id?: number;
+    id: number;
     /**
      * Book title
      */
-    title?: string;
+    title: string;
     /**
      * Author name
      */
-    author?: string;
+    author: string;
     /**
      * Author Id
      */
-    authorId?: number;
+    authorId: number;
     /**
      * ISBN-13 identifier
      */
-    isbn13?: string;
+    isbn13: string;
     /**
      * ISBN-10 identifier
      */
@@ -33,19 +33,19 @@ export type BookResponse = {
     /**
      * Publication year
      */
-    publicationYear?: number;
+    publicationYear: number;
     /**
      * Publication month (1-12)
      */
-    publicationMonth?: number;
+    publicationMonth: number;
     /**
      * Distributor author royalty rate
      */
-    distributorAuthorRoyaltyRate?: number;
+    distributorAuthorRoyaltyRate: number;
     /**
      * Handsold author royalty rate
      */
-    handsoldAuthorRoyaltyRate?: number;
+    handsoldAuthorRoyaltyRate: number;
     /**
      * Series name
      */
@@ -57,18 +57,18 @@ export type BookResponse = {
     /**
      * Cover price (USD)
      */
-    coverPrice?: number;
+    coverPrice: number;
     /**
      * Print cost (USD)
      */
-    printCost?: number;
+    printCost: number;
     /**
      * Total sales quantity to date
      */
-    totalSalesToDate?: number;
+    totalSalesToDate: number;
     /**
      * Whether this book has a cover image
      */
-    hasCover?: boolean;
+    hasCover: boolean;
 };
 

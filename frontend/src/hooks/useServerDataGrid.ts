@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import * as React from 'react';
 import type { GridPaginationModel } from '@mui/x-data-grid';
 
 const SHOW_ALL_SIZE = -1;
 
 export interface UseServerDataGridOptions<T> {
   /**
-   * Fetches a page of data. Must be wrapped in `useCallback` by the caller —
+   * Fetches a page of data. Must be wrapped in `React.useCallback` by the caller —
    * the hook re-fetches whenever `fetchFn` identity changes. When filters or
-   * search terms change, update the useCallback deps so a new reference is
+   * search terms change, update the React.useCallback deps so a new reference is
    * created, which triggers a re-fetch and resets pagination to page 0.
    */
   fetchFn: (params: {
@@ -33,19 +33,19 @@ export function useServerDataGrid<T>({
   fetchFn,
   initialPageSize = 10,
 }: UseServerDataGridOptions<T>): UseServerDataGridResult<T> {
-  const [rows, setRows] = useState<T[]>([]);
-  const [rowCount, setRowCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+  const [rows, setRows] = React.useState<T[]>([]);
+  const [rowCount, setRowCount] = React.useState(0);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<Error | null>(null);
+  const [paginationModel, setPaginationModel] = React.useState<GridPaginationModel>({
     page: 0,
     pageSize: initialPageSize,
   });
 
   // Track fetchFn identity to reset page on filter changes
-  const prevFetchFnRef = useRef(fetchFn);
+  const prevFetchFnRef = React.useRef(fetchFn);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (prevFetchFnRef.current !== fetchFn) {
       prevFetchFnRef.current = fetchFn;
       setPaginationModel((p) => (p.page === 0 ? p : { ...p, page: 0 }));
@@ -54,7 +54,7 @@ export function useServerDataGrid<T>({
 
   const showAll = paginationModel.pageSize === SHOW_ALL_SIZE;
 
-  const loadData = useCallback(async () => {
+  const loadData = React.useCallback(async () => {
     setError(null);
     setIsLoading(true);
     try {
@@ -65,18 +65,18 @@ export function useServerDataGrid<T>({
       });
       setRows(response.content ?? []);
       setRowCount(response.totalElements ?? 0);
-    } catch (e) {
-      setError(e as Error);
+    } catch (fetchError) {
+      setError(fetchError as Error);
     } finally {
       setIsLoading(false);
     }
   }, [fetchFn, paginationModel, showAll]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     loadData();
   }, [loadData]);
 
-  const refresh = useCallback(() => {
+  const refresh = React.useCallback(() => {
     if (!isLoading) loadData();
   }, [isLoading, loadData]);
 
