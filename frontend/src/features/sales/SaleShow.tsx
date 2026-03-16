@@ -11,7 +11,7 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { BooksService, SalesService, type BookResponse, type SaleResponse } from '@/api';
+import { SalesService, type SaleResponse } from '@/api';
 import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import { useDialogs } from '@/hooks/useDialogs/useDialogs';
@@ -30,7 +30,6 @@ export default function SaleShow() {
   const notifications = useNotifications();
 
   const [sale, setSale] = React.useState<SaleResponse | null>(null);
-  const [book, setBook] = React.useState<BookResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -41,9 +40,6 @@ export default function SaleShow() {
     try {
       const saleData = await SalesService.getSaleById(Number(saleId));
       setSale(saleData);
-
-      const bookData = await BooksService.getBookById(saleData.bookId);
-      setBook(bookData);
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -65,7 +61,7 @@ export default function SaleShow() {
     }
 
     const confirmed = await dialogs.confirm(
-      `Do you wish to delete this sale record for ${book?.title || 'this book'}?`,
+      `Do you wish to delete this sale record for ${sale.bookTitle}?`,
       {
         title: `Delete sale record?`,
         severity: 'error',
@@ -96,7 +92,7 @@ export default function SaleShow() {
       }
       setIsLoading(false);
     }
-  }, [sale, book, dialogs, saleId, navigate, notifications]);
+  }, [sale, dialogs, saleId, navigate, notifications]);
 
   const handleBack = React.useCallback(() => {
     navigate(backPath);
@@ -179,14 +175,12 @@ export default function SaleShow() {
                   },
                 }}
               >
-                {book?.title || `Book ID: ${sale.bookId}`}
+                {sale.bookTitle}
               </Box>
             </Typography>
-            {book?.author && (
-              <Typography variant="caption" color="text.secondary">
-                by {book.author}
-              </Typography>
-            )}
+            <Typography variant="caption" color="text.secondary">
+              by {sale.bookAuthor}
+            </Typography>
           </Paper>
         </Grid>
         <Grid size={{ xs: 12, sm: 6 }}>

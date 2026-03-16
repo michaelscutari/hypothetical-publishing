@@ -72,7 +72,6 @@ export default function AuthorPayments() {
   const [debouncedQuery, flush] = useDebounce(searchQuery, 300);
 
   const [authorOptions, setAuthorOptions] = React.useState<AuthorResponse[]>([]);
-  const authorDebounceRef = React.useRef<number | null>(null);
 
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
 
@@ -81,23 +80,19 @@ export default function AuthorPayments() {
   }, [debouncedQuery]);
 
   React.useEffect(() => {
-    if (authorDebounceRef.current) window.clearTimeout(authorDebounceRef.current);
-
-    const q = (searchQuery ?? '').trim();
-
-    authorDebounceRef.current = window.setTimeout(async () => {
+    let mounted = true;
+    void (async () => {
       try {
-        const response = await BooksService.searchAuthors(q || undefined, 0, 25, true);
-        setAuthorOptions(response.content ?? []);
+        const response = await BooksService.searchAuthors(debouncedQuery || undefined, 0, 25, true);
+        if (mounted) setAuthorOptions(response.content ?? []);
       } catch {
-        setAuthorOptions([]);
+        if (mounted) setAuthorOptions([]);
       }
-    }, 250);
-
+    })();
     return () => {
-      if (authorDebounceRef.current) window.clearTimeout(authorDebounceRef.current);
+      mounted = false;
     };
-  }, [searchQuery]);
+  }, [debouncedQuery]);
 
   // fetch grouped author payments from backend
   const loadGroups = React.useCallback(async () => {

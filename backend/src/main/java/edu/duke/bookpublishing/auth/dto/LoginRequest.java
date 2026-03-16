@@ -7,9 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 
 @Schema(description = "Login credentials")
 public record LoginRequest(
-    @Schema(description = "Username", example = "admin", requiredMode = REQUIRED)
-        @NotBlank
+    @Schema(description = "Username", example = "admin", requiredMode = REQUIRED) @NotBlank
         String username,
-    @Schema(description = "Password", example = "password", requiredMode = REQUIRED)
-        @NotBlank
+    @Schema(description = "Password", example = "password", requiredMode = REQUIRED) @NotBlank
         String password) {}

@@ -150,12 +150,12 @@ export class SalesService {
         });
     }
     /**
-     * Previews a CSV import
+     * Imports or previews a CSV file
      * @param formData
      * @returns IngramImportResponse OK
      * @throws ApiError
      */
-    public static previewCsv(
+    public static importCsv(
         formData?: IngramImportRequest,
     ): CancelablePromise<IngramImportResponse> {
         return __request(OpenAPI, {
