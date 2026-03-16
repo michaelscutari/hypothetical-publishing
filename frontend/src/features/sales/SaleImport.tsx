@@ -141,7 +141,7 @@ export default function SaleImport() {
 
     setIsSubmitting(true);
     try {
-      const response = await SalesService.previewCsv(payload);
+      const response = await SalesService.importCsv(payload);
       handleResponse(response);
     } catch (error) {
       setValidationError(getErrorMessage(error));
@@ -156,7 +156,7 @@ export default function SaleImport() {
 
     setIsSubmitting(true);
     try {
-      const response = await SalesService.previewCsv(payload);
+      const response = await SalesService.importCsv(payload);
       const csvErrors = response.csvErrors ?? [];
       const savingErrors = response.savingErrors ?? [];
 

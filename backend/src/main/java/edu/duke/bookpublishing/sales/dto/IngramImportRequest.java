@@ -1,5 +1,7 @@
 package edu.duke.bookpublishing.sales.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -8,19 +10,19 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Schema(description = "Request object for CSV import")
 public record IngramImportRequest(
-    @Schema(description = "The month in which the sale was made")
+    @Schema(description = "The month in which the sale was made", requiredMode = REQUIRED)
         @NotNull(message = "saleMonth.isRequired")
         @Min(1)
         @Max(12)
         Integer saleMonth,
-    @Schema(description = "The year in which the sale was made")
+    @Schema(description = "The year in which the sale was made", requiredMode = REQUIRED)
         @NotNull(message = "year.isRequired")
         @Min(1900)
         @Max(2100)
         Integer saleYear,
-    @Schema(description = "The CSV file that we wish to import")
+    @Schema(description = "The CSV file that we wish to import", requiredMode = REQUIRED)
         @NotNull(message = "csvFile.isRequired")
         MultipartFile csvFile,
-    @Schema(description = "Indicates if it is a preview request or not")
+    @Schema(description = "Indicates if it is a preview request or not", requiredMode = REQUIRED)
         @NotNull(message = "isPreview.isRequired")
         Boolean isPreview) {}

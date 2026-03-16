@@ -142,7 +142,7 @@ public class SaleController {
     return SaleResponse.from(saleService.createSale(sale));
   }
 
-  @Operation(operationId = "previewCsv", summary = "Previews a CSV import")
+  @Operation(operationId = "importCsv", summary = "Imports or previews a CSV file")
   @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Transactional
   public IngramImportResponse importIngramCsv(

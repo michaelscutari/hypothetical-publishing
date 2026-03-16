@@ -1,5 +1,7 @@
 package edu.duke.bookpublishing.sales.dto;
 
+import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
+
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
@@ -19,23 +21,32 @@ import java.time.YearMonth;
  */
 @Schema(description = "Request body for creating or updating a sale")
 public record SaleRequest(
-    @Schema(description = "The id of the corresponding book that was sold", example = "74398738961")
+    @Schema(
+            description = "The id of the corresponding book that was sold",
+            example = "74398738961",
+            requiredMode = REQUIRED)
         @NotNull(message = "Book is required")
         Long bookId,
-    @Schema(description = "Sale source (distributor or handsold)", example = "distributor")
+    @Schema(
+            description = "Sale source (distributor or handsold)",
+            example = "distributor",
+            requiredMode = REQUIRED)
         @NotNull(message = "Sale source is required")
         SaleSource saleSource,
-    @Schema(description = "The month the sale was made", example = "1")
+    @Schema(description = "The month the sale was made", example = "1", requiredMode = REQUIRED)
         @NotNull(message = "Sale Month is required")
         @Min(1)
         @Max(12)
         Integer saleMonth,
-    @Schema(description = "The year the sale was made", example = "2024")
+    @Schema(description = "The year the sale was made", example = "2024", requiredMode = REQUIRED)
         @NotNull(message = "Sale year is required")
         @Min(1900)
         @Max(2100)
         Integer saleYear,
-    @Schema(description = "The amount of books sold in this sale", example = "50")
+    @Schema(
+            description = "The amount of books sold in this sale",
+            example = "50",
+            requiredMode = REQUIRED)
         @NotNull(message = "Quantity is required")
         @Positive
         Integer quantitySold,
