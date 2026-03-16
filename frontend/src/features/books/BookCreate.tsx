@@ -8,6 +8,7 @@ import {
   type BookRequest,
   type BookResponse,
 } from '@/api';
+import { getErrorMessage } from '@/utils/error';
 import { validateBook, parseFieldErrors } from './bookValidation';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
@@ -206,7 +207,7 @@ export default function BookCreate() {
       if (fieldErrors) {
         setFormErrors(fieldErrors);
       } else {
-        notifications.show(`Failed to create book. Reason: ${(createError as Error).message}`, {
+        notifications.show(`Failed to create book. Reason: ${getErrorMessage(createError)}`, {
           severity: 'error',
           autoHideDuration: 3000,
         });

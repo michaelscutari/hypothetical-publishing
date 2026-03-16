@@ -63,8 +63,8 @@ export default function AuthorRoyaltyReport() {
     try {
       const response = await AuthorsService.getAllAuthors(0, 1000, true);
       setAuthors(response.content ?? []);
-    } catch (error) {
-      console.error('Failed to load authors:', error);
+    } catch {
+      // silent — empty author list is acceptable
     } finally {
       setLoadingAuthors(false);
     }

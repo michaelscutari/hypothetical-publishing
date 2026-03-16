@@ -19,6 +19,7 @@ import {
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { getErrorMessage } from '@/utils/error';
 import { formatMonthYear } from '@/utils/formatting';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useServerDataGrid } from '@/hooks/useServerDataGrid';
@@ -119,7 +120,7 @@ export default function BookList() {
           });
           refresh();
         } catch (deleteError) {
-          notifications.show(`Failed to delete book. Reason: ${(deleteError as Error).message}`, {
+          notifications.show(`Failed to delete book. Reason: ${getErrorMessage(deleteError)}`, {
             severity: 'error',
             autoHideDuration: 3000,
           });

@@ -3,7 +3,6 @@ import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
-import CircularProgress from '@mui/material/CircularProgress';
 import FormControl from '@mui/material/FormControl';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Grid from '@mui/material/Grid';
@@ -25,9 +24,11 @@ import {
   type SaleResponse,
 } from '@/api';
 import { MONTH_NAMES } from '@/constants/months';
+import { getErrorMessage } from '@/utils/error';
 import { isValidMonetaryInput } from '@/utils/monetary';
-import { computeHandsoldRevenue, computeRoyalty } from '@/utils/royalty';
+import { computePublisherRevenue, computeSaleRoyalty } from '@/utils/royalty';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import FullPageLoader from '@/components/FullPageLoader';
 import PageContainer from '@/components/PageContainer';
 
 export default function SaleEdit() {
@@ -40,7 +41,7 @@ export default function SaleEdit() {
   const [selectedBook, setSelectedBook] = React.useState<BookResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   // Form fields
   const [saleMonth, setSaleMonth] = React.useState<number>(1);
@@ -55,22 +56,26 @@ export default function SaleEdit() {
   const [comment, setComment] = React.useState<string>('');
 
   const computedRevenue = React.useMemo(() => {
-    if (saleSource === SaleRequest.saleSource.DISTRIBUTOR) {
-      return parseFloat(publisherRevenue) || 0;
-    }
-    return computeHandsoldRevenue(
-      Number(selectedBook?.coverPrice ?? 0),
-      Number(selectedBook?.printCost ?? 0),
-      quantitySold,
+    return (
+      computePublisherRevenue(
+        saleSource,
+        Number(selectedBook?.coverPrice ?? 0),
+        Number(selectedBook?.printCost ?? 0),
+        quantitySold,
+        parseFloat(publisherRevenue) || 0,
+      ) ?? 0
     );
   }, [publisherRevenue, saleSource, selectedBook, quantitySold]);
 
   const computedRoyalty = React.useMemo(() => {
-    const rate =
-      saleSource === SaleRequest.saleSource.HAND_SOLD
-        ? (selectedBook?.handsoldAuthorRoyaltyRate ?? 0)
-        : (selectedBook?.distributorAuthorRoyaltyRate ?? 0);
-    return computeRoyalty(computedRevenue, rate);
+    return (
+      computeSaleRoyalty(
+        computedRevenue,
+        saleSource,
+        selectedBook?.handsoldAuthorRoyaltyRate ?? 0,
+        selectedBook?.distributorAuthorRoyaltyRate ?? 0,
+      ) ?? 0
+    );
   }, [computedRevenue, saleSource, selectedBook]);
 
   // Load sale and books
@@ -89,7 +94,7 @@ export default function SaleEdit() {
       setQuantitySold(saleData.quantitySold);
       setPublisherRevenue(String(saleData.publisherRevenue));
       setAuthorRoyalty(String(saleData.authorRoyalty));
-      setSaleSource(saleData.saleSource as unknown as SaleRequest.saleSource);
+      setSaleSource(saleData.saleSource as SaleRequest.saleSource);
       setHasAuthorBeenPaid(saleData.hasAuthorBeenPaid);
       setComment(saleData.comment ?? '');
 
@@ -101,7 +106,7 @@ export default function SaleEdit() {
       const book = (booksResponse.content ?? []).find((b) => b.id === saleData.bookId);
       setSelectedBook(book ?? null);
     } catch (loadError) {
-      setError(loadError as Error);
+      setError(getErrorMessage(loadError));
     } finally {
       setIsLoading(false);
     }
@@ -154,7 +159,7 @@ export default function SaleEdit() {
         navigate(`/sales/${saleId}`);
       } catch (updateError) {
         notifications.show(
-          `Failed to update sale record. Reason: ${(updateError as Error).message}`,
+          `Failed to update sale record. Reason: ${getErrorMessage(updateError)}`,
           {
             severity: 'error',
             autoHideDuration: 3000,
@@ -183,33 +188,36 @@ export default function SaleEdit() {
     navigate(`/sales/${saleId}`);
   }, [navigate, saleId]);
 
-  const renderEdit = React.useMemo(() => {
-    if (isLoading) {
-      return (
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            m: 1,
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      );
-    }
-    if (error) {
-      return (
-        <Box sx={{ flexGrow: 1 }}>
-          <Alert severity="error">{error.message}</Alert>
-        </Box>
-      );
-    }
+  if (isLoading) {
+    return <FullPageLoader />;
+  }
 
-    return sale ? (
+  if (error) {
+    return (
+      <PageContainer
+        title="Edit Sale Record"
+        breadcrumbs={[
+          { title: 'Sales Records', path: '/sales' },
+          { title: `Sale ${saleId}`, path: `/sales/${saleId}` },
+          { title: 'Edit' },
+        ]}
+      >
+        <Alert severity="error">{error}</Alert>
+      </PageContainer>
+    );
+  }
+
+  if (!sale) return null;
+
+  return (
+    <PageContainer
+      title={`Edit Sale Record ${saleId}`}
+      breadcrumbs={[
+        { title: 'Sales Records', path: '/sales' },
+        { title: `Sale ${saleId}`, path: `/sales/${saleId}` },
+        { title: 'Edit' },
+      ]}
+    >
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
         <Grid container spacing={2} sx={{ mb: 2, width: '100%' }}>
           <Grid size={{ xs: 12, sm: 6 }}>
@@ -361,36 +369,6 @@ export default function SaleEdit() {
           </Button>
         </Stack>
       </Box>
-    ) : null;
-  }, [
-    isLoading,
-    error,
-    sale,
-    books,
-    selectedBook,
-    saleMonth,
-    saleYear,
-    quantitySold,
-    publisherRevenue,
-    authorRoyalty,
-    saleSource,
-    hasAuthorBeenPaid,
-    comment,
-    isSubmitting,
-    handleSubmit,
-    handleBack,
-  ]);
-
-  return (
-    <PageContainer
-      title={`Edit Sale Record ${saleId}`}
-      breadcrumbs={[
-        { title: 'Sales Records', path: '/sales' },
-        { title: `Sale ${saleId}`, path: `/sales/${saleId}` },
-        { title: 'Edit' },
-      ]}
-    >
-      <Box sx={{ display: 'flex', flex: 1 }}>{renderEdit}</Box>
     </PageContainer>
   );
 }

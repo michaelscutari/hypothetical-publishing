@@ -7,6 +7,7 @@ import TextField from '@mui/material/TextField';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthorsService } from '@/api';
+import { getErrorMessage } from '@/utils/error';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import PageContainer from '@/components/PageContainer';
 import { type AuthorFormState, validateAuthor } from './authorValidation';
@@ -41,7 +42,7 @@ export default function AuthorCreate() {
         });
         navigate('/authors');
       } catch (err) {
-        notifications.show(`Failed to create author. Reason: ${(err as Error).message}`, {
+        notifications.show(`Failed to create author. Reason: ${getErrorMessage(err)}`, {
           severity: 'error',
           autoHideDuration: 3000,
         });

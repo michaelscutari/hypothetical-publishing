@@ -11,6 +11,7 @@ import { AuthorsService, type AuthorResponse } from '@/api';
 import FullPageLoader from '@/components/FullPageLoader';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import PageContainer from '@/components/PageContainer';
+import { getErrorMessage } from '@/utils/error';
 import { truncate } from '@/utils/formatting';
 import { type AuthorFormState, validateAuthor } from './authorValidation';
 
@@ -23,7 +24,7 @@ export default function AuthorEdit() {
   const [form, setForm] = React.useState<AuthorFormState>({ name: '', email: '', errors: {} });
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -33,7 +34,7 @@ export default function AuthorEdit() {
       setAuthor(authorData);
       setForm({ name: authorData.name, email: authorData.email ?? '', errors: {} });
     } catch (loadError) {
-      setError(loadError as Error);
+      setError(getErrorMessage(loadError));
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +74,7 @@ export default function AuthorEdit() {
         });
         navigate(`/authors/${authorId}`);
       } catch (err) {
-        notifications.show(`Failed to update author. Reason: ${(err as Error).message}`, {
+        notifications.show(`Failed to update author. Reason: ${getErrorMessage(err)}`, {
           severity: 'error',
           autoHideDuration: 3000,
         });
@@ -96,7 +97,7 @@ export default function AuthorEdit() {
       ]}
     >
       {error ? (
-        <Alert severity="error">{error.message}</Alert>
+        <Alert severity="error">{error}</Alert>
       ) : (
         <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
           <Grid container spacing={2} sx={{ mb: 2 }}>

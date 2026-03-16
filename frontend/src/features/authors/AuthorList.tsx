@@ -20,6 +20,7 @@ import {
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AuthorsService, type AuthorResponse } from '@/api';
+import { getErrorMessage } from '@/utils/error';
 import { formatCurrency } from '@/utils/formatting';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useServerDataGrid } from '@/hooks/useServerDataGrid';
@@ -109,7 +110,7 @@ export default function AuthorList() {
           });
           refresh();
         } catch (deleteError) {
-          notifications.show(`Failed to delete author. Reason: ${(deleteError as Error).message}`, {
+          notifications.show(`Failed to delete author. Reason: ${getErrorMessage(deleteError)}`, {
             severity: 'error',
             autoHideDuration: 3000,
           });

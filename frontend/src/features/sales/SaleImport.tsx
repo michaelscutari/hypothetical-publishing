@@ -29,6 +29,7 @@ import {
   type ParsingError,
   type SaleResponse,
 } from '@/api';
+import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import PageContainer from '@/components/PageContainer';
@@ -143,7 +144,7 @@ export default function SaleImport() {
       const response = await SalesService.previewCsv(payload);
       handleResponse(response);
     } catch (error) {
-      setValidationError((error as Error).message);
+      setValidationError(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -173,7 +174,7 @@ export default function SaleImport() {
       });
       navigate('/sales');
     } catch (error) {
-      setValidationError((error as Error).message);
+      setValidationError(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }

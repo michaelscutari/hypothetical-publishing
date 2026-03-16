@@ -1,15 +1,9 @@
-import AddIcon from '@mui/icons-material/Add';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import CloseIcon from '@mui/icons-material/Close';
 import SearchIcon from '@mui/icons-material/Search';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import FormGroup from '@mui/material/FormGroup';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
@@ -18,23 +12,16 @@ import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
-import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthorsService, BooksService, type AuthorResponse, type BookResponse } from '@/api';
+import { BooksService, type AuthorResponse, type BookResponse } from '@/api';
 import { MONTH_NAMES } from '@/constants/months';
+import { useDebounce } from '@/hooks/useDebounce';
+import AuthorField from './AuthorField';
+import CoverImageField from './CoverImageField';
 
 type BookFormValues = Partial<Omit<BookResponse, 'id' | 'totalSalesToDate'>> & {
   coverImageFile?: File | null;
-};
-
-const CREATE_NEW_SENTINEL: AuthorResponse = {
-  id: -1,
-  name: '+ Create new author',
-  bookCount: 0,
-  totalRoyalty: 0,
-  paidRoyalty: 0,
-  unpaidRoyalty: 0,
 };
 
 export interface BookFormState {
@@ -58,8 +45,6 @@ export interface BookFormProps {
   lookupAuthorName?: string | null;
 }
 
-const ACCEPTED_IMAGE_TYPES = 'image/jpeg,image/gif,image/png,image/webp';
-
 export default function BookForm(props: BookFormProps) {
   const {
     formState,
@@ -81,195 +66,18 @@ export default function BookForm(props: BookFormProps) {
   const navigate = useNavigate();
 
   const [isSubmitting, setIsSubmitting] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // previewUrl is always a blob URL — either created from a picked file,
-  // or fetched from the server with credentials on edit load.
-  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
-  const pickedFilePreview = React.useRef<string | null>(null);
-
-  // On mount in edit mode, fetch the existing thumbnail with credentials.
-  React.useEffect(() => {
-    if (bookId == null) return;
-    let blobUrl: string | null = null;
-
-    fetch(`/api/books/${bookId}/cover/thumbnail`, { credentials: 'include' })
-      .then((res) => (res.ok ? res.blob() : null))
-      .then((blob) => {
-        if (blob) {
-          blobUrl = URL.createObjectURL(blob);
-          setPreviewUrl(blobUrl);
-        }
-      })
-      .catch(() => {
-        // No cover yet — leave preview empty.
-      });
-
-    return () => {
-      if (blobUrl) URL.revokeObjectURL(blobUrl);
-    };
-  }, [bookId]);
-
-  // Revoke the picked-file blob URL on unmount.
-  React.useEffect(() => {
-    return () => {
-      if (pickedFilePreview.current) {
-        URL.revokeObjectURL(pickedFilePreview.current);
-      }
-    };
-  }, []);
-
-  const handleFileChange = React.useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      const file = event.target.files?.[0] ?? null;
-
-      // Revoke any previous picked-file blob URL.
-      if (pickedFilePreview.current) {
-        URL.revokeObjectURL(pickedFilePreview.current);
-        pickedFilePreview.current = null;
-      }
-
-      if (file) {
-        const blobUrl = URL.createObjectURL(file);
-        pickedFilePreview.current = blobUrl;
-        setPreviewUrl(blobUrl);
-        onFieldChange('coverImageFile', file);
-      } else {
-        onFieldChange('coverImageFile', null);
-      }
-
-      // Reset the input so the same file can be re-selected if needed.
-      event.target.value = '';
-    },
-    [onFieldChange],
-  );
-  const handleClearImage = React.useCallback(() => {
-    if (pickedFilePreview.current) {
-      URL.revokeObjectURL(pickedFilePreview.current);
-      pickedFilePreview.current = null;
-    }
-    setPreviewUrl(null);
-    onFieldChange('coverImageFile', null);
-    // Reset the file input so the same file can be re-selected if needed.
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  }, [onFieldChange]);
-  const handleChooseFile = React.useCallback(() => {
-    fileInputRef.current?.click();
-  }, []);
-
-  const [authorOptions, setAuthorOptions] = React.useState<AuthorResponse[]>([]);
   const [selectedAuthor, setSelectedAuthor] = React.useState<AuthorResponse | null>(
     initialAuthor ?? null,
   );
-  const [authorSearchInput, setAuthorSearchInput] = React.useState('');
-  const processedLookupRef = React.useRef<string | null>(null);
-
-  const [createAuthorOpen, setCreateAuthorOpen] = React.useState(false);
-  const [newAuthorName, setNewAuthorName] = React.useState('');
-  const [newAuthorEmail, setNewAuthorEmail] = React.useState('');
-  const [newAuthorErrors, setNewAuthorErrors] = React.useState<{
-    name?: string;
-    email?: string;
-  }>({});
-  const [isCreatingAuthor, setIsCreatingAuthor] = React.useState(false);
-
-  React.useEffect(() => {
-    if (initialAuthor) {
-      setSelectedAuthor(initialAuthor);
-    }
-  }, [initialAuthor]);
-
-  React.useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const response = await BooksService.searchAuthors(undefined, 0, 25, true);
-        if (!cancelled) {
-          const items = response.content ?? [];
-          const seen = new Set<number>();
-          setAuthorOptions(
-            items.filter((a) => {
-              if (a.id == null || seen.has(a.id)) return false;
-              seen.add(a.id);
-              return true;
-            }),
-          );
-        }
-      } catch {
-        if (!cancelled) setAuthorOptions([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  React.useEffect(() => {
-    if (!lookupAuthorName || lookupAuthorName === processedLookupRef.current) return;
-    if (authorOptions.length === 0) return;
-    processedLookupRef.current = lookupAuthorName;
-    const term = lookupAuthorName.toLowerCase();
-    const match = authorOptions.find((a) => a.name.toLowerCase() === term);
-    if (match) {
-      setSelectedAuthor(match);
-      onFieldChange('authorId', match.id);
-      onFieldChange('author', match.name);
-    } else {
-      setAuthorSearchInput(lookupAuthorName);
-    }
-  }, [lookupAuthorName, authorOptions, onFieldChange]);
 
   const handleAuthorChange = React.useCallback(
-    (_event: React.SyntheticEvent, value: AuthorResponse | null) => {
-      if (value?.id === CREATE_NEW_SENTINEL.id) {
-        setNewAuthorName(authorSearchInput.trim());
-        setNewAuthorEmail('');
-        setNewAuthorErrors({});
-        setCreateAuthorOpen(true);
-        return;
-      }
-      setSelectedAuthor(value);
-      onFieldChange('authorId', value?.id ?? null);
-      onFieldChange('author', value?.name ?? null);
+    (author: AuthorResponse | null) => {
+      setSelectedAuthor(author);
+      onFieldChange('authorId', author?.id ?? null);
+      onFieldChange('author', author?.name ?? null);
     },
-    [onFieldChange, authorSearchInput],
-  );
-
-  const handleCreateAuthorSubmit = React.useCallback(async () => {
-    const errors: { name?: string; email?: string } = {};
-    if (!newAuthorName.trim()) errors.name = 'Name is required';
-    if (!newAuthorEmail.trim()) errors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newAuthorEmail))
-      errors.email = 'Must be a valid email address';
-
-    if (Object.keys(errors).length > 0) {
-      setNewAuthorErrors(errors);
-      return;
-    }
-
-    setIsCreatingAuthor(true);
-    try {
-      const created = await AuthorsService.createAuthor({
-        name: newAuthorName.trim(),
-        email: newAuthorEmail.trim(),
-      });
-      setAuthorOptions((prev) => [...prev, created]);
-      setSelectedAuthor(created);
-      onFieldChange('authorId', created.id);
-      onFieldChange('author', created.name);
-      setCreateAuthorOpen(false);
-    } catch (err) {
-      setNewAuthorErrors({ name: (err as Error).message });
-    } finally {
-      setIsCreatingAuthor(false);
-    }
-  }, [newAuthorName, newAuthorEmail, onFieldChange]);
-
-  const displayedOptions = React.useMemo(
-    () => [CREATE_NEW_SENTINEL, ...authorOptions],
-    [authorOptions],
+    [onFieldChange],
   );
 
   const handleSubmit = React.useCallback(
@@ -318,26 +126,23 @@ export default function BookForm(props: BookFormProps) {
   // Series autocomplete state
   const [seriesOptions, setSeriesOptions] = React.useState<string[]>([]);
   const [seriesInputValue, setSeriesInputValue] = React.useState(formValues.seriesName ?? '');
-  const seriesDebounceRef = React.useRef<number | null>(null);
+  const [debouncedSeriesInput] = useDebounce(seriesInputValue, 300);
 
   React.useEffect(() => {
     setSeriesInputValue(formValues.seriesName ?? '');
   }, [formValues.seriesName]);
 
   React.useEffect(() => {
-    if (seriesDebounceRef.current) window.clearTimeout(seriesDebounceRef.current);
-    seriesDebounceRef.current = window.setTimeout(async () => {
+    const search = async () => {
       try {
-        const results = await BooksService.searchSeries(seriesInputValue || undefined);
+        const results = await BooksService.searchSeries(debouncedSeriesInput || undefined);
         setSeriesOptions(results);
       } catch {
         setSeriesOptions([]);
       }
-    }, 300);
-    return () => {
-      if (seriesDebounceRef.current) window.clearTimeout(seriesDebounceRef.current);
     };
-  }, [seriesInputValue]);
+    search();
+  }, [debouncedSeriesInput]);
 
   const handleReset = React.useCallback(() => {
     if (onReset) {
@@ -373,62 +178,12 @@ export default function BookForm(props: BookFormProps) {
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
-            <Autocomplete
-              fullWidth
-              options={displayedOptions}
+            <AuthorField
               value={selectedAuthor}
               onChange={handleAuthorChange}
-              inputValue={authorSearchInput}
-              onInputChange={(_e, v) => setAuthorSearchInput(v)}
-              getOptionLabel={(option) => (option.id === CREATE_NEW_SENTINEL.id ? '' : option.name)}
-              isOptionEqualToValue={(option, value) => option.id === value.id}
-              filterOptions={(options, { inputValue }) => {
-                const term = inputValue.toLowerCase();
-                return options.filter(
-                  (o) =>
-                    o.id === CREATE_NEW_SENTINEL.id ||
-                    o.name.toLowerCase().includes(term) ||
-                    (o.email ?? '').toLowerCase().includes(term),
-                );
-              }}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Author"
-                  error={!!formErrors.authorId}
-                  helperText={formErrors.authorId ?? ' '}
-                  placeholder="Search authors..."
-                />
-              )}
-              renderOption={(props, option) =>
-                option.id === CREATE_NEW_SENTINEL.id ? (
-                  <li {...props}>
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
-                      sx={{ color: 'primary.main' }}
-                    >
-                      <AddIcon fontSize="small" />
-                      <Typography variant="body2" fontWeight={600}>
-                        Create new author
-                        {authorSearchInput.trim() ? ` "${authorSearchInput.trim()}"` : ''}
-                      </Typography>
-                    </Stack>
-                  </li>
-                ) : (
-                  <li {...props}>
-                    <Box>
-                      <Typography variant="body2">{option.name}</Typography>
-                      {option.email && (
-                        <Typography variant="caption" color="text.secondary">
-                          {option.email}
-                        </Typography>
-                      )}
-                    </Box>
-                  </li>
-                )
-              }
+              initialAuthor={initialAuthor}
+              lookupAuthorName={lookupAuthorName}
+              error={formErrors.authorId}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
@@ -565,7 +320,6 @@ export default function BookForm(props: BookFormProps) {
                 }
               }}
               onBlur={() => {
-                // Commit typed text as the value on blur
                 const trimmed = seriesInputValue.trim();
                 if (trimmed && trimmed !== (formValues.seriesName ?? '')) {
                   onFieldChange('seriesName', trimmed);
@@ -628,75 +382,12 @@ export default function BookForm(props: BookFormProps) {
               onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
-
-          {/* Cover Art */}
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, width: '100%' }}>
-              <Typography variant="body2" color="text.secondary">
-                Cover Art
-              </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                {previewUrl && (
-                  <Box sx={{ position: 'relative', flexShrink: 0 }}>
-                    <Box
-                      component="img"
-                      src={previewUrl}
-                      alt="Cover preview"
-                      sx={{
-                        width: 80,
-                        height: 120,
-                        objectFit: 'contain',
-                        bgcolor: 'grey.100',
-                        borderRadius: 1,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        display: 'block',
-                      }}
-                    />
-                    <IconButton
-                      size="small"
-                      onClick={handleClearImage}
-                      sx={{
-                        position: 'absolute',
-                        top: -8,
-                        right: -8,
-                        bgcolor: 'background.paper',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        padding: '2px',
-                        '&:hover': {
-                          bgcolor: 'error.light',
-                          borderColor: 'error.light',
-                          color: 'white',
-                        },
-                      }}
-                    >
-                      <CloseIcon sx={{ fontSize: 14 }} />
-                    </IconButton>
-                  </Box>
-                )}
-                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                  <Button variant="outlined" size="small" onClick={handleChooseFile}>
-                    {previewUrl ? 'Replace Image' : 'Choose Image'}
-                  </Button>
-                  <Typography variant="caption" color="text.secondary">
-                    JPEG, PNG, GIF, or WEBP
-                  </Typography>
-                  {formErrors.coverImageFile && (
-                    <Typography variant="caption" color="error">
-                      {formErrors.coverImageFile}
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept={ACCEPTED_IMAGE_TYPES}
-                onChange={handleFileChange}
-                style={{ display: 'none' }}
-              />
-            </Box>
+            <CoverImageField
+              bookId={bookId}
+              onFileChange={(file) => onFieldChange('coverImageFile', file)}
+              error={formErrors.coverImageFile}
+            />
           </Grid>
         </Grid>
       </FormGroup>
@@ -708,50 +399,6 @@ export default function BookForm(props: BookFormProps) {
           {submitButtonLabel}
         </Button>
       </Stack>
-
-      <Dialog
-        open={createAuthorOpen}
-        onClose={() => !isCreatingAuthor && setCreateAuthorOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>Create New Author</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              label="Name"
-              value={newAuthorName}
-              onChange={(e) => {
-                setNewAuthorName(e.target.value);
-                setNewAuthorErrors((prev) => ({ ...prev, name: undefined }));
-              }}
-              error={!!newAuthorErrors.name}
-              helperText={newAuthorErrors.name ?? ' '}
-              fullWidth
-              autoFocus
-            />
-            <TextField
-              label="Email"
-              value={newAuthorEmail}
-              onChange={(e) => {
-                setNewAuthorEmail(e.target.value);
-                setNewAuthorErrors((prev) => ({ ...prev, email: undefined }));
-              }}
-              error={!!newAuthorErrors.email}
-              helperText={newAuthorErrors.email ?? ' '}
-              fullWidth
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateAuthorOpen(false)} disabled={isCreatingAuthor}>
-            Cancel
-          </Button>
-          <Button variant="contained" onClick={handleCreateAuthorSubmit} loading={isCreatingAuthor}>
-            Create
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Box>
   );
 }

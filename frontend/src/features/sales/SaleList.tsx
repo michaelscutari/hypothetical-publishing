@@ -28,6 +28,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { type AuthorResponse, AuthorsService, type SaleResponse, SalesService } from '@/api';
+import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import { useServerDataGrid } from '@/hooks/useServerDataGrid';
 import { useDialogs } from '@/hooks/useDialogs/useDialogs';
@@ -97,8 +98,8 @@ export default function SaleList() {
     try {
       const response = await AuthorsService.getAllAuthors(0, 1000, true);
       setAuthors(response.content ?? []);
-    } catch (error) {
-      console.error('Failed to load authors:', error);
+    } catch {
+      // silent — empty author filter is acceptable
     }
   }, []);
 
@@ -145,7 +146,7 @@ export default function SaleList() {
           refresh();
         } catch (deleteError) {
           notifications.show(
-            `Failed to delete sale record. Reason: ${(deleteError as Error).message}`,
+            `Failed to delete sale record. Reason: ${getErrorMessage(deleteError)}`,
             {
               severity: 'error',
               autoHideDuration: 3000,

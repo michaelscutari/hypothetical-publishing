@@ -47,6 +47,7 @@ import {
   type AuthorResponse,
 } from '@/api';
 import { useDebounce } from '@/hooks/useDebounce';
+import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 const INITIAL_PAGE_SIZE = 10;
@@ -67,7 +68,7 @@ export default function AuthorPayments() {
   const [totalElements, setTotalElements] = React.useState<number>(0);
 
   const [isLoading, setIsLoading] = React.useState<boolean>(true);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const [searchQuery, setSearchQuery] = React.useState<string>('');
   const [debouncedQuery, flush] = useDebounce(searchQuery, 300);
@@ -139,7 +140,7 @@ export default function AuthorPayments() {
       setTotalPages(response.totalPages ?? 0);
       setTotalElements(response.totalElements ?? 0);
     } catch (loadError) {
-      setError(loadError as Error);
+      setError(getErrorMessage(loadError));
     } finally {
       setIsLoading(false);
     }
@@ -197,7 +198,7 @@ export default function AuthorPayments() {
 
       await loadGroups();
     } catch (paymentError) {
-      notifications.show(`Failed to mark paid: ${(paymentError as Error).message}`, {
+      notifications.show(`Failed to mark paid: ${getErrorMessage(paymentError)}`, {
         severity: 'error',
         autoHideDuration: 3000,
       });
@@ -278,7 +279,7 @@ export default function AuthorPayments() {
       <Box sx={{ flex: 1, width: '100%' }}>
         {error ? (
           <Box sx={{ flexGrow: 1 }}>
-            <Alert severity="error">{error.message}</Alert>
+            <Alert severity="error">{error}</Alert>
           </Box>
         ) : isLoading ? (
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', py: 6 }}>

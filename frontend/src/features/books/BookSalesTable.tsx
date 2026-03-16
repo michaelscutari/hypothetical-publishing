@@ -23,6 +23,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SalesService, type SaleResponse } from '@/api';
+import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import { useDialogs } from '@/hooks/useDialogs/useDialogs';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
@@ -89,7 +90,7 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
       );
       setSales(response.content ?? []);
     } catch (loadError) {
-      notifications.show(`Failed to load sales: ${(loadError as Error).message}`, {
+      notifications.show(`Failed to load sales: ${getErrorMessage(loadError)}`, {
         severity: 'error',
         autoHideDuration: 3000,
       });
@@ -128,7 +129,7 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
         await loadSales();
         onChange?.();
       } catch (deleteError) {
-        notifications.show(`Failed to delete sale: ${(deleteError as Error).message}`, {
+        notifications.show(`Failed to delete sale: ${getErrorMessage(deleteError)}`, {
           severity: 'error',
           autoHideDuration: 3000,
         });

@@ -1,6 +1,4 @@
 import Alert from '@mui/material/Alert';
-import Box from '@mui/material/Box';
-import CircularProgress from '@mui/material/CircularProgress';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import FullPageLoader from '@/components/FullPageLoader';
@@ -12,6 +10,7 @@ import {
   type BookRequest,
   type BookResponse,
 } from '@/api';
+import { getErrorMessage } from '@/utils/error';
 import { truncate } from '@/utils/formatting';
 import { validateBook, parseFieldErrors } from './bookValidation';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
@@ -127,7 +126,7 @@ function BookEditForm({
       if (fieldErrors) {
         setFormErrors(fieldErrors);
       } else {
-        notifications.show(`Failed to edit book. Reason: ${(editError as Error).message}`, {
+        notifications.show(`Failed to edit book. Reason: ${getErrorMessage(editError)}`, {
           severity: 'error',
           autoHideDuration: 3000,
         });
@@ -156,7 +155,7 @@ export default function BookEdit() {
   const [book, setBook] = React.useState<BookResponse | null>(null);
   const [authorForBook, setAuthorForBook] = React.useState<AuthorResponse | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
-  const [error, setError] = React.useState<Error | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
 
   const loadData = React.useCallback(async () => {
     setError(null);
@@ -181,7 +180,7 @@ export default function BookEdit() {
         }
       }
     } catch (loadError) {
-      setError(loadError as Error);
+      setError(getErrorMessage(loadError));
     } finally {
       setIsLoading(false);
     }
@@ -213,56 +212,42 @@ export default function BookEdit() {
     [bookId],
   );
 
-  const renderEdit = React.useMemo(() => {
-    if (isLoading) {
-      return (
-        <Box
-          sx={{
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            m: 1,
-          }}
-        >
-          <CircularProgress />
-        </Box>
-      );
-    }
+  if (isLoading) {
+    return <FullPageLoader />;
+  }
 
-    if (error) {
-      return (
-        <Box sx={{ flexGrow: 1 }}>
-          <Alert severity="error">{error.message}</Alert>
-        </Box>
-      );
-    }
+  if (error) {
+    return (
+      <PageContainer
+        title="Edit Book"
+        breadcrumbs={[
+          { title: 'Books', path: '/books' },
+          { title: 'Book', path: `/books/${bookId}` },
+          { title: 'Edit' },
+        ]}
+      >
+        <Alert severity="error">{error}</Alert>
+      </PageContainer>
+    );
+  }
 
-    return book ? (
+  if (!book) return null;
+
+  return (
+    <PageContainer
+      title={book.title ?? 'Edit Book'}
+      breadcrumbs={[
+        { title: 'Books', path: '/books' },
+        { title: truncate(book.title), path: `/books/${bookId}` },
+        { title: 'Edit' },
+      ]}
+    >
       <BookEditForm
         initialValues={book}
         initialAuthor={authorForBook}
         bookId={Number(bookId)}
         onSubmit={handleSubmit}
       />
-    ) : null;
-  }, [isLoading, error, book, bookId, handleSubmit, authorForBook]);
-
-  if (isLoading) {
-    return <FullPageLoader />;
-  }
-  return (
-    <PageContainer
-      title={book?.title ?? 'Edit Book'}
-      breadcrumbs={[
-        { title: 'Books', path: '/books' },
-        { title: book ? truncate(book.title) : 'Book', path: `/books/${bookId}` },
-        { title: 'Edit' },
-      ]}
-    >
-      <Box sx={{ display: 'flex', flex: 1 }}>{renderEdit}</Box>
     </PageContainer>
   );
 }
