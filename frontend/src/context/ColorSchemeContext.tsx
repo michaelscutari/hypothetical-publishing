@@ -1,6 +1,6 @@
 import * as React from 'react';
-import type { PreferredMode } from '../hooks/usePreferredColorScheme';
-import { usePreferredColorScheme } from '../hooks/usePreferredColorScheme';
+import type { PreferredMode } from '@/hooks/usePreferredColorScheme';
+import { usePreferredColorScheme } from '@/hooks/usePreferredColorScheme';
 
 type ColorSchemeContextValue = {
   preferredMode: PreferredMode;

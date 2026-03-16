@@ -9,11 +9,11 @@ export type AuthorResponse = {
     /**
      * Author id
      */
-    id?: number;
+    id: number;
     /**
      * Author name
      */
-    name?: string;
+    name: string;
     /**
      * Author email
      */
@@ -21,18 +21,18 @@ export type AuthorResponse = {
     /**
      * Number of books written by the author
      */
-    bookCount?: number;
+    bookCount: number;
     /**
      * Total royalty earned by the author (both paid and unpaid)
      */
-    totalRoyalty?: number;
+    totalRoyalty: number;
     /**
      * Total royalty paid to the author
      */
-    paidRoyalty?: number;
+    paidRoyalty: number;
     /**
      * Total royalty unpaid to the author
      */
-    unpaidRoyalty?: number;
+    unpaidRoyalty: number;
 };
 

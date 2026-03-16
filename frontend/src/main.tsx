@@ -1,15 +1,15 @@
-import { StrictMode } from 'react';
+import * as React from 'react';
 import { createRoot } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import './index.css';
-import App from './App';
-import { getTheme } from './theme/getTheme';
-import React from 'react';
-import { ColorSchemeProvider, useColorScheme } from './context/ColorSchemeContext';
-import { AuthProvider } from './context/AuthContext';
+import App from '@/App';
+import { getTheme } from '@/theme/getTheme';
+import { ColorSchemeProvider, useColorScheme } from '@/context/ColorSchemeContext';
+import { AuthProvider } from '@/context/AuthContext';
 
 // eslint-disable-next-line react-refresh/only-export-components
-function ThemedApp() {
+function Root() {
   const { effectiveMode } = useColorScheme();
   const theme = React.useMemo(() => getTheme(effectiveMode), [effectiveMode]);
 
@@ -22,18 +22,18 @@ function ThemedApp() {
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
-function Root() {
+function Providers() {
   return (
     <ColorSchemeProvider>
       <AuthProvider>
-        <ThemedApp />
+        <Root />
       </AuthProvider>
     </ColorSchemeProvider>
   );
 }
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <Root />
-  </StrictMode>,
+  <React.StrictMode>
+    <Providers />
+  </React.StrictMode>,
 );

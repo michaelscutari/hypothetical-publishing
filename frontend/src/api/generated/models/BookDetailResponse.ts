@@ -9,23 +9,23 @@ export type BookDetailResponse = {
     /**
      * Unique book identifier
      */
-    id?: number;
+    id: number;
     /**
      * Book title
      */
-    title?: string;
+    title: string;
     /**
      * Author name
      */
-    author?: string;
+    author: string;
     /**
      * Author Id
      */
-    authorId?: number;
+    authorId: number;
     /**
      * ISBN-13 identifier
      */
-    isbn13?: string;
+    isbn13: string;
     /**
      * ISBN-10 identifier
      */
@@ -33,19 +33,19 @@ export type BookDetailResponse = {
     /**
      * Publication year
      */
-    publicationYear?: number;
+    publicationYear: number;
     /**
      * Publication month (1-12)
      */
-    publicationMonth?: number;
+    publicationMonth: number;
     /**
      * Distributor author royalty rate
      */
-    distributorAuthorRoyaltyRate?: number;
+    distributorAuthorRoyaltyRate: number;
     /**
      * Handsold author royalty rate
      */
-    handsoldAuthorRoyaltyRate?: number;
+    handsoldAuthorRoyaltyRate: number;
     /**
      * Series name
      */
@@ -57,34 +57,34 @@ export type BookDetailResponse = {
     /**
      * Cover price (USD)
      */
-    coverPrice?: number;
+    coverPrice: number;
     /**
      * Print cost (USD)
      */
-    printCost?: number;
+    printCost: number;
     /**
      * Total sales quantity to date
      */
-    totalSalesToDate?: number;
+    totalSalesToDate: number;
     /**
      * Total publisher revenue earned from this book
      */
-    revenue?: number;
+    revenue: number;
     /**
      * Total author unpaid royalty from the book
      */
-    unpaidRoyalty?: number;
+    unpaidRoyalty: number;
     /**
      * Total author paid royalty from the book
      */
-    paidRoyalty?: number;
+    paidRoyalty: number;
     /**
      * Total royalty earned by the author (both paid and unpaid)
      */
-    totalRoyalty?: number;
+    totalRoyalty: number;
     /**
      * Whether this book has a cover image
      */
-    hasCover?: boolean;
+    hasCover: boolean;
 };
 

@@ -10,18 +10,18 @@ export type AuthorPaymentGroupResponse = {
     /**
      * Author ID
      */
-    authorId?: number;
+    authorId: number;
     /**
      * Author name
      */
-    author?: string;
+    author: string;
     /**
      * Total unpaid author royalty for this author
      */
-    unpaidTotal?: number;
+    unpaidTotal: number;
     /**
      * Sales rows for this author
      */
-    sales?: Array<AuthorPaymentSaleResponse>;
+    sales: Array<AuthorPaymentSaleResponse>;
 };
 

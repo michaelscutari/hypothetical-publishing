@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -66,32 +67,6 @@ public class BookController {
   @Operation(
       operationId = "getAllBooks",
       summary = "Get paginated books with optional search, sort, and filter")
-  //   @GetMapping
-  //   public PagedResponse<BookResponse> getBooks(
-  //       @RequestParam(defaultValue = "0") int page,
-  //       @RequestParam(defaultValue = "25") int size,
-  //       @RequestParam(defaultValue = "false") boolean showAll,
-  //       @RequestParam(required = false) String query,
-  //       @RequestParam(required = false) String sortField,
-  //       @RequestParam(defaultValue = "asc") String sortDirection) {
-
-  //     Sort sort;
-  //     if (sortField != null) {
-  //       Sort.Direction dir = Sort.Direction.fromString(sortDirection);
-  //       if ("publicationDate".equals(sortField)) {
-  //         sort =
-  //             Sort.by(
-  //                 new Sort.Order(dir, "publicationYear"), new Sort.Order(dir,
-  // "publicationMonth"));
-  //       } else {
-  //         sort = Sort.by(new Sort.Order(dir, sortField));
-  //       }
-  //    } else {
-  //   sort = Sort.by(
-  //       Sort.Order.asc("author"),
-  //       Sort.Order.asc("title"));
-  // }
-
   @GetMapping
   public PagedResponse<BookResponse> getBooks(
       @RequestParam(required = false) Long authorId,
@@ -104,28 +79,7 @@ public class BookController {
 
     Sort sort;
     if (sortField != null && !sortField.isEmpty()) {
-      List<Sort.Order> orders = new java.util.ArrayList<>();
-      for (int i = 0; i < sortField.size(); i++) {
-        String field = sortField.get(i);
-        Sort.Direction dir =
-            (sortDirection != null && i < sortDirection.size())
-                ? Sort.Direction.fromString(sortDirection.get(i))
-                : Sort.Direction.ASC;
-        if ("publicationDate".equals(field)) {
-          orders.add(new Sort.Order(dir, "publicationYear"));
-          orders.add(new Sort.Order(dir, "publicationMonth"));
-        } else if ("author".equals(field)) {
-          orders.add(new Sort.Order(dir, "author.name"));
-        } else if ("seriesName".equals(field) || "seriesPosition".equals(field)) {
-          boolean alreadyHasNullOrder =
-              orders.stream().anyMatch(o -> "seriesNullOrder".equals(o.getProperty()));
-          if (!alreadyHasNullOrder) {
-            orders.add(new Sort.Order(Sort.Direction.ASC, "seriesNullOrder"));
-          }
-          orders.add(new Sort.Order(dir, field));
-        }
-      }
-      sort = Sort.by(orders);
+      sort = buildBookSort(sortField, sortDirection);
     } else {
       sort = DEFAULT_SORT;
     }
@@ -285,6 +239,35 @@ public class BookController {
     book.setPrintCost(request.printCost());
 
     return BookResponse.from(bookService.updateBook(book, oldSeriesName, oldSeriesPosition));
+  }
+
+  // ------- PRIVATE HELPERS -------
+
+  private Sort buildBookSort(List<String> sortField, List<String> sortDirection) {
+    List<Sort.Order> orders = new ArrayList<>();
+    for (int i = 0; i < sortField.size(); i++) {
+      String field = sortField.get(i);
+      Sort.Direction dir =
+          (sortDirection != null && i < sortDirection.size())
+              ? Sort.Direction.fromString(sortDirection.get(i))
+              : Sort.Direction.ASC;
+      if ("publicationDate".equals(field)) {
+        orders.add(new Sort.Order(dir, "publicationYear"));
+        orders.add(new Sort.Order(dir, "publicationMonth"));
+      } else if ("author".equals(field)) {
+        orders.add(new Sort.Order(dir, "author.name"));
+      } else if ("seriesName".equals(field) || "seriesPosition".equals(field)) {
+        boolean alreadyHasNullOrder =
+            orders.stream().anyMatch(o -> "seriesNullOrder".equals(o.getProperty()));
+        if (!alreadyHasNullOrder) {
+          orders.add(new Sort.Order(Sort.Direction.ASC, "seriesNullOrder"));
+        }
+        orders.add(new Sort.Order(dir, field));
+      } else {
+        orders.add(new Sort.Order(dir, field));
+      }
+    }
+    return Sort.by(orders);
   }
 
   // ------- DELETE MAPPINGS -------

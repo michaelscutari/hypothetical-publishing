@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import * as React from 'react';
 
 /**
  * Debounces a string value by the given delay.
@@ -8,15 +8,15 @@ import { useCallback, useEffect, useRef, useState } from 'react';
  * rendered yet (e.g. calling flush right after setState in the same handler).
  */
 export function useDebounce(value: string, delay: number): [string, (override?: string) => void] {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  const timerRef = useRef<number | null>(null);
-  const latestValue = useRef(value);
+  const [debouncedValue, setDebouncedValue] = React.useState(value);
+  const timerRef = React.useRef<number | null>(null);
+  const latestValue = React.useRef(value);
 
-  useEffect(() => {
+  React.useEffect(() => {
     latestValue.current = value;
   });
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (timerRef.current) window.clearTimeout(timerRef.current);
     timerRef.current = window.setTimeout(() => {
       setDebouncedValue(value.trim());
@@ -26,7 +26,7 @@ export function useDebounce(value: string, delay: number): [string, (override?: 
     };
   }, [value, delay]);
 
-  const flush = useCallback((override?: string) => {
+  const flush = React.useCallback((override?: string) => {
     if (timerRef.current) window.clearTimeout(timerRef.current);
     setDebouncedValue(override !== undefined ? override.trim() : latestValue.current.trim());
   }, []);

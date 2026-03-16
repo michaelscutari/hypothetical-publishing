@@ -1,11 +1,11 @@
 // src/hooks/usePreferredColorScheme.ts
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import * as React from 'react';
 
 const KEY = 'hp_color_mode'; // 'system' | 'light' | 'dark'
 export type PreferredMode = 'system' | 'light' | 'dark';
 
 export function usePreferredColorScheme() {
-  const [preferred, setPreferred] = useState<PreferredMode>(() => {
+  const [preferred, setPreferred] = React.useState<PreferredMode>(() => {
     if (typeof window === 'undefined') return 'system';
     try {
       const storage = window.localStorage;
@@ -17,18 +17,18 @@ export function usePreferredColorScheme() {
     }
   });
 
-  const [prefersDark, setPrefersDark] = useState<boolean>(() =>
+  const [prefersDark, setPrefersDark] = React.useState<boolean>(() =>
     typeof window !== 'undefined'
       ? window.matchMedia?.('(prefers-color-scheme: dark)').matches
       : false,
   );
 
-  const effectiveMode = useMemo(
+  const effectiveMode = React.useMemo(
     () => (preferred === 'system' ? (prefersDark ? 'dark' : 'light') : preferred),
     [preferred, prefersDark],
   ) as 'light' | 'dark';
 
-  useEffect(() => {
+  React.useEffect(() => {
     try {
       const storage = window.localStorage;
       if (!storage || typeof storage.setItem !== 'function') return;
@@ -38,7 +38,7 @@ export function usePreferredColorScheme() {
     }
   }, [preferred]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e: MediaQueryListEvent) => setPrefersDark(e.matches);
@@ -51,7 +51,7 @@ export function usePreferredColorScheme() {
     };
   }, []);
 
-  const setPreferredMode = useCallback((m: PreferredMode) => setPreferred(m), []);
+  const setPreferredMode = React.useCallback((m: PreferredMode) => setPreferred(m), []);
 
   return { preferredMode: preferred, effectiveMode, setPreferredMode };
 }
