@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { getErrorMessage } from '@/utils/error';
 import ColorModeToggle from '@/components/ColorModeToggle';
 
 const Card = styled(MuiCard)(({ theme }) => ({
@@ -82,7 +83,7 @@ export default function Login() {
     try {
       await login(username, password);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed');
+      setError(getErrorMessage(err));
     } finally {
       setIsSubmitting(false);
     }
@@ -172,8 +173,8 @@ export default function Login() {
               />
             </FormControl>
 
-            <Button type="submit" variant="contained" fullWidth disabled={isSubmitting}>
-              {isSubmitting ? <CircularProgress size={24} /> : 'Sign in'}
+            <Button type="submit" variant="contained" fullWidth loading={isSubmitting}>
+              Sign in
             </Button>
           </Box>
         </Card>

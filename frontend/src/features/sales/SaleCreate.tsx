@@ -345,14 +345,11 @@ export default function SaleCreate() {
           <Button
             variant="contained"
             onClick={handleSubmit}
-            disabled={
-              isSubmitting || records.filter((r) => !r.isPlaceholder && r.book).length === 0
-            }
+            disabled={records.filter((r) => !r.isPlaceholder && r.book).length === 0}
+            loading={isSubmitting}
             size="large"
           >
-            {isSubmitting
-              ? 'Saving...'
-              : `Create ${records.filter((r) => !r.isPlaceholder && r.book).length} Record(s)`}
+            {`Create ${records.filter((r) => !r.isPlaceholder && r.book).length} Record(s)`}
           </Button>
         </Stack>
 

@@ -14,10 +14,6 @@ import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Chip from '@mui/material/Chip';
 import CircularProgress from '@mui/material/CircularProgress';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogTitle from '@mui/material/DialogTitle';
 import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
@@ -47,6 +43,7 @@ import {
   type AuthorResponse,
 } from '@/api';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useDialogs } from '@/hooks/useDialogs/useDialogs';
 import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
@@ -57,6 +54,7 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 export default function AuthorPayments() {
   const navigate = useNavigate();
   const notifications = useNotifications();
+  const dialogs = useDialogs();
 
   const [page, setPage] = React.useState<number>(0);
   const [pageSize, setPageSize] = React.useState<number>(INITIAL_PAGE_SIZE);
@@ -76,11 +74,6 @@ export default function AuthorPayments() {
   const [authorOptions, setAuthorOptions] = React.useState<AuthorResponse[]>([]);
   const authorDebounceRef = React.useRef<number | null>(null);
 
-  const [confirmingGroup, setConfirmingGroup] = React.useState<AuthorPaymentGroupResponse | null>(
-    null,
-  );
-  const [confirmingUnpaidCount, setConfirmingUnpaidCount] = React.useState<number>(0);
-  const [confirmingUnpaidTotal, setConfirmingUnpaidTotal] = React.useState<number>(0);
   const [isProcessing, setIsProcessing] = React.useState<boolean>(false);
 
   React.useEffect(() => {
@@ -163,8 +156,8 @@ export default function AuthorPayments() {
     navigate('/sales/new');
   }, [navigate]);
 
-  const handleBeginPayAuthor = React.useCallback(
-    (group: AuthorPaymentGroupResponse) => {
+  const handlePayAuthor = React.useCallback(
+    async (group: AuthorPaymentGroupResponse) => {
       const unpaidCount = group.sales.filter((sale) => !sale.hasAuthorBeenPaid).length;
       if (unpaidCount === 0) {
         notifications.show('No unpaid records for this author', {
@@ -173,42 +166,37 @@ export default function AuthorPayments() {
         });
         return;
       }
-      setConfirmingGroup(group);
-      setConfirmingUnpaidCount(unpaidCount);
-      setConfirmingUnpaidTotal(group.unpaidTotal ?? 0);
-    },
-    [notifications],
-  );
 
-  const handleConfirmPayAuthor = React.useCallback(async () => {
-    if (!confirmingGroup?.authorId) return;
-    setIsProcessing(true);
+      const unpaidTotal = group.unpaidTotal ?? 0;
+      const confirmed = await dialogs.confirm(
+        <>
+          You are about to mark <strong>{group.author}</strong>&apos;s {unpaidCount} unpaid sale
+          record(s) as paid. Total: <strong>{formatCurrency(unpaidTotal)}</strong>.
+        </>,
+        { title: 'Confirm mark paid', okText: 'Confirm', severity: 'warning' },
+      );
+      if (!confirmed) return;
 
-    try {
-      const req: MarkAllPaidRequest = { authorId: confirmingGroup.authorId };
-      const resp = await SalesService.markAuthorPaymentsPaid(req);
-      const updatedCount = resp.updatedCount;
-      notifications.show(
-        `Marked ${updatedCount} record(s) for ${confirmingGroup.author} as paid.`,
-        {
+      setIsProcessing(true);
+      try {
+        const req: MarkAllPaidRequest = { authorId: group.authorId };
+        const resp = await SalesService.markAuthorPaymentsPaid(req);
+        notifications.show(`Marked ${resp.updatedCount} record(s) for ${group.author} as paid.`, {
           severity: 'success',
           autoHideDuration: 3000,
-        },
-      );
-
-      await loadGroups();
-    } catch (paymentError) {
-      notifications.show(`Failed to mark paid: ${getErrorMessage(paymentError)}`, {
-        severity: 'error',
-        autoHideDuration: 3000,
-      });
-    } finally {
-      setIsProcessing(false);
-      setConfirmingGroup(null);
-      setConfirmingUnpaidCount(0);
-      setConfirmingUnpaidTotal(0);
-    }
-  }, [confirmingGroup, loadGroups, notifications]);
+        });
+        await loadGroups();
+      } catch (paymentError) {
+        notifications.show(`Failed to mark paid: ${getErrorMessage(paymentError)}`, {
+          severity: 'error',
+          autoHideDuration: 3000,
+        });
+      } finally {
+        setIsProcessing(false);
+      }
+    },
+    [dialogs, loadGroups, notifications],
+  );
 
   const handleSearchEnter = React.useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -333,10 +321,10 @@ export default function AuthorPayments() {
                               size="small"
                               variant="contained"
                               startIcon={<PaymentIcon />}
-                              disabled={unpaidTotal === 0}
+                              disabled={unpaidTotal === 0 || isProcessing}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleBeginPayAuthor(group);
+                                handlePayAuthor(group);
                               }}
                             >
                               Pay
@@ -447,34 +435,6 @@ export default function AuthorPayments() {
           </Box>
         )}
       </Box>
-
-      <Dialog
-        open={Boolean(confirmingGroup)}
-        onClose={() => !isProcessing && setConfirmingGroup(null)}
-      >
-        <DialogTitle>Confirm mark paid</DialogTitle>
-        <DialogContent>
-          <Typography>
-            You are about to mark <strong>{confirmingGroup?.author}</strong>’s{' '}
-            {confirmingUnpaidCount} unpaid sale record(s) as paid. Total:{' '}
-            <strong>{formatCurrency(confirmingUnpaidTotal)}</strong>.
-          </Typography>
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={() => setConfirmingGroup(null)} disabled={isProcessing}>
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirmPayAuthor}
-            disabled={isProcessing}
-            startIcon={isProcessing ? <CircularProgress size={18} /> : <PaymentIcon />}
-          >
-            {isProcessing ? 'Processing...' : 'Confirm'}
-          </Button>
-        </DialogActions>
-      </Dialog>
     </PageContainer>
   );
 }

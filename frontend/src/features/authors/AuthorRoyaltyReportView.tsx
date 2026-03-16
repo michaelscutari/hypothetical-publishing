@@ -7,6 +7,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { SalesService, type RoyaltyReportResponse } from '@/api';
+import { getErrorMessage } from '@/utils/error';
 import ReportHeader from './ReportHeader';
 import YearSection from './YearSection';
 import AllYearsTotals from './AllYearsTotals';
@@ -49,7 +50,7 @@ export default function AuthorRoyaltyReportView() {
 
       setReportData(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load report');
+      setError(getErrorMessage(err));
     } finally {
       setIsLoading(false);
     }

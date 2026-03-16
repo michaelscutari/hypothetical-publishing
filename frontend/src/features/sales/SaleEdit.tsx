@@ -364,8 +364,8 @@ export default function SaleEdit() {
           <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
             Back
           </Button>
-          <Button type="submit" variant="contained" size="large" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : 'Save'}
+          <Button type="submit" variant="contained" size="large" loading={isSubmitting}>
+            Save
           </Button>
         </Stack>
       </Box>

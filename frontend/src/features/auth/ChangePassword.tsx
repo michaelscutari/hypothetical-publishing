@@ -9,6 +9,7 @@ import TextField from '@mui/material/TextField';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { getErrorMessage } from '@/utils/error';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import PageContainer from '@/components/PageContainer';
 
@@ -53,8 +54,7 @@ export default function ChangePassword() {
         setConfirmPassword('');
         navigate('/');
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to change password.';
-        setError(message);
+        setError(getErrorMessage(err));
       } finally {
         setIsSubmitting(false);
       }
