@@ -139,15 +139,20 @@ export default function BookShow() {
           <Button variant="outlined" startIcon={<EditIcon />} onClick={handleBookEdit} size="small">
             Edit
           </Button>
-          <Button variant="outlined" color="error" startIcon={<DeleteIcon />} onClick={handleBookDelete} size="small">
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={handleBookDelete}
+            size="small"
+          >
             Delete
           </Button>
         </Stack>
       </Stack>
- 
+
       {/* Main product layout */}
       <Grid container spacing={4} sx={{ mb: 4 }}>
- 
         {/* LEFT: Cover image */}
         <Grid size={{ xs: 12, md: 3 }}>
           <Box sx={{ position: 'sticky', top: 24 }}>
@@ -182,12 +187,14 @@ export default function BookShow() {
                   justifyContent: 'center',
                 }}
               >
-                <Typography variant="body2" color="text.disabled">No cover</Typography>
+                <Typography variant="body2" color="text.disabled">
+                  No cover
+                </Typography>
               </Box>
             )}
           </Box>
         </Grid>
- 
+
         {/* CENTER: Title, author, metadata */}
         <Grid size={{ xs: 12, md: 6 }}>
           {book.seriesName && (
@@ -198,11 +205,11 @@ export default function BookShow() {
               sx={{ mb: 1.5, fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
             />
           )}
- 
+
           <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.2, mb: 1 }}>
             {book.title}
           </Typography>
- 
+
           <Typography variant="h6" sx={{ fontWeight: 400, mb: 2.5, color: 'text.secondary' }}>
             by{' '}
             <Box
@@ -218,13 +225,17 @@ export default function BookShow() {
               {book.author}
             </Box>
           </Typography>
- 
+
           <Divider sx={{ mb: 2.5 }} />
- 
+
           {/* Pricing */}
           <Stack spacing={1.5} sx={{ mb: 3 }}>
             <Stack direction="row" spacing={1} alignItems="baseline">
-              <Typography variant="body1" color="text.secondary" sx={{ minWidth: 160, fontWeight: 600 }}>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
                 Cover Price
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 400, color: 'text.primary' }}>
@@ -232,7 +243,11 @@ export default function BookShow() {
               </Typography>
             </Stack>
             <Stack direction="row" spacing={1} alignItems="baseline">
-              <Typography variant="body1" color="text.secondary" sx={{ minWidth: 160, fontWeight: 600 }}>
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
                 Print Cost
               </Typography>
               <Typography variant="h6" sx={{ fontWeight: 400, color: 'text.secondary' }}>
@@ -240,13 +255,17 @@ export default function BookShow() {
               </Typography>
             </Stack>
           </Stack>
- 
+
           <Divider sx={{ mb: 2.5 }} />
- 
+
           {/* Publication + ISBNs */}
           <Stack spacing={1} sx={{ mb: 3 }}>
             <Stack direction="row" spacing={1} alignItems="baseline">
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 160, fontWeight: 600 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
                 Publication Date
               </Typography>
               <Typography variant="body1">
@@ -254,7 +273,11 @@ export default function BookShow() {
               </Typography>
             </Stack>
             <Stack direction="row" spacing={1} alignItems="baseline">
-              <Typography variant="body2" color="text.secondary" sx={{ minWidth: 160, fontWeight: 600 }}>
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
                 ISBN-13
               </Typography>
               <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
@@ -263,7 +286,11 @@ export default function BookShow() {
             </Stack>
             {book.isbn10 && (
               <Stack direction="row" spacing={1} alignItems="baseline">
-                <Typography variant="body2" color="text.secondary" sx={{ minWidth: 160, fontWeight: 600 }}>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ minWidth: 160, fontWeight: 600 }}
+                >
                   ISBN-10
                 </Typography>
                 <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
@@ -273,28 +300,45 @@ export default function BookShow() {
             )}
           </Stack>
         </Grid>
- 
+
         {/* RIGHT: Royalty rates panel */}
         <Grid size={{ xs: 12, md: 3 }}>
           <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
-            <Typography variant="overline" sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: 1 }}>
+            <Typography
+              variant="overline"
+              sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: 1 }}
+            >
               Royalty Rates
             </Typography>
             <Divider sx={{ my: 1.5 }} />
             <Stack spacing={2}>
               <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
                   Distributor
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1.2 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1.2 }}
+                >
                   {formatPercent(book.distributorAuthorRoyaltyRate)}
                 </Typography>
               </Box>
               <Box>
-                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
                   Handsold
                 </Typography>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: 'secondary.main', lineHeight: 1.2 }}>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, color: 'secondary.main', lineHeight: 1.2 }}
+                >
                   {formatPercent(book.handsoldAuthorRoyaltyRate)}
                 </Typography>
               </Box>
@@ -302,7 +346,7 @@ export default function BookShow() {
           </Paper>
         </Grid>
       </Grid>
- 
+
       {/* Financial summary */}
       <Box sx={{ mb: 4 }}>
         <FinancialSummary
@@ -315,7 +359,7 @@ export default function BookShow() {
           }}
         />
       </Box>
- 
+
       <Box sx={{ mt: 3 }}>
         <BookSalesTable bookId={book.id} onChange={loadData} />
       </Box>
