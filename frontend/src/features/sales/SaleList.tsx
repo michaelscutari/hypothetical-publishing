@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
+import CommentIcon from '@mui/icons-material/Comment';
 import DeleteIcon from '@mui/icons-material/Delete';
-import EditIcon from '@mui/icons-material/Edit';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -15,6 +15,15 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 
+import { type AuthorResponse, AuthorsService, type SaleResponse, SalesService } from '@/api';
+import PageContainer from '@/components/PageContainer';
+import PaidStatusChip from '@/components/PaidStatusChip';
+import StandardDataGrid from '@/components/StandardDataGrid';
+import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { useServerDataGrid } from '@/hooks/useServerDataGrid';
+import { getErrorMessage } from '@/utils/error';
+import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import {
   GridActionsCellItem,
   type GridColDef,
@@ -27,15 +36,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { type AuthorResponse, AuthorsService, type SaleResponse, SalesService } from '@/api';
-import { getErrorMessage } from '@/utils/error';
-import { formatCurrency, formatMonthYear } from '@/utils/formatting';
-import { useServerDataGrid } from '@/hooks/useServerDataGrid';
-import { useDialogs } from '@/hooks/useDialogs/useDialogs';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PageContainer from '@/components/PageContainer';
-import PaidStatusChip from '@/components/PaidStatusChip';
-import StandardDataGrid from '@/components/StandardDataGrid';
 
 export default function SaleList() {
   const navigate = useNavigate();
@@ -159,108 +159,142 @@ export default function SaleList() {
     [dialogs, notifications, refresh, setIsLoading],
   );
 
-  const columns = React.useMemo<GridColDef<SaleResponse>[]>(
-    () => [
-      {
-        field: 'bookTitle',
-        headerName: 'Book Title',
-        width: 200,
-        renderCell: (params) => {
-          const bookId = params.row.bookId;
-          const title = params.row.bookTitle;
+const columns = React.useMemo<GridColDef<SaleResponse>[]>(
+  () => [
+    {
+      field: 'bookTitle',
+      headerName: 'Book Title',
+      flex: 1.5,
+      minWidth: 170,
+      renderCell: (params) => {
+        const bookId = params.row.bookId;
+        const title = params.row.bookTitle;
 
-          return (
-            <Link
-              to={`/books/${bookId}`}
-              style={{
-                color: 'inherit',
-                textDecoration: 'none',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.textDecoration = 'underline';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.textDecoration = 'none';
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
+        return (
+          <Link
+            to={`/books/${bookId}`}
+            style={{
+              color: 'inherit',
+              textDecoration: 'none',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = 'underline';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = 'none';
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            {title}
+          </Link>
+        );
+      },
+    },
+    {
+      field: 'bookAuthor',
+      headerName: 'Author',
+      flex: 1.2,
+      minWidth: 140,
+    },
+    {
+      field: 'saleSource',
+      headerName: 'Sale Source',
+      flex: 1,
+      minWidth: 120,
+      valueGetter: (_value, row) => {
+        if (row.saleSource === 'DISTRIBUTOR') return 'Distributor';
+        if (row.saleSource === 'HAND_SOLD') return 'Hand Sold';
+        return row.saleSource;
+      },
+    },
+    {
+      field: 'saleYear',
+      headerName: 'Date',
+      flex: 1,
+      minWidth: 120,
+      valueGetter: (_value, row) => formatMonthYear(row.saleMonth, row.saleYear),
+    },
+    {
+      field: 'quantitySold',
+      headerName: 'Qty',
+      type: 'number',
+      flex: 0.8,
+      minWidth: 90,
+    },
+    {
+      field: 'publisherRevenue',
+      headerName: 'Revenue',
+      type: 'number',
+      flex: 1,
+      minWidth: 120,
+      valueFormatter: (value) => formatCurrency(Number(value)),
+    },
+    {
+      field: 'authorRoyalty',
+      headerName: 'Royalty',
+      type: 'number',
+      flex: 1,
+      minWidth: 120,
+      valueFormatter: (value) => formatCurrency(Number(value)),
+    },
+    {
+      field: 'comment',
+      headerName: 'Comment',
+      width: 90,
+      sortable: false,
+      filterable: false,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => {
+        const comment = params.row.comment;
+
+        if (!comment) return null;
+
+        return (
+          <Tooltip title={comment} placement="top" enterDelay={300}>
+            <IconButton
+              size="small"
+              onClick={(e) => e.stopPropagation()}
+              aria-label="View comment"
             >
-              {title}
-            </Link>
-          );
-        },
+              <CommentIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        );
       },
-      {
-        field: 'bookAuthor',
-        headerName: 'Author',
-        width: 180,
-      },
-      {
-        field: 'saleSource',
-        headerName: 'Sale Source',
-        width: 130,
-        valueGetter: (_value, row) => {
-          if (row.saleSource === 'DISTRIBUTOR') return 'Distributor';
-          if (row.saleSource === 'HAND_SOLD') return 'Hand Sold';
-          return row.saleSource;
-        },
-      },
-      {
-        field: 'saleYear',
-        headerName: 'Month/Year',
-        width: 120,
-        valueGetter: (_value, row) => formatMonthYear(row.saleMonth, row.saleYear),
-      },
-      {
-        field: 'quantitySold',
-        headerName: 'Quantity Sold',
-        type: 'number',
-        width: 130,
-      },
-      {
-        field: 'publisherRevenue',
-        headerName: 'Publisher Revenue',
-        type: 'number',
-        width: 160,
-        valueFormatter: (value) => formatCurrency(Number(value)),
-      },
-      {
-        field: 'authorRoyalty',
-        headerName: 'Author Royalty',
-        type: 'number',
-        width: 150,
-        valueFormatter: (value) => formatCurrency(Number(value)),
-      },
-      {
-        field: 'hasAuthorBeenPaid',
-        headerName: 'Paid Status',
-        width: 140,
-        renderCell: (params) => <PaidStatusChip paid={params.row.hasAuthorBeenPaid} />,
-      },
-      {
-        field: 'actions',
-        type: 'actions',
-        flex: 1,
-        align: 'right',
-        getActions: ({ row }) => [
-          <GridActionsCellItem
-            key="edit-item"
-            icon={<EditIcon />}
-            label="Edit"
-            onClick={handleRowEdit(row)}
-          />,
-          <GridActionsCellItem
-            key="delete-item"
-            icon={<DeleteIcon />}
-            label="Delete"
-            onClick={handleRowDelete(row)}
-          />,
-        ],
-      },
-    ],
-    [handleRowEdit, handleRowDelete],
-  );
+    },
+    {
+  field: 'hasAuthorBeenPaid',
+  headerName: 'Paid',
+  flex: 1,
+  minWidth: 120,
+  align: 'left',
+  headerAlign: 'center',
+  renderCell: (params) => (
+    <Box sx={{ pl: 1.5 }}>
+      <PaidStatusChip paid={params.row.hasAuthorBeenPaid} />
+    </Box>
+  ),
+},
+    {
+      field: 'actions',
+      type: 'actions',
+      width: 45,
+      align: 'right',
+      getActions: ({ row }) => [
+        <GridActionsCellItem
+          key="delete-item"
+          icon={<DeleteIcon />}
+          label="Delete"
+          onClick={handleRowDelete(row)}
+        />,
+      ],
+    },
+  ],
+  [handleRowEdit, handleRowDelete],
+);
 
   const pageTitle = 'Records';
 
