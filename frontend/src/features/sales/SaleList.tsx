@@ -159,142 +159,142 @@ export default function SaleList() {
     [dialogs, notifications, refresh, setIsLoading],
   );
 
-const columns = React.useMemo<GridColDef<SaleResponse>[]>(
-  () => [
-    {
-      field: 'bookTitle',
-      headerName: 'Book Title',
-      flex: 1.5,
-      minWidth: 170,
-      renderCell: (params) => {
-        const bookId = params.row.bookId;
-        const title = params.row.bookTitle;
+  const columns = React.useMemo<GridColDef<SaleResponse>[]>(
+    () => [
+      {
+        field: 'bookTitle',
+        headerName: 'Book Title',
+        flex: 1.5,
+        minWidth: 170,
+        renderCell: (params) => {
+          const bookId = params.row.bookId;
+          const title = params.row.bookTitle;
 
-        return (
-          <Link
-            to={`/books/${bookId}`}
-            style={{
-              color: 'inherit',
-              textDecoration: 'none',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.textDecoration = 'underline';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.textDecoration = 'none';
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            {title}
-          </Link>
-        );
-      },
-    },
-    {
-      field: 'bookAuthor',
-      headerName: 'Author',
-      flex: 1.2,
-      minWidth: 140,
-    },
-    {
-      field: 'saleSource',
-      headerName: 'Sale Source',
-      flex: 1,
-      minWidth: 120,
-      valueGetter: (_value, row) => {
-        if (row.saleSource === 'DISTRIBUTOR') return 'Distributor';
-        if (row.saleSource === 'HAND_SOLD') return 'Hand Sold';
-        return row.saleSource;
-      },
-    },
-    {
-      field: 'saleYear',
-      headerName: 'Date',
-      flex: 1,
-      minWidth: 120,
-      valueGetter: (_value, row) => formatMonthYear(row.saleMonth, row.saleYear),
-    },
-    {
-      field: 'quantitySold',
-      headerName: 'Qty',
-      type: 'number',
-      flex: 0.8,
-      minWidth: 90,
-    },
-    {
-      field: 'publisherRevenue',
-      headerName: 'Revenue',
-      type: 'number',
-      flex: 1,
-      minWidth: 120,
-      valueFormatter: (value) => formatCurrency(Number(value)),
-    },
-    {
-      field: 'authorRoyalty',
-      headerName: 'Royalty',
-      type: 'number',
-      flex: 1,
-      minWidth: 120,
-      valueFormatter: (value) => formatCurrency(Number(value)),
-    },
-    {
-      field: 'comment',
-      headerName: 'Comment',
-      width: 90,
-      sortable: false,
-      filterable: false,
-      align: 'center',
-      headerAlign: 'center',
-      renderCell: (params) => {
-        const comment = params.row.comment;
-
-        if (!comment) return null;
-
-        return (
-          <Tooltip title={comment} placement="top" enterDelay={300}>
-            <IconButton
-              size="small"
-              onClick={(e) => e.stopPropagation()}
-              aria-label="View comment"
+          return (
+            <Link
+              to={`/books/${bookId}`}
+              style={{
+                color: 'inherit',
+                textDecoration: 'none',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
             >
-              <CommentIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-        );
+              {title}
+            </Link>
+          );
+        },
       },
-    },
-    {
-  field: 'hasAuthorBeenPaid',
-  headerName: 'Paid',
-  flex: 1,
-  minWidth: 120,
-  align: 'left',
-  headerAlign: 'center',
-  renderCell: (params) => (
-    <Box sx={{ pl: 1.5 }}>
-      <PaidStatusChip paid={params.row.hasAuthorBeenPaid} />
-    </Box>
-  ),
-},
-    {
-      field: 'actions',
-      type: 'actions',
-      width: 45,
-      align: 'right',
-      getActions: ({ row }) => [
-        <GridActionsCellItem
-          key="delete-item"
-          icon={<DeleteIcon />}
-          label="Delete"
-          onClick={handleRowDelete(row)}
-        />,
-      ],
-    },
-  ],
-  [handleRowEdit, handleRowDelete],
-);
+      {
+        field: 'bookAuthor',
+        headerName: 'Author',
+        flex: 1.2,
+        minWidth: 140,
+      },
+      {
+        field: 'saleSource',
+        headerName: 'Sale Source',
+        flex: 1,
+        minWidth: 120,
+        valueGetter: (_value, row) => {
+          if (row.saleSource === 'DISTRIBUTOR') return 'Distributor';
+          if (row.saleSource === 'HAND_SOLD') return 'Hand Sold';
+          return row.saleSource;
+        },
+      },
+      {
+        field: 'saleYear',
+        headerName: 'Date',
+        flex: 1,
+        minWidth: 120,
+        valueGetter: (_value, row) => formatMonthYear(row.saleMonth, row.saleYear),
+      },
+      {
+        field: 'quantitySold',
+        headerName: 'Qty',
+        type: 'number',
+        flex: 0.8,
+        minWidth: 90,
+      },
+      {
+        field: 'publisherRevenue',
+        headerName: 'Revenue',
+        type: 'number',
+        flex: 1,
+        minWidth: 120,
+        valueFormatter: (value) => formatCurrency(Number(value)),
+      },
+      {
+        field: 'authorRoyalty',
+        headerName: 'Royalty',
+        type: 'number',
+        flex: 1,
+        minWidth: 120,
+        valueFormatter: (value) => formatCurrency(Number(value)),
+      },
+      {
+        field: 'comment',
+        headerName: 'Comment',
+        width: 90,
+        sortable: false,
+        filterable: false,
+        align: 'center',
+        headerAlign: 'center',
+        renderCell: (params) => {
+          const comment = params.row.comment;
+
+          if (!comment) return null;
+
+          return (
+            <Tooltip title={comment} placement="top" enterDelay={300}>
+              <IconButton
+                size="small"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="View comment"
+              >
+                <CommentIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          );
+        },
+      },
+      {
+        field: 'hasAuthorBeenPaid',
+        headerName: 'Paid',
+        flex: 1,
+        minWidth: 120,
+        align: 'left',
+        headerAlign: 'center',
+        renderCell: (params) => (
+          <Box sx={{ pl: 1.5 }}>
+            <PaidStatusChip paid={params.row.hasAuthorBeenPaid} />
+          </Box>
+        ),
+      },
+      {
+        field: 'actions',
+        type: 'actions',
+        width: 45,
+        align: 'right',
+        getActions: ({ row }) => [
+          <GridActionsCellItem
+            key="delete-item"
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={handleRowDelete(row)}
+          />,
+        ],
+      },
+    ],
+    [handleRowEdit, handleRowDelete],
+  );
 
   const pageTitle = 'Records';
 
