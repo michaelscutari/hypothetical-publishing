@@ -475,6 +475,35 @@ class BookControllerTest {
   }
 
   @Test
+  void createBookPersistsAsin() throws Exception {
+    Cookie token = login();
+    BookRequest request =
+        new BookRequest(
+            "ASIN Book",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"),
+            "B0ABC12345");
+
+    mockMvc
+        .perform(
+            post("/api/books")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.asin").value("B0ABC12345"));
+  }
+
+  @Test
   void createBookNormalizesAuthorWhitespace() throws Exception {
     Author authorWithSpaces = createAuthor("  Author   with   spaces  ");
     BookRequest request =
@@ -769,6 +798,53 @@ class BookControllerTest {
         .andExpect(jsonPath("$.publicationMonth").value(5))
         .andExpect(jsonPath("$.distributorAuthorRoyaltyRate").value(0.75))
         .andExpect(jsonPath("$.handsoldAuthorRoyaltyRate").value(0.2));
+  }
+
+  @Test
+  void updateBookPersistsAsin() throws Exception {
+    Cookie token = login();
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Old Title",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5"),
+                new BigDecimal("0.2"),
+                null,
+                null,
+                new BigDecimal("20.00"),
+                new BigDecimal("5.00"),
+                null));
+
+    BookRequest updateRequest =
+        new BookRequest(
+            "Old Title",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"),
+            "B0ABC12345");
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", bookId)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.asin").value("B0ABC12345"));
   }
 
   @Test

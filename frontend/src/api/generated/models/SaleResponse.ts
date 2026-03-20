@@ -27,6 +27,14 @@ export type SaleResponse = {
      */
     saleSource: SaleResponse.saleSource;
     /**
+     * Distributor of the sale
+     */
+    distributor: SaleResponse.distributor;
+    /**
+     * Format of the book that was sold
+     */
+    format: SaleResponse.format;
+    /**
      * Author ID of the sold book
      */
     authorId: number;
@@ -41,9 +49,21 @@ export type SaleResponse = {
     /**
      * Quantity of books sold
      */
-    quantitySold: number;
+    quantitySold?: number;
     /**
-     * Revenue of the publisher
+     * KENP of the ebooks sold. Only present for ebooks
+     */
+    kenp?: number;
+    /**
+     * Currency the sale was made in
+     */
+    saleCurrency: SaleResponse.saleCurrency;
+    /**
+     * Revenue of the publisher in the original sale currency
+     */
+    originalPublisherRevenue: number;
+    /**
+     * Revenue of the publisher in USD
      */
     publisherRevenue: number;
     /**
@@ -66,6 +86,44 @@ export namespace SaleResponse {
     export enum saleSource {
         DISTRIBUTOR = 'DISTRIBUTOR',
         HAND_SOLD = 'HAND_SOLD',
+    }
+    /**
+     * Distributor of the sale
+     */
+    export enum distributor {
+        INGRAM_SPARK = 'INGRAM_SPARK',
+        AMAZON = 'AMAZON',
+        OTHER = 'OTHER',
+    }
+    /**
+     * Format of the book that was sold
+     */
+    export enum format {
+        PRINT = 'PRINT',
+        EBOOK = 'EBOOK',
+        KINDLE_UNLIMITED = 'KINDLE_UNLIMITED',
+    }
+    /**
+     * Currency the sale was made in
+     */
+    export enum saleCurrency {
+        AUD = 'AUD',
+        BRL = 'BRL',
+        CAD = 'CAD',
+        CNY = 'CNY',
+        EGP = 'EGP',
+        EUR = 'EUR',
+        INR = 'INR',
+        JPY = 'JPY',
+        MXN = 'MXN',
+        PLN = 'PLN',
+        SAR = 'SAR',
+        SGD = 'SGD',
+        SEK = 'SEK',
+        TRY = 'TRY',
+        AED = 'AED',
+        GBP = 'GBP',
+        USD = 'USD',
     }
 }
 
