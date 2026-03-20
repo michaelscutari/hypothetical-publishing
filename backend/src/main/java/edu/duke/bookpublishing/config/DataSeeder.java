@@ -9,6 +9,9 @@ import edu.duke.bookpublishing.books.cover.CoverService;
 import edu.duke.bookpublishing.common.StringUtils;
 import edu.duke.bookpublishing.sales.Sale;
 import edu.duke.bookpublishing.sales.SaleRepository;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import java.io.InputStreamReader;
 import java.math.BigDecimal;
@@ -173,9 +176,13 @@ public class DataSeeder implements CommandLineRunner {
             Sale.builder()
                 .book(book)
                 .saleSource(saleSource != null ? saleSource : SaleSource.DISTRIBUTOR)
+                .distributor(SaleDistributor.OTHER)
+                .format(SaleFormat.PRINT)
                 .saleMonth(month)
                 .saleYear(year)
                 .quantitySold(unitsSold)
+                .saleCurrency(Currency.USD)
+                .originalPublisherRevenue(publisherRevenue)
                 .publisherRevenue(publisherRevenue)
                 .authorRoyalty(authorRoyalty)
                 .hasAuthorBeenPaid(royaltyPaid)

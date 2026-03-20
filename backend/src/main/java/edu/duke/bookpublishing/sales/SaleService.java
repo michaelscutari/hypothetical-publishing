@@ -16,6 +16,9 @@ import edu.duke.bookpublishing.sales.dto.ReportBookRow;
 import edu.duke.bookpublishing.sales.dto.RoyaltyReportResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
@@ -51,6 +54,7 @@ public class SaleService {
 
   private static final LocalDate MIN_SALE_START_DATE = LocalDate.of(1900, 1, 1);
   private static final LocalDate MAX_SALE_END_DATE = LocalDate.of(2100, 1, 1);
+  private static final Currency DEFAULT_SALE_CURRENCY = Currency.USD;
 
   private final BookService bookService;
   private final BookRepository bookRepository;
@@ -190,6 +194,7 @@ public class SaleService {
     Book book = getOrThrowBookFromRepoById(request.bookId());
 
     BigDecimal publisherRevenue = resolvePublisherRevenue(request, book);
+    BigDecimal originalPublisherRevenue = publisherRevenue;
     BigDecimal authorRoyaltyRate = resolveAuthorRoyaltyRate(request, book);
     BigDecimal authorRoyalty = computeAuthorRoyalty(publisherRevenue, authorRoyaltyRate);
 
@@ -199,10 +204,15 @@ public class SaleService {
         Sale.builder()
             .book(book)
             .saleSource(request.saleSource())
+            .distributor(request.distributor())
+            .format(request.format())
             .saleMonth(request.saleMonth())
             .saleYear(request.saleYear())
             .quantitySold(request.quantitySold())
-            .publisherRevenue(publisherRevenue)
+            .saleCurrency(request.saleCurrency())
+            .originalPublisherRevenue(
+                originalPublisherRevenue) // TODO: Change when currency handled @Michael
+            .publisherRevenue(publisherRevenue) // TODO: Change to be converted value @Michael
             .authorRoyalty(authorRoyalty)
             .hasAuthorBeenPaid(hasAuthorBeenPaid)
             .comment(request.comment())
@@ -217,15 +227,22 @@ public class SaleService {
     Book newBook = getOrThrowBookFromRepoById(request.bookId());
 
     BigDecimal publisherRevenue = resolvePublisherRevenue(request, newBook);
+    BigDecimal originalPublisherRevenue = publisherRevenue;
     BigDecimal authorRoyaltyRate = resolveAuthorRoyaltyRate(request, newBook);
     BigDecimal authorRoyalty = computeAuthorRoyalty(publisherRevenue, authorRoyaltyRate);
 
     sale.setBook(newBook);
     sale.setSaleSource(request.saleSource());
+    sale.setDistributor(request.distributor());
+    sale.setFormat(request.format());
     sale.setSaleMonth(request.saleMonth());
     sale.setSaleYear(request.saleYear());
     sale.setQuantitySold(request.quantitySold());
-    sale.setPublisherRevenue(publisherRevenue);
+    sale.setKenp(request.kenp());
+    sale.setSaleCurrency(request.saleCurrency());
+    sale.setOriginalPublisherRevenue(
+        originalPublisherRevenue); // TODO: Change when currency handled @Michael
+    sale.setPublisherRevenue(publisherRevenue); // TODO: Change to be converted value @Michael
     sale.setAuthorRoyalty(authorRoyalty);
     sale.setComment(request.comment());
 
@@ -498,10 +515,14 @@ public class SaleService {
 
     return Sale.builder()
         .saleSource(SaleSource.DISTRIBUTOR)
+        .distributor(SaleDistributor.INGRAM_SPARK)
+        .format(resolveIngramFormat(ingramCsvEntry.getFormat()))
         .saleMonth(ingramImportRequest.saleMonth())
         .saleYear(ingramImportRequest.saleYear())
         .book(book)
         .quantitySold(Math.toIntExact(ingramCsvEntry.getNetQty()))
+        .saleCurrency(resolveIngramCurrency(ingramCsvEntry.getSalesMarket()))
+        .originalPublisherRevenue(ingramCsvEntry.getNetCompensation())
         .publisherRevenue(ingramCsvEntry.getNetCompensation())
         .authorRoyalty(authorRoyalty)
         .hasAuthorBeenPaid(false)
@@ -521,5 +542,80 @@ public class SaleService {
 
   private void saveSalesToRepo(List<Sale> sales) {
     saleRepository.saveAll(sales);
+  }
+
+  private SaleFormat resolveIngramFormat(String formatRaw) {
+    if (formatRaw == null) {
+      return SaleFormat.PRINT;
+    }
+    String normalized = formatRaw.trim().toLowerCase();
+    if (normalized.contains("ebook")) {
+      return SaleFormat.EBOOK;
+    }
+    return SaleFormat.PRINT;
+  }
+
+  private Currency resolveIngramCurrency(String salesMarketRaw) {
+    if (salesMarketRaw == null || salesMarketRaw.isBlank()) {
+      return DEFAULT_SALE_CURRENCY;
+    }
+
+    String normalized = salesMarketRaw.trim().toUpperCase();
+    String normalizedWords = normalized.replaceAll("\\(.*?\\)", " ").replaceAll("[^A-Z]", " ");
+    normalizedWords = normalizedWords.trim().replaceAll("\\s+", " ");
+
+    for (String token : normalizedWords.split(" ")) {
+      if (token.isBlank()) {
+        continue;
+      }
+      Currency currency = resolveIngramCurrencyToken(token);
+      if (currency != null) {
+        return currency;
+      }
+    }
+
+    return switch (normalized) {
+      case "AU", "AUD" -> Currency.AUD;
+      case "BR", "BRL" -> Currency.BRL;
+      case "CA", "CAD" -> Currency.CAD;
+      case "CN", "CNY" -> Currency.CNY;
+      case "EG", "EGP" -> Currency.EGP;
+      case "BE", "FR", "DE", "IT", "NL", "ES", "EU", "EUR" -> Currency.EUR;
+      case "IN", "INR" -> Currency.INR;
+      case "JP", "JPY" -> Currency.JPY;
+      case "MX", "MXN" -> Currency.MXN;
+      case "PL", "PLN" -> Currency.PLN;
+      case "SA", "SAR" -> Currency.SAR;
+      case "SG", "SGD" -> Currency.SGD;
+      case "SE", "SEK" -> Currency.SEK;
+      case "TR", "TRY" -> Currency.TRY;
+      case "AE" -> Currency.AED;
+      case "GB", "UK", "GBP" -> Currency.GBP;
+      case "US", "USA", "USD" -> Currency.USD;
+      default -> DEFAULT_SALE_CURRENCY;
+    };
+  }
+
+  private Currency resolveIngramCurrencyToken(String token) {
+    return switch (token) {
+      case "AU", "AUD", "AUSTRALIA" -> Currency.AUD;
+      case "BR", "BRL", "BRAZIL" -> Currency.BRL;
+      case "CA", "CAD", "CANADA" -> Currency.CAD;
+      case "CN", "CNY", "CHINA" -> Currency.CNY;
+      case "EG", "EGP", "EGYPT" -> Currency.EGP;
+      case "BE", "FR", "DE", "IT", "NL", "ES", "EU", "EUR", "EUROPE", "EUROZONE" -> Currency.EUR;
+      case "IN", "INR", "INDIA" -> Currency.INR;
+      case "JP", "JPY", "JAPAN" -> Currency.JPY;
+      case "MX", "MXN", "MEXICO" -> Currency.MXN;
+      case "PL", "PLN", "POLAND" -> Currency.PLN;
+      case "SA", "SAR", "SAUDI", "SAUDIARABIA" -> Currency.SAR;
+      case "SG", "SGD", "SINGAPORE" -> Currency.SGD;
+      case "SE", "SEK", "SWEDEN" -> Currency.SEK;
+      case "TR", "TRY", "TURKEY" -> Currency.TRY;
+      case "AE", "UAE", "AED", "EMIRATES" -> Currency.AED;
+      case "GB", "UK", "GBP", "BRITAIN", "ENGLAND" -> Currency.GBP;
+      case "US", "USA", "USD", "AMERICA" -> Currency.USD;
+      default -> null;
+    };
   }
 }

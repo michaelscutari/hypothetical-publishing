@@ -17,6 +17,9 @@ import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
 import edu.duke.bookpublishing.sales.SaleRepository;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
@@ -96,7 +99,8 @@ class BookControllerTest {
         null,
         null,
         new BigDecimal("20.00"),
-        new BigDecimal("5.00"));
+        new BigDecimal("5.00"),
+        null);
   }
 
   private BookRequest buildSeriesBookRequest(
@@ -113,7 +117,8 @@ class BookControllerTest {
         seriesName,
         seriesPosition,
         new BigDecimal("20.00"),
-        new BigDecimal("5.00"));
+        new BigDecimal("5.00"),
+        null);
   }
 
   private Author createAuthor(String name) {
@@ -149,7 +154,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc.perform(
         post("/api/books")
@@ -246,7 +252,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc.perform(
         post("/api/books")
@@ -505,7 +512,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -533,7 +541,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -560,7 +569,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -587,7 +597,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -615,7 +626,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -638,7 +650,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -668,7 +681,8 @@ class BookControllerTest {
                 null,
                 null,
                 new BigDecimal("20.00"),
-                new BigDecimal("5.00")));
+                new BigDecimal("5.00"),
+                null));
 
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
@@ -695,7 +709,8 @@ class BookControllerTest {
                 null,
                 null,
                 new BigDecimal("20.00"),
-                new BigDecimal("5.00")));
+                new BigDecimal("5.00"),
+                null));
 
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
@@ -726,7 +741,8 @@ class BookControllerTest {
                 null,
                 null,
                 new BigDecimal("20.00"),
-                new BigDecimal("5.00")));
+                new BigDecimal("5.00"),
+                null));
 
     BookRequest updateRequest =
         buildBookRequest(
@@ -773,7 +789,8 @@ class BookControllerTest {
                 null,
                 null,
                 new BigDecimal("20.00"),
-                new BigDecimal("5.00")));
+                new BigDecimal("5.00"),
+                null));
 
     mockMvc
         .perform(delete("/api/books/{id}", bookId).cookie(token))
@@ -805,12 +822,12 @@ class BookControllerTest {
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             bookId, SaleSource.DISTRIBUTOR, 1, 2025, 10, new BigDecimal("1000.00"), true, null));
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             bookId, SaleSource.DISTRIBUTOR, 2, 2025, 5, new BigDecimal("250.00"), false, null));
 
     mockMvc
@@ -1050,7 +1067,8 @@ class BookControllerTest {
             "Some Series",
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -1077,7 +1095,8 @@ class BookControllerTest {
             null,
             3,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -1303,7 +1322,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -1338,5 +1358,30 @@ class BookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
+  }
+
+  private SaleRequest saleRequest(
+      Long bookId,
+      SaleSource saleSource,
+      Integer saleMonth,
+      Integer saleYear,
+      Integer quantitySold,
+      BigDecimal publisherRevenue,
+      Boolean hasAuthorBeenPaid,
+      String comment) {
+    return new SaleRequest(
+        bookId,
+        saleSource,
+        SaleDistributor.OTHER,
+        SaleFormat.PRINT,
+        saleMonth,
+        saleYear,
+        quantitySold,
+        null,
+        Currency.USD,
+        publisherRevenue,
+        publisherRevenue,
+        hasAuthorBeenPaid,
+        comment);
   }
 }

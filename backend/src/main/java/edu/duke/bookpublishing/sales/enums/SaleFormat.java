@@ -7,5 +7,6 @@ package edu.duke.bookpublishing.sales.enums;
  */
 public enum SaleFormat {
   PRINT,
-  EBOOK
+  EBOOK,
+  KINDLE_UNLIMITED
 }

@@ -92,8 +92,8 @@ public class Sale {
   @Column(name = "usd_publisher_revenue", nullable = false, precision = 19, scale = 2)
   private BigDecimal originalPublisherRevenue;
 
-  /* 
-    USD Publisher Revenue, the source of truth for all revenue calculations. 
+  /*
+    USD Publisher Revenue, the source of truth for all revenue calculations.
     If sale was made in other currency, this is the converted amount
   */
   @PositiveOrZero
