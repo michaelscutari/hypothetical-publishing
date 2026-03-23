@@ -2,6 +2,7 @@ package edu.duke.bookpublishing.sales;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,6 +19,9 @@ import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
@@ -139,6 +143,31 @@ class SaleControllerTest {
     return objectMapper.readValue(result.getResponse().getContentAsString(), SaleResponse.class);
   }
 
+  private SaleRequest saleRequest(
+      Long bookId,
+      SaleSource saleSource,
+      Integer saleMonth,
+      Integer saleYear,
+      Integer quantitySold,
+      BigDecimal publisherRevenue,
+      Boolean hasAuthorBeenPaid,
+      String comment) {
+    return new SaleRequest(
+        bookId,
+        saleSource,
+        saleSource == SaleSource.DISTRIBUTOR ? SaleDistributor.OTHER : null,
+        SaleFormat.PRINT,
+        saleMonth,
+        saleYear,
+        quantitySold,
+        null,
+        Currency.USD,
+        publisherRevenue,
+        publisherRevenue,
+        hasAuthorBeenPaid,
+        comment);
+  }
+
   @Test
   void getAllSalesReturnsEmptyList() throws Exception {
     mockMvc
@@ -154,7 +183,7 @@ class SaleControllerTest {
     Book book = createBook();
 
     SaleRequest request =
-        new SaleRequest(
+        saleRequest(
             book.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -176,6 +205,11 @@ class SaleControllerTest {
         .andExpect(jsonPath("$.saleMonth").value(1))
         .andExpect(jsonPath("$.saleYear").value(2024))
         .andExpect(jsonPath("$.quantitySold").value(50))
+        .andExpect(jsonPath("$.kenp", nullValue()))
+        .andExpect(jsonPath("$.distributor").value("OTHER"))
+        .andExpect(jsonPath("$.format").value("PRINT"))
+        .andExpect(jsonPath("$.saleCurrency").value("USD"))
+        .andExpect(jsonPath("$.originalPublisherRevenue").value(100.00))
         .andExpect(jsonPath("$.publisherRevenue").value(100.00))
         .andExpect(jsonPath("$.authorRoyalty").value(20.00))
         .andExpect(jsonPath("$.hasAuthorBeenPaid").value(true))
@@ -190,7 +224,7 @@ class SaleControllerTest {
     YearMonth future = YearMonth.now().plusMonths(1);
 
     SaleRequest request =
-        new SaleRequest(
+        saleRequest(
             book.getId(),
             SaleSource.DISTRIBUTOR,
             future.getMonthValue(),
@@ -210,12 +244,12 @@ class SaleControllerTest {
   }
 
   @Test
-  void createHandsoldSaleComputesRevenueAndRoyalty() throws Exception {
+  void createHandsoldSaleRejectsInvalidDistributorValidation() throws Exception {
     Cookie token = login();
     Book book = createBook();
 
     SaleRequest request =
-        new SaleRequest(book.getId(), SaleSource.HAND_SOLD, 2, 2024, 10, null, false, "Handsale");
+        saleRequest(book.getId(), SaleSource.HAND_SOLD, 2, 2024, 10, null, false, "Handsale");
 
     mockMvc
         .perform(
@@ -223,11 +257,7 @@ class SaleControllerTest {
                 .cookie(token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$.publisherRevenue").value(150.00))
-        .andExpect(jsonPath("$.authorRoyalty").value(15.00))
-        .andExpect(jsonPath("$.saleSource").value("HAND_SOLD"))
-        .andExpect(jsonPath("$.comment").value("Handsale"));
+        .andExpect(status().isBadRequest());
   }
 
   @Test
@@ -238,7 +268,7 @@ class SaleControllerTest {
     SaleResponse created =
         createSale(
             token,
-            new SaleRequest(
+            saleRequest(
                 book.getId(),
                 SaleSource.DISTRIBUTOR,
                 2,
@@ -254,6 +284,11 @@ class SaleControllerTest {
         .andExpect(jsonPath("$.id").value(created.id()))
         .andExpect(jsonPath("$.bookId").value(book.getId()))
         .andExpect(jsonPath("$.saleSource").value("DISTRIBUTOR"))
+        .andExpect(jsonPath("$.distributor").value("OTHER"))
+        .andExpect(jsonPath("$.format").value("PRINT"))
+        .andExpect(jsonPath("$.saleCurrency").value("USD"))
+        .andExpect(jsonPath("$.originalPublisherRevenue").value(50.00))
+        .andExpect(jsonPath("$.kenp", nullValue()))
         .andExpect(jsonPath("$.comment").value("Initial import"));
   }
 
@@ -265,7 +300,7 @@ class SaleControllerTest {
     SaleResponse created =
         createSale(
             token,
-            new SaleRequest(
+            saleRequest(
                 book.getId(),
                 SaleSource.DISTRIBUTOR,
                 2,
@@ -276,7 +311,7 @@ class SaleControllerTest {
                 null));
 
     SaleRequest update =
-        new SaleRequest(
+        saleRequest(
             book.getId(),
             SaleSource.DISTRIBUTOR,
             3,
@@ -295,6 +330,11 @@ class SaleControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.saleMonth").value(3))
         .andExpect(jsonPath("$.quantitySold").value(25))
+        .andExpect(jsonPath("$.distributor").value("OTHER"))
+        .andExpect(jsonPath("$.format").value("PRINT"))
+        .andExpect(jsonPath("$.saleCurrency").value("USD"))
+        .andExpect(jsonPath("$.originalPublisherRevenue").value(200.00))
+        .andExpect(jsonPath("$.kenp", nullValue()))
         .andExpect(jsonPath("$.publisherRevenue").value(200.00))
         .andExpect(jsonPath("$.authorRoyalty").value(40.00))
         .andExpect(jsonPath("$.hasAuthorBeenPaid").value(true))
@@ -310,7 +350,7 @@ class SaleControllerTest {
     SaleResponse created =
         createSale(
             token,
-            new SaleRequest(
+            saleRequest(
                 book.getId(),
                 SaleSource.DISTRIBUTOR,
                 2,
@@ -337,7 +377,7 @@ class SaleControllerTest {
     for (int i = 1; i <= 30; i++) {
       createSale(
           token,
-          new SaleRequest(
+          saleRequest(
               book.getId(),
               SaleSource.DISTRIBUTOR,
               1,
@@ -363,7 +403,7 @@ class SaleControllerTest {
     for (int i = 1; i <= 30; i++) {
       createSale(
           token,
-          new SaleRequest(
+          saleRequest(
               book.getId(),
               SaleSource.DISTRIBUTOR,
               1,
@@ -398,7 +438,7 @@ class SaleControllerTest {
     for (int i = 1; i <= 21; i++) {
       createSale(
           token,
-          new SaleRequest(
+          saleRequest(
               book.getId(),
               SaleSource.DISTRIBUTOR,
               1,
@@ -432,7 +472,7 @@ class SaleControllerTest {
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             book.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -443,7 +483,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             book.getId(),
             SaleSource.DISTRIBUTOR,
             3,
@@ -454,7 +494,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             book.getId(),
             SaleSource.DISTRIBUTOR,
             5,
@@ -486,7 +526,7 @@ class SaleControllerTest {
     Book bookB = createBook("Book B", "Author B", "9780000000011");
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             bookA.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -497,7 +537,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             bookA.getId(),
             SaleSource.DISTRIBUTOR,
             2,
@@ -508,7 +548,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             bookB.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -537,7 +577,7 @@ class SaleControllerTest {
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             alpha.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -548,7 +588,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             alpha.getId(),
             SaleSource.DISTRIBUTOR,
             3,
@@ -560,7 +600,7 @@ class SaleControllerTest {
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             beta.getId(),
             SaleSource.DISTRIBUTOR,
             2,
@@ -591,7 +631,7 @@ class SaleControllerTest {
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             alpha.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -602,7 +642,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             alpha.getId(),
             SaleSource.DISTRIBUTOR,
             2,
@@ -613,7 +653,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             alpha.getId(),
             SaleSource.DISTRIBUTOR,
             3,
@@ -624,7 +664,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             beta.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -661,7 +701,7 @@ class SaleControllerTest {
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             alpha.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -734,7 +774,7 @@ class SaleControllerTest {
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             alpha.getId(),
             SaleSource.DISTRIBUTOR,
             1,
@@ -745,7 +785,7 @@ class SaleControllerTest {
             null));
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             beta.getId(),
             SaleSource.DISTRIBUTOR,
             1,

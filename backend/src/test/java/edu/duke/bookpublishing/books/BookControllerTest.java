@@ -1,6 +1,7 @@
 package edu.duke.bookpublishing.books;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -17,6 +18,9 @@ import edu.duke.bookpublishing.books.dto.BookRequest;
 import edu.duke.bookpublishing.books.dto.BookResponse;
 import edu.duke.bookpublishing.sales.SaleRepository;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
@@ -96,7 +100,8 @@ class BookControllerTest {
         null,
         null,
         new BigDecimal("20.00"),
-        new BigDecimal("5.00"));
+        new BigDecimal("5.00"),
+        null);
   }
 
   private BookRequest buildSeriesBookRequest(
@@ -113,7 +118,8 @@ class BookControllerTest {
         seriesName,
         seriesPosition,
         new BigDecimal("20.00"),
-        new BigDecimal("5.00"));
+        new BigDecimal("5.00"),
+        null);
   }
 
   private Author createAuthor(String name) {
@@ -149,7 +155,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc.perform(
         post("/api/books")
@@ -246,7 +253,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc.perform(
         post("/api/books")
@@ -468,6 +476,35 @@ class BookControllerTest {
   }
 
   @Test
+  void createBookPersistsAsin() throws Exception {
+    Cookie token = login();
+    BookRequest request =
+        new BookRequest(
+            "ASIN Book",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"),
+            "B0ABC12345");
+
+    mockMvc
+        .perform(
+            post("/api/books")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.asin").value("B0ABC12345"));
+  }
+
+  @Test
   void createBookNormalizesAuthorWhitespace() throws Exception {
     Author authorWithSpaces = createAuthor("  Author   with   spaces  ");
     BookRequest request =
@@ -505,7 +542,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -533,7 +571,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -560,7 +599,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -587,7 +627,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -615,7 +656,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -638,7 +680,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -668,7 +711,8 @@ class BookControllerTest {
                 null,
                 null,
                 new BigDecimal("20.00"),
-                new BigDecimal("5.00")));
+                new BigDecimal("5.00"),
+                null));
 
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
@@ -695,7 +739,8 @@ class BookControllerTest {
                 null,
                 null,
                 new BigDecimal("20.00"),
-                new BigDecimal("5.00")));
+                new BigDecimal("5.00"),
+                null));
 
     mockMvc
         .perform(get("/api/books/{id}", bookId).cookie(token))
@@ -726,7 +771,8 @@ class BookControllerTest {
                 null,
                 null,
                 new BigDecimal("20.00"),
-                new BigDecimal("5.00")));
+                new BigDecimal("5.00"),
+                null));
 
     BookRequest updateRequest =
         buildBookRequest(
@@ -756,6 +802,149 @@ class BookControllerTest {
   }
 
   @Test
+  void updateBookPersistsAsin() throws Exception {
+    Cookie token = login();
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Old Title",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5"),
+                new BigDecimal("0.2"),
+                null,
+                null,
+                new BigDecimal("20.00"),
+                new BigDecimal("5.00"),
+                null));
+
+    BookRequest updateRequest =
+        new BookRequest(
+            "Old Title",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"),
+            "B0ABC12345");
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", bookId)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.asin").value("B0ABC12345"));
+  }
+
+  @Test
+  void updateBookClearsAsinWhenExplicitNull() throws Exception {
+    Cookie token = login();
+
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Book With Asin",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5"),
+                new BigDecimal("0.2"),
+                null,
+                null,
+                new BigDecimal("20.00"),
+                new BigDecimal("5.00"),
+                "B0ABC12345"));
+
+    BookRequest updateRequest =
+        new BookRequest(
+            "Book With Asin Updated",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2021,
+            2,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"),
+            null);
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", bookId)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value("Book With Asin Updated"))
+        .andExpect(jsonPath("$.asin").value(nullValue()));
+  }
+
+  @Test
+  void updateBookRejectsInvalidAsinWithBadRequest() throws Exception {
+    Cookie token = login();
+
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Book",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5"),
+                new BigDecimal("0.2"),
+                null,
+                null,
+                new BigDecimal("20.00"),
+                new BigDecimal("5.00"),
+                null));
+
+    BookRequest updateRequest =
+        new BookRequest(
+            "Book",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"),
+            "BAD-ASIN");
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", bookId)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void deleteBookRemovesIt() throws Exception {
     Cookie token = login();
     Long bookId =
@@ -773,7 +962,8 @@ class BookControllerTest {
                 null,
                 null,
                 new BigDecimal("20.00"),
-                new BigDecimal("5.00")));
+                new BigDecimal("5.00"),
+                null));
 
     mockMvc
         .perform(delete("/api/books/{id}", bookId).cookie(token))
@@ -805,12 +995,12 @@ class BookControllerTest {
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             bookId, SaleSource.DISTRIBUTOR, 1, 2025, 10, new BigDecimal("1000.00"), true, null));
 
     createSale(
         token,
-        new SaleRequest(
+        saleRequest(
             bookId, SaleSource.DISTRIBUTOR, 2, 2025, 5, new BigDecimal("250.00"), false, null));
 
     mockMvc
@@ -1050,7 +1240,8 @@ class BookControllerTest {
             "Some Series",
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -1077,7 +1268,8 @@ class BookControllerTest {
             null,
             3,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -1303,7 +1495,8 @@ class BookControllerTest {
             null,
             null,
             new BigDecimal("20.00"),
-            new BigDecimal("5.00"));
+            new BigDecimal("5.00"),
+            null);
 
     mockMvc
         .perform(
@@ -1338,5 +1531,30 @@ class BookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isOk());
+  }
+
+  private SaleRequest saleRequest(
+      Long bookId,
+      SaleSource saleSource,
+      Integer saleMonth,
+      Integer saleYear,
+      Integer quantitySold,
+      BigDecimal publisherRevenue,
+      Boolean hasAuthorBeenPaid,
+      String comment) {
+    return new SaleRequest(
+        bookId,
+        saleSource,
+        SaleDistributor.OTHER,
+        SaleFormat.PRINT,
+        saleMonth,
+        saleYear,
+        quantitySold,
+        null,
+        Currency.USD,
+        publisherRevenue,
+        publisherRevenue,
+        hasAuthorBeenPaid,
+        comment);
   }
 }

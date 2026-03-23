@@ -19,6 +19,10 @@ import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.sales.Sale;
 import edu.duke.bookpublishing.sales.SaleRepository;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.servlet.http.Cookie;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.BeforeEach;
@@ -403,10 +407,14 @@ class AuthorControllerTest {
         saleRepository.save(
             Sale.builder()
                 .book(book1)
-                .saleSource(edu.duke.bookpublishing.sales.enums.SaleSource.DISTRIBUTOR)
+                .saleSource(SaleSource.DISTRIBUTOR)
+                .distributor(SaleDistributor.OTHER)
+                .format(SaleFormat.PRINT)
                 .saleMonth(1)
                 .saleYear(2024)
                 .quantitySold(10)
+                .saleCurrency(Currency.USD)
+                .originalPublisherRevenue(new BigDecimal("100.00"))
                 .publisherRevenue(new BigDecimal("100.00"))
                 .authorRoyalty(new BigDecimal("50.00"))
                 .hasAuthorBeenPaid(false)
@@ -416,10 +424,14 @@ class AuthorControllerTest {
         saleRepository.save(
             Sale.builder()
                 .book(book2)
-                .saleSource(edu.duke.bookpublishing.sales.enums.SaleSource.HAND_SOLD)
+                .saleSource(SaleSource.HAND_SOLD)
+                .distributor(SaleDistributor.OTHER)
+                .format(SaleFormat.PRINT)
                 .saleMonth(2)
                 .saleYear(2024)
                 .quantitySold(5)
+                .saleCurrency(Currency.USD)
+                .originalPublisherRevenue(new BigDecimal("75.00"))
                 .publisherRevenue(new BigDecimal("75.00"))
                 .authorRoyalty(new BigDecimal("25.00"))
                 .hasAuthorBeenPaid(false)
@@ -471,10 +483,14 @@ class AuthorControllerTest {
     saleRepository.save(
         Sale.builder()
             .book(book)
-            .saleSource(edu.duke.bookpublishing.sales.enums.SaleSource.DISTRIBUTOR)
+            .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
             .saleMonth(1)
             .saleYear(2024)
             .quantitySold(10)
+            .saleCurrency(Currency.USD)
+            .originalPublisherRevenue(new BigDecimal("500.00"))
             .publisherRevenue(new BigDecimal("500.00"))
             .authorRoyalty(new BigDecimal("250.00"))
             .hasAuthorBeenPaid(true)
@@ -483,10 +499,14 @@ class AuthorControllerTest {
     saleRepository.save(
         Sale.builder()
             .book(book)
-            .saleSource(edu.duke.bookpublishing.sales.enums.SaleSource.DISTRIBUTOR)
+            .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
             .saleMonth(2)
             .saleYear(2024)
             .quantitySold(5)
+            .saleCurrency(Currency.USD)
+            .originalPublisherRevenue(new BigDecimal("200.00"))
             .publisherRevenue(new BigDecimal("200.00"))
             .authorRoyalty(new BigDecimal("100.00"))
             .hasAuthorBeenPaid(false)

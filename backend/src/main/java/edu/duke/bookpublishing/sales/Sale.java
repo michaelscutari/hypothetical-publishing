@@ -1,6 +1,9 @@
 package edu.duke.bookpublishing.sales;
 
 import edu.duke.bookpublishing.books.Book;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -52,6 +55,14 @@ public class Sale {
   @Column(name = "sale_source", nullable = false)
   private SaleSource saleSource;
 
+  @Enumerated(EnumType.STRING)
+  @Column(name = "distributor", nullable = false)
+  private SaleDistributor distributor;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "format", nullable = false)
+  private SaleFormat format;
+
   @Min(1)
   @Max(12)
   @Column(name = "sale_month", nullable = false)
@@ -66,6 +77,25 @@ public class Sale {
   @Column(name = "quantity_sold", nullable = false)
   private Integer quantitySold;
 
+  @Positive
+  @Column(name = "kindle_kenp")
+  private Integer kenp;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "sale_currency", nullable = false)
+  private Currency saleCurrency;
+
+  /*
+    Publisher revenue in the original currency in which the sale was made.
+  */
+  @PositiveOrZero
+  @Column(name = "usd_publisher_revenue", nullable = false, precision = 19, scale = 2)
+  private BigDecimal originalPublisherRevenue;
+
+  /*
+    USD Publisher Revenue, the source of truth for all revenue calculations.
+    If sale was made in other currency, this is the converted amount
+  */
   @PositiveOrZero
   @Column(name = "publisher_revenue", nullable = false, precision = 19, scale = 2)
   private BigDecimal publisherRevenue;

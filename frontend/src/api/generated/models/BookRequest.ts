@@ -54,5 +54,9 @@ export type BookRequest = {
      * Print cost (USD)
      */
     printCost: number;
+    /**
+     * Amazon ASIN Number
+     */
+    asin?: string;
 };
 

@@ -17,6 +17,9 @@ import edu.duke.bookpublishing.books.BookService;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
@@ -88,6 +91,31 @@ class SaleServiceTest {
             .build();
   }
 
+  private SaleRequest saleRequest(
+      Long bookId,
+      SaleSource source,
+      Integer month,
+      Integer year,
+      Integer quantitySold,
+      BigDecimal publisherRevenue,
+      Boolean hasAuthorBeenPaid,
+      String comment) {
+    return new SaleRequest(
+        bookId,
+        source,
+        source == SaleSource.DISTRIBUTOR ? SaleDistributor.OTHER : null,
+        SaleFormat.PRINT,
+        month,
+        year,
+        quantitySold,
+        null,
+        Currency.USD,
+        publisherRevenue,
+        publisherRevenue,
+        hasAuthorBeenPaid,
+        comment);
+  }
+
   @Test
   void getAllSalesWithoutFiltersUsesSpecification() {
     Sort sort = Sort.by("saleYear").descending();
@@ -142,7 +170,22 @@ class SaleServiceTest {
 
   @Test
   void getSaleByIdReturnsSaleWhenFound() {
-    Sale sale = Sale.builder().id(11L).build();
+    Sale sale =
+        Sale.builder()
+            .id(11L)
+            .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
+            .saleMonth(1)
+            .saleYear(2024)
+            .quantitySold(1)
+            .saleCurrency(Currency.USD)
+            .originalPublisherRevenue(new BigDecimal("10.00"))
+            .publisherRevenue(new BigDecimal("10.00"))
+            .authorRoyalty(new BigDecimal("2.00"))
+            .hasAuthorBeenPaid(false)
+            .build();
     when(saleRepository.findById(11L)).thenReturn(Optional.of(sale));
     Sale result = saleService.getSaleById(11L);
     assertThat(result).isSameAs(sale);
@@ -161,8 +204,7 @@ class SaleServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
     SaleRequest request =
-        new SaleRequest(
-            1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, new BigDecimal("100.00"), false, null);
+        saleRequest(1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, new BigDecimal("100.00"), false, null);
 
     Sale result = saleService.createSale(request);
 
@@ -185,7 +227,7 @@ class SaleServiceTest {
     when(saleRepository.save(any(Sale.class)))
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
-    SaleRequest request = new SaleRequest(1L, SaleSource.HAND_SOLD, 2, 2024, 10, null, false, null);
+    SaleRequest request = saleRequest(1L, SaleSource.HAND_SOLD, 2, 2024, 10, null, false, null);
 
     Sale result = saleService.createSale(request);
 
@@ -201,8 +243,7 @@ class SaleServiceTest {
     when(bookRepository.findById(1L)).thenReturn(Optional.empty());
 
     SaleRequest request =
-        new SaleRequest(
-            1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, new BigDecimal("100.00"), false, null);
+        saleRequest(1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, new BigDecimal("100.00"), false, null);
 
     assertThrows(NotFoundException.class, () -> saleService.createSale(request));
   }
@@ -210,8 +251,7 @@ class SaleServiceTest {
   @Test
   void createSaleThrowsWhenPublisherRevenueNull() {
     when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
-    SaleRequest request =
-        new SaleRequest(1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, null, false, null);
+    SaleRequest request = saleRequest(1L, SaleSource.DISTRIBUTOR, 1, 2024, 50, null, false, null);
     assertThrows(DataIntegrityViolationException.class, () -> saleService.createSale(request));
   }
 
@@ -238,9 +278,13 @@ class SaleServiceTest {
             .id(10L)
             .book(book)
             .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
             .saleMonth(1)
             .saleYear(2024)
             .quantitySold(10)
+            .saleCurrency(Currency.USD)
+            .originalPublisherRevenue(new BigDecimal("50.00"))
             .publisherRevenue(new BigDecimal("50.00"))
             .authorRoyalty(new BigDecimal("10.00"))
             .hasAuthorBeenPaid(false)
@@ -252,8 +296,7 @@ class SaleServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
 
     SaleRequest request =
-        new SaleRequest(
-            2L, SaleSource.DISTRIBUTOR, 3, 2024, 25, new BigDecimal("200.00"), true, null);
+        saleRequest(2L, SaleSource.DISTRIBUTOR, 3, 2024, 25, new BigDecimal("200.00"), true, null);
 
     Sale result = saleService.updateSale(10L, request);
 
@@ -262,13 +305,131 @@ class SaleServiceTest {
     assertThat(result.getSaleYear()).isEqualTo(2024);
     assertThat(result.getQuantitySold()).isEqualTo(25);
     assertThat(result.getPublisherRevenue()).isEqualByComparingTo("200.00");
+    assertThat(result.getOriginalPublisherRevenue()).isEqualByComparingTo("200.00");
     assertThat(result.getAuthorRoyalty()).isEqualByComparingTo("50.00");
     assertThat(result.getHasAuthorBeenPaid()).isTrue();
   }
 
   @Test
+  void updateSalePreservesExistingImportMetadata() {
+    Sale existing =
+        Sale.builder()
+            .id(10L)
+            .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.INGRAM_SPARK)
+            .format(SaleFormat.EBOOK)
+            .saleMonth(1)
+            .saleYear(2024)
+            .quantitySold(10)
+            .saleCurrency(Currency.GBP)
+            .originalPublisherRevenue(new BigDecimal("40.00"))
+            .publisherRevenue(new BigDecimal("50.00"))
+            .authorRoyalty(new BigDecimal("10.00"))
+            .hasAuthorBeenPaid(false)
+            .build();
+
+    when(saleRepository.findById(10L)).thenReturn(Optional.of(existing));
+    when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+    when(saleRepository.save(any(Sale.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
+
+    SaleRequest request =
+        saleRequest(1L, SaleSource.DISTRIBUTOR, 3, 2024, 25, new BigDecimal("200.00"), true, null);
+
+    Sale result = saleService.updateSale(10L, request);
+
+    assertThat(result.getDistributor()).isEqualTo(SaleDistributor.OTHER);
+    assertThat(result.getFormat()).isEqualTo(SaleFormat.PRINT);
+    assertThat(result.getSaleCurrency()).isEqualTo(Currency.USD);
+    assertThat(result.getOriginalPublisherRevenue()).isEqualByComparingTo("200.00");
+    assertThat(result.getPublisherRevenue()).isEqualByComparingTo("200.00");
+  }
+
+  @Test
+  void updateSaleResetsImportMetadataWhenSourceChanges() {
+    Sale existing =
+        Sale.builder()
+            .id(10L)
+            .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.INGRAM_SPARK)
+            .format(SaleFormat.EBOOK)
+            .saleMonth(1)
+            .saleYear(2024)
+            .quantitySold(10)
+            .saleCurrency(Currency.GBP)
+            .originalPublisherRevenue(new BigDecimal("40.00"))
+            .publisherRevenue(new BigDecimal("50.00"))
+            .authorRoyalty(new BigDecimal("10.00"))
+            .hasAuthorBeenPaid(false)
+            .build();
+
+    when(saleRepository.findById(10L)).thenReturn(Optional.of(existing));
+    when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+    when(saleRepository.save(any(Sale.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
+
+    SaleRequest request = saleRequest(1L, SaleSource.HAND_SOLD, 3, 2024, 4, null, true, null);
+
+    Sale result = saleService.updateSale(10L, request);
+
+    assertThat(result.getDistributor()).isNull();
+    assertThat(result.getFormat()).isEqualTo(SaleFormat.PRINT);
+    assertThat(result.getSaleCurrency()).isEqualTo(Currency.USD);
+    assertThat(result.getOriginalPublisherRevenue()).isEqualByComparingTo("60.00");
+    assertThat(result.getPublisherRevenue()).isEqualByComparingTo("60.00");
+  }
+
+  @Test
+  void updateSaleBackfillsAllMissingMetadataFields() {
+    Sale existing =
+        Sale.builder()
+            .id(10L)
+            .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
+            .saleMonth(1)
+            .saleYear(2024)
+            .quantitySold(10)
+            .publisherRevenue(new BigDecimal("50.00"))
+            .authorRoyalty(new BigDecimal("10.00"))
+            .hasAuthorBeenPaid(false)
+            .build();
+
+    when(saleRepository.findById(10L)).thenReturn(Optional.of(existing));
+    when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+    when(saleRepository.save(any(Sale.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
+
+    SaleRequest request =
+        saleRequest(1L, SaleSource.DISTRIBUTOR, 3, 2024, 25, new BigDecimal("200.00"), true, null);
+
+    Sale result = saleService.updateSale(10L, request);
+
+    assertThat(result.getDistributor()).isEqualTo(SaleDistributor.OTHER);
+    assertThat(result.getFormat()).isEqualTo(SaleFormat.PRINT);
+    assertThat(result.getSaleCurrency()).isEqualTo(Currency.USD);
+    assertThat(result.getOriginalPublisherRevenue()).isEqualByComparingTo("200.00");
+  }
+
+  @Test
   void deleteByIdDeletesWhenSaleExists() {
-    Sale existing = Sale.builder().id(7L).build();
+    Sale existing =
+        Sale.builder()
+            .id(7L)
+            .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
+            .saleMonth(1)
+            .saleYear(2024)
+            .quantitySold(1)
+            .saleCurrency(Currency.USD)
+            .originalPublisherRevenue(new BigDecimal("10.00"))
+            .publisherRevenue(new BigDecimal("10.00"))
+            .authorRoyalty(new BigDecimal("2.00"))
+            .hasAuthorBeenPaid(false)
+            .build();
     when(saleRepository.findById(7L)).thenReturn(Optional.of(existing));
 
     saleService.deleteById(7L);
@@ -311,7 +472,7 @@ class SaleServiceTest {
     second.setNetQty(2L);
     second.setNetCompensation(new BigDecimal("10.00"));
     second.setFormat("Paperback");
-    second.setSalesMarket("GB");
+    second.setSalesMarket("GB (UK)");
 
     ParsedBatch<IngramCsvEntry> parsedBatch =
         new ParsedBatch<>(timestamp, List.of(first, second), List.of());
@@ -335,7 +496,11 @@ class SaleServiceTest {
 
     Sale firstSaved = saved.get(0);
     assertThat(firstSaved.getSaleSource()).isEqualTo(SaleSource.DISTRIBUTOR);
+    assertThat(firstSaved.getDistributor()).isEqualTo(SaleDistributor.INGRAM_SPARK);
+    assertThat(firstSaved.getFormat()).isEqualTo(SaleFormat.PRINT);
+    assertThat(firstSaved.getSaleCurrency()).isEqualTo(Currency.USD);
     assertThat(firstSaved.getQuantitySold()).isEqualTo(5);
+    assertThat(firstSaved.getOriginalPublisherRevenue()).isEqualByComparingTo("25.50");
     assertThat(firstSaved.getPublisherRevenue()).isEqualByComparingTo("25.50");
     assertThat(firstSaved.getAuthorRoyalty()).isEqualByComparingTo("5.10");
     assertThat(firstSaved.getHasAuthorBeenPaid()).isFalse();
@@ -343,9 +508,44 @@ class SaleServiceTest {
         .contains("Ingram: Format='Hardcover' Market='US' File='ingram.csv' (" + timestamp);
 
     Sale secondSaved = saved.get(1);
+    assertThat(secondSaved.getDistributor()).isEqualTo(SaleDistributor.INGRAM_SPARK);
+    assertThat(secondSaved.getFormat()).isEqualTo(SaleFormat.PRINT);
+    assertThat(secondSaved.getSaleCurrency()).isEqualTo(Currency.USD);
+    assertThat(secondSaved.getOriginalPublisherRevenue()).isEqualByComparingTo("10.00");
     assertThat(secondSaved.getQuantitySold()).isEqualTo(2);
     assertThat(secondSaved.getPublisherRevenue()).isEqualByComparingTo("10.00");
     assertThat(secondSaved.getAuthorRoyalty()).isEqualByComparingTo("2.00");
+  }
+
+  @Test
+  void importFromCsvMapsCurrencyFromVerboseMarketLabel() {
+    MultipartFile file = new MockMultipartFile("file", "ingram.csv", "text/csv", "data".getBytes());
+    LocalDateTime timestamp = LocalDateTime.of(2024, 1, 2, 3, 4);
+
+    IngramCsvEntry entry = new IngramCsvEntry();
+    entry.setIsbn("9780743273565");
+    entry.setNetQty(1L);
+    entry.setNetCompensation(new BigDecimal("5.00"));
+    entry.setFormat("Hardcover");
+    entry.setSalesMarket("United Kingdom Marketplace");
+
+    ParsedBatch<IngramCsvEntry> parsedBatch =
+        new ParsedBatch<>(timestamp, List.of(entry), List.of());
+
+    when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
+    when(saleRepository.saveAll(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0, List.class));
+
+    IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
+    var result = saleService.importSalesFromCsv(request);
+
+    assertThat(result.savedSales()).hasSize(1);
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Sale>> salesCaptor = ArgumentCaptor.forClass(List.class);
+    verify(saleRepository).saveAll(salesCaptor.capture());
+    Sale saved = salesCaptor.getValue().get(0);
+    assertThat(saved.getSaleCurrency()).isEqualTo(Currency.USD);
   }
 
   @Test

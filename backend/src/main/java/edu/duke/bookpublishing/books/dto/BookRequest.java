@@ -2,6 +2,7 @@ package edu.duke.bookpublishing.books.dto;
 
 import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 
+import edu.duke.bookpublishing.books.validation.ASIN;
 import edu.duke.bookpublishing.books.validation.ISBN10;
 import edu.duke.bookpublishing.books.validation.ISBN13;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -60,7 +61,8 @@ public record BookRequest(
     @Schema(description = "Print cost (USD)", example = "4.50", requiredMode = REQUIRED)
         @NotNull(message = "Print cost is required")
         @DecimalMin("0.00")
-        BigDecimal printCost) {
+        BigDecimal printCost,
+    @Schema(description = "Amazon ASIN Number") @ASIN String asin) {
 
   @Schema(hidden = true)
   @AssertTrue(message = "Cover price must be greater than print cost")

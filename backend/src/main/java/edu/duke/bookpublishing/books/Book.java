@@ -82,10 +82,12 @@ public class Book {
   @Column(name = "series_position")
   private Integer seriesPosition;
 
+  // Cover Price in USD
   @PositiveOrZero
   @Column(name = "cover_price", nullable = false, precision = 19, scale = 2)
   private BigDecimal coverPrice;
 
+  // Print Cost in USD
   @PositiveOrZero
   @Column(name = "print_cost", nullable = false, precision = 19, scale = 2)
   private BigDecimal printCost;
@@ -102,6 +104,9 @@ public class Book {
 
   @Column(name = "cover_content_type")
   private String coverContentType;
+
+  @Column(name = "amazon_asin", length = 10)
+  private String amazonEbookAsin;
 
   @Formula("(SELECT COALESCE(SUM(s.quantity_sold), 0) FROM sales s WHERE s.book_id = id)")
   private Long totalSalesToDate;
@@ -126,6 +131,12 @@ public class Book {
       if (seriesName.isEmpty()) {
         seriesName = null;
         seriesPosition = null;
+      }
+    }
+    if (amazonEbookAsin != null) {
+      amazonEbookAsin = amazonEbookAsin.trim().toUpperCase();
+      if (amazonEbookAsin.isEmpty()) {
+        amazonEbookAsin = null;
       }
     }
   }
