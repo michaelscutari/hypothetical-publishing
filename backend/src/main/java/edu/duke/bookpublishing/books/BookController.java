@@ -196,6 +196,7 @@ public class BookController {
             .seriesPosition(request.seriesPosition())
             .coverPrice(request.coverPrice())
             .printCost(request.printCost())
+            .amazonEbookAsin(request.asin())
             .build();
 
     return BookResponse.from(bookService.createBook(book));
@@ -237,6 +238,7 @@ public class BookController {
     book.setSeriesPosition(request.seriesPosition());
     book.setCoverPrice(request.coverPrice());
     book.setPrintCost(request.printCost());
+    book.setAmazonEbookAsin(request.asin());
 
     return BookResponse.from(bookService.updateBook(book, oldSeriesName, oldSeriesPosition));
   }

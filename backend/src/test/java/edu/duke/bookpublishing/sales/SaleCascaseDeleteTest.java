@@ -6,6 +6,9 @@ import edu.duke.bookpublishing.author.Author;
 import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
+import edu.duke.bookpublishing.sales.enums.Currency;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
@@ -52,9 +55,13 @@ class SaleCascadeDeleteTest {
         Sale.builder()
             .book(book)
             .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
             .saleMonth(1)
             .saleYear(2024)
             .quantitySold(10)
+            .saleCurrency(Currency.USD)
+            .originalPublisherRevenue(new BigDecimal("100.00"))
             .publisherRevenue(new BigDecimal("100.00"))
             .authorRoyalty(new BigDecimal("10.00"))
             .hasAuthorBeenPaid(false)
@@ -64,9 +71,13 @@ class SaleCascadeDeleteTest {
         Sale.builder()
             .book(book)
             .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
             .saleMonth(2)
             .saleYear(2024)
             .quantitySold(5)
+            .saleCurrency(Currency.USD)
+            .originalPublisherRevenue(new BigDecimal("50.00"))
             .publisherRevenue(new BigDecimal("50.00"))
             .authorRoyalty(new BigDecimal("5.00"))
             .hasAuthorBeenPaid(false)

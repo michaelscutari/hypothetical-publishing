@@ -28,7 +28,8 @@ public record BookResponse(
     @Schema(description = "Total sales quantity to date", requiredMode = REQUIRED)
         Long totalSalesToDate,
     @Schema(description = "Whether this book has a cover image", requiredMode = REQUIRED)
-        Boolean hasCover) {
+        Boolean hasCover,
+    @Schema(description = "Amazon ASIN number") String asin) {
 
   public static BookResponse from(Book book) {
     return from(book, 0L);
@@ -51,6 +52,7 @@ public record BookResponse(
         book.getCoverPrice(),
         book.getPrintCost(),
         totalSaleToDate,
-        book.getCoverImage() != null);
+        book.getCoverImage() != null,
+        book.getAmazonEbookAsin());
   }
 }

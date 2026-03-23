@@ -9,4 +9,8 @@ public final class ValidationPatterns {
   public static final Pattern ISBN13 = Pattern.compile("^\\d{13}$");
 
   public static final Pattern ISBN_ANY = Pattern.compile("^(\\d{9}[\\dXx]|\\d{13})$");
+
+  public static final Pattern ASIN = Pattern.compile("^[A-Za-z0-9]{10}$");
+
+  private ValidationPatterns() {}
 }

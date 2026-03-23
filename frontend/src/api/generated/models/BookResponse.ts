@@ -70,5 +70,9 @@ export type BookResponse = {
      * Whether this book has a cover image
      */
     hasCover: boolean;
+    /**
+     * Amazon ASIN number
+     */
+    asin?: string;
 };
 
