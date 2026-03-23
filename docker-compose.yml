@@ -9,6 +9,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-change-this-in-production}
       - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
+      - CURRENCY_API_APP_ID=${CURRENCY_API_APP_ID}
     depends_on:
       db:
         condition: service_healthy
