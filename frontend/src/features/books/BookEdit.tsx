@@ -17,6 +17,12 @@ import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from '@/components/PageContainer';
 
+const normalizeRoyaltyRate = (value: unknown, fallback: number) => {
+  if (value == null || value === '') return fallback;
+  const rate = Number(value);
+  return Number.isNaN(rate) ? fallback : rate;
+};
+
 function BookEditForm({
   initialValues,
   initialAuthor,
@@ -199,8 +205,11 @@ export default function BookEdit() {
         isbn10: formValues.isbn10 ?? undefined,
         publicationYear: formValues.publicationYear ?? new Date().getFullYear(),
         publicationMonth: formValues.publicationMonth ?? 1,
-        distributorAuthorRoyaltyRate: formValues.distributorAuthorRoyaltyRate ?? 0.5,
-        handsoldAuthorRoyaltyRate: formValues.handsoldAuthorRoyaltyRate ?? 0.2,
+        distributorAuthorRoyaltyRate: normalizeRoyaltyRate(
+          formValues.distributorAuthorRoyaltyRate,
+          0.5,
+        ),
+        handsoldAuthorRoyaltyRate: normalizeRoyaltyRate(formValues.handsoldAuthorRoyaltyRate, 0.2),
         seriesName: formValues.seriesName ?? undefined,
         seriesPosition: formValues.seriesPosition ?? undefined,
         coverPrice: formValues.coverPrice ?? 0,

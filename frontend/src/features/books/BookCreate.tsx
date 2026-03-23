@@ -28,6 +28,12 @@ export default function BookCreate() {
 
   const notifications = useNotifications();
 
+  const normalizeRoyaltyRate = React.useCallback((value: unknown, fallback: number) => {
+    if (value == null || value === '') return fallback;
+    const rate = Number(value);
+    return Number.isNaN(rate) ? fallback : rate;
+  }, []);
+
   const [formState, setFormState] = React.useState<BookFormState>(() => ({
     values: INITIAL_FORM_VALUES,
     errors: {},
@@ -172,8 +178,11 @@ export default function BookCreate() {
         isbn10: formValues.isbn10 ?? undefined,
         publicationYear: formValues.publicationYear ?? new Date().getFullYear(),
         publicationMonth: formValues.publicationMonth ?? 1,
-        distributorAuthorRoyaltyRate: formValues.distributorAuthorRoyaltyRate ?? 0.5,
-        handsoldAuthorRoyaltyRate: formValues.handsoldAuthorRoyaltyRate ?? 0.2,
+        distributorAuthorRoyaltyRate: normalizeRoyaltyRate(
+          formValues.distributorAuthorRoyaltyRate,
+          0.5,
+        ),
+        handsoldAuthorRoyaltyRate: normalizeRoyaltyRate(formValues.handsoldAuthorRoyaltyRate, 0.2),
         seriesName: formValues.seriesName ?? undefined,
         seriesPosition: formValues.seriesPosition ?? undefined,
         coverPrice: formValues.coverPrice ?? 0,
@@ -214,7 +223,7 @@ export default function BookCreate() {
       }
       throw createError;
     }
-  }, [formValues, navigate, notifications, setFormErrors]);
+  }, [formValues, navigate, normalizeRoyaltyRate, notifications, setFormErrors]);
 
   return (
     <PageContainer
