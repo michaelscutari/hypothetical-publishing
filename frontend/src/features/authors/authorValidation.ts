@@ -1,3 +1,5 @@
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@.]+$/;
+
 export interface AuthorFormState {
   name: string;
   email: string;
@@ -10,7 +12,7 @@ export function validateAuthor(
   const errors: AuthorFormState['errors'] = {};
   if (!values.name.trim()) errors.name = 'Name is required';
   if (!values.email.trim()) errors.email = 'Email is required';
-  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(values.email))
+  else if (!EMAIL_REGEX.test(values.email.toLowerCase().trim()))
     errors.email = 'Must be a valid email address';
   return errors;
 }
