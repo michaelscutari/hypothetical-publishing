@@ -22,6 +22,8 @@ import CoverImageField from './CoverImageField';
 
 type BookFormValues = Partial<Omit<BookResponse, 'id' | 'totalSalesToDate'>> & {
   coverImageFile?: File | null;
+  distributorAuthorRoyaltyRate?: number | string | null;
+  handsoldAuthorRoyaltyRate?: number | string | null;
 };
 
 export interface BookFormState {
@@ -107,6 +109,17 @@ export default function BookForm(props: BookFormProps) {
       onFieldChange(
         event.target.name as keyof BookFormState['values'],
         value === '' ? null : Number(value),
+      );
+    },
+    [onFieldChange],
+  );
+
+  const handleRoyaltyFieldChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value;
+      onFieldChange(
+        event.target.name as keyof BookFormState['values'],
+        value === '' ? null : value,
       );
     },
     [onFieldChange],
@@ -278,29 +291,29 @@ export default function BookForm(props: BookFormProps) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
-              type="number"
+              type="text"
               value={formValues.distributorAuthorRoyaltyRate ?? ''}
-              onChange={handleNumberFieldChange}
+              onChange={handleRoyaltyFieldChange}
               name="distributorAuthorRoyaltyRate"
               label="Distributor Royalty Rate"
               error={!!formErrors.distributorAuthorRoyaltyRate}
               helperText={formErrors.distributorAuthorRoyaltyRate ?? ' '}
               fullWidth
-              inputProps={{ step: '0.01', min: 0, max: 1 }}
+              inputProps={{ inputMode: 'decimal' }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
-              type="number"
+              type="text"
               value={formValues.handsoldAuthorRoyaltyRate ?? ''}
-              onChange={handleNumberFieldChange}
+              onChange={handleRoyaltyFieldChange}
               name="handsoldAuthorRoyaltyRate"
               label="Handsold Royalty Rate"
               error={!!formErrors.handsoldAuthorRoyaltyRate}
               helperText={formErrors.handsoldAuthorRoyaltyRate ?? ' '}
               fullWidth
-              inputProps={{ step: '0.01', min: 0, max: 1 }}
+              inputProps={{ inputMode: 'decimal' }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
