@@ -6,7 +6,6 @@ import type { BookDetailResponse } from '../models/BookDetailResponse';
 import type { BookLookupResponse } from '../models/BookLookupResponse';
 import type { BookRequest } from '../models/BookRequest';
 import type { BookResponse } from '../models/BookResponse';
-import type { JsonNode } from '../models/JsonNode';
 import type { PagedResponseAuthorResponse } from '../models/PagedResponseAuthorResponse';
 import type { PagedResponseBookResponse } from '../models/PagedResponseBookResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
@@ -39,7 +38,7 @@ export class BooksService {
      */
     public static updateBook(
         id: number,
-        requestBody: JsonNode,
+        requestBody: BookRequest,
     ): CancelablePromise<BookResponse> {
         return __request(OpenAPI, {
             method: 'PUT',
