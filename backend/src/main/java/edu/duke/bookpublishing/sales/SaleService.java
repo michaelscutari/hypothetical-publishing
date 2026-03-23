@@ -520,7 +520,7 @@ public class SaleService {
         .saleYear(ingramImportRequest.saleYear())
         .book(book)
         .quantitySold(Math.toIntExact(ingramCsvEntry.getNetQty()))
-        .saleCurrency(Currency.USD)
+        .saleCurrency(Currency.USD) // CSV Import is always USD Value
         .originalPublisherRevenue(ingramCsvEntry.getNetCompensation())
         .publisherRevenue(ingramCsvEntry.getNetCompensation())
         .authorRoyalty(authorRoyalty)
