@@ -133,5 +133,11 @@ public class Book {
         seriesPosition = null;
       }
     }
+    if (amazonEbookAsin != null) {
+      amazonEbookAsin = amazonEbookAsin.trim().toUpperCase();
+      if (amazonEbookAsin.isEmpty()) {
+        amazonEbookAsin = null;
+      }
+    }
   }
 }

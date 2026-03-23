@@ -1,6 +1,7 @@
 package edu.duke.bookpublishing.books;
 
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -845,6 +846,102 @@ class BookControllerTest {
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.asin").value("B0ABC12345"));
+  }
+
+  @Test
+  void updateBookClearsAsinWhenExplicitNull() throws Exception {
+    Cookie token = login();
+
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Book With Asin",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5"),
+                new BigDecimal("0.2"),
+                null,
+                null,
+                new BigDecimal("20.00"),
+                new BigDecimal("5.00"),
+                "B0ABC12345"));
+
+    BookRequest updateRequest =
+        new BookRequest(
+            "Book With Asin Updated",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2021,
+            2,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"),
+            null);
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", bookId)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.title").value("Book With Asin Updated"))
+        .andExpect(jsonPath("$.asin").value(nullValue()));
+  }
+
+  @Test
+  void updateBookRejectsInvalidAsinWithBadRequest() throws Exception {
+    Cookie token = login();
+
+    Long bookId =
+        createBook(
+            token,
+            new BookRequest(
+                "Book",
+                defaultAuthor.getId(),
+                "9780743273565",
+                null,
+                2020,
+                1,
+                new BigDecimal("0.5"),
+                new BigDecimal("0.2"),
+                null,
+                null,
+                new BigDecimal("20.00"),
+                new BigDecimal("5.00"),
+                null));
+
+    BookRequest updateRequest =
+        new BookRequest(
+            "Book",
+            defaultAuthor.getId(),
+            "9780743273565",
+            null,
+            2020,
+            1,
+            new BigDecimal("0.5"),
+            new BigDecimal("0.2"),
+            null,
+            null,
+            new BigDecimal("20.00"),
+            new BigDecimal("5.00"),
+            "BAD-ASIN");
+
+    mockMvc
+        .perform(
+            put("/api/books/{id}", bookId)
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updateRequest)))
+        .andExpect(status().isBadRequest());
   }
 
   @Test

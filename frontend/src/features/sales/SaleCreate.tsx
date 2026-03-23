@@ -220,16 +220,21 @@ export default function SaleCreate() {
 
     try {
       const promises = filledRecords.map((record) => {
+        const resolvedRevenue = record.publisherRevenue ?? 0;
         const req = {
           bookId: record.book!.id!,
           saleSource: record.saleSource,
+          distributor: SaleRequest.distributor.OTHER,
+          format: SaleRequest.format.PRINT,
           saleMonth: record.saleDate!.month() + 1,
           saleYear: record.saleDate!.year(),
           quantitySold: record.quantitySold!,
+          saleCurrency: SaleRequest.saleCurrency.USD,
+          originalPublisherRevenue: resolvedRevenue,
           publisherRevenue:
             record.saleSource === SaleRequest.saleSource.DISTRIBUTOR
               ? record.publisherRevenue!
-              : undefined,
+              : resolvedRevenue,
           hasAuthorBeenPaid: record.hasAuthorBeenPaid,
           comment: record.comment || undefined,
         };

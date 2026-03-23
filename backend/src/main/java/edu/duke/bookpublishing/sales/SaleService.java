@@ -54,7 +54,6 @@ public class SaleService {
 
   private static final LocalDate MIN_SALE_START_DATE = LocalDate.of(1900, 1, 1);
   private static final LocalDate MAX_SALE_END_DATE = LocalDate.of(2100, 1, 1);
-  private static final Currency DEFAULT_SALE_CURRENCY = Currency.USD;
 
   private final BookService bookService;
   private final BookRepository bookRepository;
@@ -521,7 +520,7 @@ public class SaleService {
         .saleYear(ingramImportRequest.saleYear())
         .book(book)
         .quantitySold(Math.toIntExact(ingramCsvEntry.getNetQty()))
-        .saleCurrency(resolveIngramCurrency(ingramCsvEntry.getSalesMarket()))
+        .saleCurrency(Currency.USD)
         .originalPublisherRevenue(ingramCsvEntry.getNetCompensation())
         .publisherRevenue(ingramCsvEntry.getNetCompensation())
         .authorRoyalty(authorRoyalty)
@@ -553,69 +552,5 @@ public class SaleService {
       return SaleFormat.EBOOK;
     }
     return SaleFormat.PRINT;
-  }
-
-  private Currency resolveIngramCurrency(String salesMarketRaw) {
-    if (salesMarketRaw == null || salesMarketRaw.isBlank()) {
-      return DEFAULT_SALE_CURRENCY;
-    }
-
-    String normalized = salesMarketRaw.trim().toUpperCase();
-    String normalizedWords = normalized.replaceAll("\\(.*?\\)", " ").replaceAll("[^A-Z]", " ");
-    normalizedWords = normalizedWords.trim().replaceAll("\\s+", " ");
-
-    for (String token : normalizedWords.split(" ")) {
-      if (token.isBlank()) {
-        continue;
-      }
-      Currency currency = resolveIngramCurrencyToken(token);
-      if (currency != null) {
-        return currency;
-      }
-    }
-
-    return switch (normalized) {
-      case "AU", "AUD" -> Currency.AUD;
-      case "BR", "BRL" -> Currency.BRL;
-      case "CA", "CAD" -> Currency.CAD;
-      case "CN", "CNY" -> Currency.CNY;
-      case "EG", "EGP" -> Currency.EGP;
-      case "BE", "FR", "DE", "IT", "NL", "ES", "EU", "EUR" -> Currency.EUR;
-      case "IN", "INR" -> Currency.INR;
-      case "JP", "JPY" -> Currency.JPY;
-      case "MX", "MXN" -> Currency.MXN;
-      case "PL", "PLN" -> Currency.PLN;
-      case "SA", "SAR" -> Currency.SAR;
-      case "SG", "SGD" -> Currency.SGD;
-      case "SE", "SEK" -> Currency.SEK;
-      case "TR", "TRY" -> Currency.TRY;
-      case "AE" -> Currency.AED;
-      case "GB", "UK", "GBP" -> Currency.GBP;
-      case "US", "USA", "USD" -> Currency.USD;
-      default -> DEFAULT_SALE_CURRENCY;
-    };
-  }
-
-  private Currency resolveIngramCurrencyToken(String token) {
-    return switch (token) {
-      case "AU", "AUD", "AUSTRALIA" -> Currency.AUD;
-      case "BR", "BRL", "BRAZIL" -> Currency.BRL;
-      case "CA", "CAD", "CANADA" -> Currency.CAD;
-      case "CN", "CNY", "CHINA" -> Currency.CNY;
-      case "EG", "EGP", "EGYPT" -> Currency.EGP;
-      case "BE", "FR", "DE", "IT", "NL", "ES", "EU", "EUR", "EUROPE", "EUROZONE" -> Currency.EUR;
-      case "IN", "INR", "INDIA" -> Currency.INR;
-      case "JP", "JPY", "JAPAN" -> Currency.JPY;
-      case "MX", "MXN", "MEXICO" -> Currency.MXN;
-      case "PL", "PLN", "POLAND" -> Currency.PLN;
-      case "SA", "SAR", "SAUDI", "SAUDIARABIA" -> Currency.SAR;
-      case "SG", "SGD", "SINGAPORE" -> Currency.SGD;
-      case "SE", "SEK", "SWEDEN" -> Currency.SEK;
-      case "TR", "TRY", "TURKEY" -> Currency.TRY;
-      case "AE", "UAE", "AED", "EMIRATES" -> Currency.AED;
-      case "GB", "UK", "GBP", "BRITAIN", "ENGLAND" -> Currency.GBP;
-      case "US", "USA", "USD", "AMERICA" -> Currency.USD;
-      default -> null;
-    };
   }
 }

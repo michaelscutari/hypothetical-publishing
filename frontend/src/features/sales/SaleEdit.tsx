@@ -140,13 +140,20 @@ export default function SaleEdit() {
         await SalesService.updateSale(Number(saleId), {
           bookId: selectedBook.id,
           saleSource,
+          distributor: sale?.distributor ?? SaleRequest.distributor.OTHER,
+          format: sale?.format ?? SaleRequest.format.PRINT,
           saleMonth,
           saleYear,
           quantitySold,
+          saleCurrency: sale?.saleCurrency ?? SaleRequest.saleCurrency.USD,
+          originalPublisherRevenue:
+            saleSource === SaleRequest.saleSource.DISTRIBUTOR
+              ? parseFloat(publisherRevenue)
+              : computedRevenue,
           publisherRevenue:
             saleSource === SaleRequest.saleSource.DISTRIBUTOR
               ? parseFloat(publisherRevenue)
-              : undefined,
+              : computedRevenue,
           hasAuthorBeenPaid,
           comment: comment || undefined,
         });
@@ -181,6 +188,8 @@ export default function SaleEdit() {
       navigate,
       saleSource,
       comment,
+      sale,
+      computedRevenue,
     ],
   );
 

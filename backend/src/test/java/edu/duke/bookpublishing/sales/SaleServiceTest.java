@@ -510,7 +510,7 @@ class SaleServiceTest {
     Sale secondSaved = saved.get(1);
     assertThat(secondSaved.getDistributor()).isEqualTo(SaleDistributor.INGRAM_SPARK);
     assertThat(secondSaved.getFormat()).isEqualTo(SaleFormat.PRINT);
-    assertThat(secondSaved.getSaleCurrency()).isEqualTo(Currency.GBP);
+    assertThat(secondSaved.getSaleCurrency()).isEqualTo(Currency.USD);
     assertThat(secondSaved.getOriginalPublisherRevenue()).isEqualByComparingTo("10.00");
     assertThat(secondSaved.getQuantitySold()).isEqualTo(2);
     assertThat(secondSaved.getPublisherRevenue()).isEqualByComparingTo("10.00");
@@ -546,37 +546,6 @@ class SaleServiceTest {
     verify(saleRepository).saveAll(salesCaptor.capture());
     Sale saved = salesCaptor.getValue().get(0);
     assertThat(saved.getSaleCurrency()).isEqualTo(Currency.USD);
-  }
-
-  @Test
-  void importFromCsvMapsCurrencyFromEurozoneMarketLabel() {
-    MultipartFile file = new MockMultipartFile("file", "ingram.csv", "text/csv", "data".getBytes());
-    LocalDateTime timestamp = LocalDateTime.of(2024, 1, 2, 3, 4);
-
-    IngramCsvEntry entry = new IngramCsvEntry();
-    entry.setIsbn("9780743273565");
-    entry.setNetQty(1L);
-    entry.setNetCompensation(new BigDecimal("5.00"));
-    entry.setFormat("Paperback");
-    entry.setSalesMarket("Eurozone Marketplace");
-
-    ParsedBatch<IngramCsvEntry> parsedBatch =
-        new ParsedBatch<>(timestamp, List.of(entry), List.of());
-
-    when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
-    when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
-    when(saleRepository.saveAll(any()))
-        .thenAnswer(invocation -> invocation.getArgument(0, List.class));
-
-    IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
-    var result = saleService.importSalesFromCsv(request);
-
-    assertThat(result.savedSales()).hasSize(1);
-    @SuppressWarnings("unchecked")
-    ArgumentCaptor<List<Sale>> salesCaptor = ArgumentCaptor.forClass(List.class);
-    verify(saleRepository).saveAll(salesCaptor.capture());
-    Sale saved = salesCaptor.getValue().get(0);
-    assertThat(saved.getSaleCurrency()).isEqualTo(Currency.EUR);
   }
 
   @Test

@@ -19,6 +19,7 @@ export type { BookResponse } from './models/BookResponse';
 export type { ChangePasswordRequest } from './models/ChangePasswordRequest';
 export type { IngramImportRequest } from './models/IngramImportRequest';
 export type { IngramImportResponse } from './models/IngramImportResponse';
+export type { JsonNode } from './models/JsonNode';
 export type { LoginRequest } from './models/LoginRequest';
 export type { MarkAllPaidRequest } from './models/MarkAllPaidRequest';
 export type { MarkAllPaidResponse } from './models/MarkAllPaidResponse';
