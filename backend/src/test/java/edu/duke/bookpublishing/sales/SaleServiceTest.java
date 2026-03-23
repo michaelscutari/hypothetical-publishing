@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -14,6 +16,7 @@ import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.books.BookService;
+import edu.duke.bookpublishing.currency.CurrencyService;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
@@ -62,6 +65,8 @@ class SaleServiceTest {
 
   @Mock private AuthorRepository authorRepository;
 
+  @Mock private CurrencyService currencyService;
+
   private SaleService saleService;
 
   @Captor private ArgumentCaptor<Sale> saleCaptor;
@@ -71,9 +76,19 @@ class SaleServiceTest {
 
   @BeforeEach
   void setUp() {
+    // USD→USD conversion is a pass-through (mirrors CurrencyService.convert short-circuit)
+    lenient()
+        .when(currencyService.convert(eq("USD"), eq("USD"), any(BigDecimal.class)))
+        .thenAnswer(invocation -> invocation.getArgument(2));
+
     saleService =
         new SaleService(
-            bookService, bookRepository, saleRepository, ingramCsvParser, authorRepository);
+            bookService,
+            bookRepository,
+            saleRepository,
+            ingramCsvParser,
+            authorRepository,
+            currencyService);
     author = Author.builder().id(1L).name("Test Author").email("test@example.com").build();
 
     book =
@@ -599,5 +614,91 @@ class SaleServiceTest {
     when(authorRepository.findById(99L)).thenReturn(Optional.empty());
 
     assertThrows(IllegalArgumentException.class, () -> saleService.markAllPaidByAuthorId(99L));
+  }
+
+  @Test
+  void createSaleConvertsForeignCurrencyToUsd() {
+    when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+    when(saleRepository.save(any(Sale.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
+    when(currencyService.convert("GBP", "USD", new BigDecimal("100.00")))
+        .thenReturn(new BigDecimal("133.00"));
+
+    SaleRequest request =
+        new SaleRequest(
+            1L,
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.AMAZON,
+            SaleFormat.PRINT,
+            1,
+            2024,
+            50,
+            null,
+            Currency.GBP,
+            new BigDecimal("100.00"),
+            new BigDecimal("100.00"),
+            false,
+            null);
+
+    Sale result = saleService.createSale(request);
+
+    verify(saleRepository).save(saleCaptor.capture());
+    Sale saved = saleCaptor.getValue();
+    assertThat(saved.getOriginalPublisherRevenue()).isEqualByComparingTo("100.00");
+    assertThat(saved.getPublisherRevenue()).isEqualByComparingTo("133.00");
+    assertThat(saved.getSaleCurrency()).isEqualTo(Currency.GBP);
+    // author royalty computed from USD publisher revenue: 133.00 * 0.20 = 26.60
+    assertThat(saved.getAuthorRoyalty()).isEqualByComparingTo("26.60");
+  }
+
+  @Test
+  void updateSaleConvertsForeignCurrencyToUsd() {
+    Sale existing =
+        Sale.builder()
+            .id(10L)
+            .book(book)
+            .saleSource(SaleSource.DISTRIBUTOR)
+            .distributor(SaleDistributor.AMAZON)
+            .format(SaleFormat.PRINT)
+            .saleMonth(1)
+            .saleYear(2024)
+            .quantitySold(10)
+            .saleCurrency(Currency.USD)
+            .originalPublisherRevenue(new BigDecimal("50.00"))
+            .publisherRevenue(new BigDecimal("50.00"))
+            .authorRoyalty(new BigDecimal("10.00"))
+            .hasAuthorBeenPaid(false)
+            .build();
+
+    when(saleRepository.findById(10L)).thenReturn(Optional.of(existing));
+    when(bookRepository.findById(1L)).thenReturn(Optional.of(book));
+    when(saleRepository.save(any(Sale.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0, Sale.class));
+    when(currencyService.convert("EUR", "USD", new BigDecimal("80.00")))
+        .thenReturn(new BigDecimal("87.20"));
+
+    SaleRequest request =
+        new SaleRequest(
+            1L,
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.AMAZON,
+            SaleFormat.PRINT,
+            3,
+            2024,
+            25,
+            null,
+            Currency.EUR,
+            new BigDecimal("80.00"),
+            new BigDecimal("80.00"),
+            false,
+            null);
+
+    Sale result = saleService.updateSale(10L, request);
+
+    assertThat(result.getOriginalPublisherRevenue()).isEqualByComparingTo("80.00");
+    assertThat(result.getPublisherRevenue()).isEqualByComparingTo("87.20");
+    assertThat(result.getSaleCurrency()).isEqualTo(Currency.EUR);
+    // author royalty computed from USD publisher revenue: 87.20 * 0.20 = 17.44
+    assertThat(result.getAuthorRoyalty()).isEqualByComparingTo("17.44");
   }
 }
