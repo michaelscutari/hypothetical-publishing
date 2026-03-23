@@ -118,11 +118,6 @@ export default function SaleList() {
 
   const handleImportClick = React.useCallback(() => navigate('/sales/import'), [navigate]);
 
-  const handleRowEdit = React.useCallback(
-    (sale: SaleResponse) => () => navigate(`/sales/${sale.id}/edit`),
-    [navigate],
-  );
-
   const handleRowDelete = React.useCallback(
     (sale: SaleResponse) => async () => {
       const confirmed = await dialogs.confirm(
@@ -293,7 +288,7 @@ export default function SaleList() {
         ],
       },
     ],
-    [handleRowEdit, handleRowDelete],
+    [handleRowDelete],
   );
 
   const pageTitle = 'Records';
