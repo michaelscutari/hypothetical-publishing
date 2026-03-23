@@ -1,9 +1,17 @@
+import { BooksService, type BookDetailResponse } from '@/api';
+import FullPageLoader from '@/components/FullPageLoader';
+import PageContainer from '@/components/PageContainer';
+import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { getErrorMessage } from '@/utils/error';
+import { formatCurrency, formatMonthYear, formatPercent, truncate } from '@/utils/formatting';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
@@ -11,15 +19,8 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import FullPageLoader from '@/components/FullPageLoader';
-import { getErrorMessage } from '@/utils/error';
-import { formatCurrency, formatMonthYear, formatPercent, truncate } from '@/utils/formatting';
 import BookSalesTable from './BookSalesTable';
 import FinancialSummary from './FinancialSummary';
-import { BooksService, type BookDetailResponse } from '@/api';
-import { useDialogs } from '@/hooks/useDialogs/useDialogs';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PageContainer from '@/components/PageContainer';
 
 export default function BookShow() {
   const { bookId } = useParams<{ bookId?: string }>();
@@ -124,168 +125,240 @@ export default function BookShow() {
         { title: breadcrumbTitle },
       ]}
     >
-      <Stack direction="row" spacing={2} justifyContent="space-between">
-        <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
+      {/* Top action bar */}
+      <Stack direction="row" spacing={2} justifyContent="space-between" sx={{ mb: 3 }}>
+        <Button
+          variant="text"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { color: 'primary.main' } }}
+        >
           Back
         </Button>
-        <Stack direction="row" spacing={2}>
-          <Button variant="contained" startIcon={<EditIcon />} onClick={handleBookEdit}>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<EditIcon />} onClick={handleBookEdit} size="small">
             Edit
           </Button>
           <Button
-            variant="contained"
+            variant="outlined"
             color="error"
             startIcon={<DeleteIcon />}
             onClick={handleBookDelete}
+            size="small"
           >
             Delete
           </Button>
         </Stack>
       </Stack>
-      <Divider sx={{ my: 3 }} />
-      <Grid container spacing={2} sx={{ width: '100%' }}>
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Title</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {book.title}
-            </Typography>
-          </Paper>
-        </Grid>
 
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Author</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
+      {/* Main product layout */}
+      <Grid container spacing={4} sx={{ mb: 4 }}>
+        {/* LEFT: Cover image */}
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Box sx={{ position: 'sticky', top: 24 }}>
+            {book.hasCover ? (
               <Box
-                component="a"
-                href={`/authors/${book.authorId}`}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault();
-                  navigate(`/authors/${book.authorId}`);
-                }}
+                component="img"
+                src={`/api/books/${book.id}/cover/thumbnail`}
+                alt={`${book.title} cover`}
                 sx={{
-                  color: 'inherit',
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                    color: 'primary.main',
-                  },
+                  width: '100%',
+                  maxWidth: 280,
+                  display: 'block',
+                  mx: 'auto',
+                  borderRadius: 2,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10)',
+                  objectFit: 'contain',
+                }}
+              />
+            ) : (
+              <Box
+                sx={{
+                  width: '100%',
+                  maxWidth: 280,
+                  aspectRatio: '2/3',
+                  mx: 'auto',
+                  borderRadius: 2,
+                  bgcolor: 'grey.100',
+                  border: '2px dashed',
+                  borderColor: 'divider',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                 }}
               >
-                {book.author}
+                <Typography variant="body2" color="text.disabled">
+                  No cover
+                </Typography>
               </Box>
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">ISBN-13</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {book.isbn13}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">ISBN-10</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {book.isbn10 ?? '—'}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Publication Date</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatMonthYear(book.publicationMonth, book.publicationYear)}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Distributor Royalty Rate</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatPercent(book.distributorAuthorRoyaltyRate)}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Handsold Royalty Rate</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatPercent(book.handsoldAuthorRoyaltyRate)}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Series</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {book.seriesName
-                ? `${book.seriesName}${book.seriesPosition ? ` (${book.seriesPosition})` : ''}`
-                : '—'}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Cover Price</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatCurrency(Number(book.coverPrice))}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Print Cost</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatCurrency(Number(book.printCost))}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Cover Image</Typography>
-            {book.hasCover ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, mb: 1 }}>
-                <Box
-                  component="img"
-                  src={`/api/books/${book.id}/cover/thumbnail`}
-                  alt={`${book.title} cover`}
-                  sx={{ maxWidth: '100%', maxHeight: 240, objectFit: 'contain' }}
-                />
-              </Box>
-            ) : (
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                —
-              </Typography>
             )}
-          </Paper>
+          </Box>
         </Grid>
 
-        <Grid size={{ xs: 12 }}>
-          <FinancialSummary
-            summary={{
-              revenue: book.revenue,
-              unpaidRoyalty: book.unpaidRoyalty,
-              paidRoyalty: book.paidRoyalty,
-              totalRoyalty: book.totalRoyalty,
-              totalSalesToDate: book.totalSalesToDate,
-            }}
-          />
+        {/* CENTER: Title, author, metadata */}
+        <Grid size={{ xs: 12, md: 6 }}>
+          {book.seriesName && (
+            <Chip
+              label={`${book.seriesName}${book.seriesPosition ? ` · Book ${book.seriesPosition}` : ''}`}
+              size="small"
+              variant="outlined"
+              sx={{ mb: 1.5, fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
+            />
+          )}
+
+          <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.2, mb: 1 }}>
+            {book.title}
+          </Typography>
+
+          <Typography variant="h6" sx={{ fontWeight: 400, mb: 2.5, color: 'text.secondary' }}>
+            by{' '}
+            <Box
+              component="span"
+              onClick={() => navigate(`/authors/${book.authorId}`)}
+              sx={{
+                color: 'primary.main',
+                cursor: 'pointer',
+                fontWeight: 500,
+                '&:hover': { textDecoration: 'underline' },
+              }}
+            >
+              {book.author}
+            </Box>
+          </Typography>
+
+          <Divider sx={{ mb: 2.5 }} />
+
+          {/* Pricing */}
+          <Stack spacing={1.5} sx={{ mb: 3 }}>
+            <Stack direction="row" spacing={1} alignItems="baseline">
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
+                Cover Price
+              </Typography>
+              <Typography variant="h5" sx={{ fontWeight: 400, color: 'text.primary' }}>
+                {formatCurrency(Number(book.coverPrice))}
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="baseline">
+              <Typography
+                variant="body1"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
+                Print Cost
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: 400, color: 'text.secondary' }}>
+                {formatCurrency(Number(book.printCost))}
+              </Typography>
+            </Stack>
+          </Stack>
+
+          <Divider sx={{ mb: 2.5 }} />
+
+          {/* Publication + ISBNs */}
+          <Stack spacing={1} sx={{ mb: 3 }}>
+            <Stack direction="row" spacing={1} alignItems="baseline">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
+                Publication Date
+              </Typography>
+              <Typography variant="body1">
+                {formatMonthYear(book.publicationMonth, book.publicationYear)}
+              </Typography>
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="baseline">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
+                ISBN-13
+              </Typography>
+              <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                {book.isbn13}
+              </Typography>
+            </Stack>
+            {book.isbn10 && (
+              <Stack direction="row" spacing={1} alignItems="baseline">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ minWidth: 160, fontWeight: 600 }}
+                >
+                  ISBN-10
+                </Typography>
+                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                  {book.isbn10}
+                </Typography>
+              </Stack>
+            )}
+          </Stack>
+        </Grid>
+
+        {/* RIGHT: Royalty rates panel */}
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+            <Typography
+              variant="overline"
+              sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: 1 }}
+            >
+              Royalty Rates
+            </Typography>
+            <Divider sx={{ my: 1.5 }} />
+            <Stack spacing={2}>
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  Distributor
+                </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1.2 }}
+                >
+                  {formatPercent(book.distributorAuthorRoyaltyRate)}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  Handsold
+                </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, color: 'secondary.main', lineHeight: 1.2 }}
+                >
+                  {formatPercent(book.handsoldAuthorRoyaltyRate)}
+                </Typography>
+              </Box>
+            </Stack>
+          </Paper>
         </Grid>
       </Grid>
+
+      {/* Financial summary */}
+      <Box sx={{ mb: 4 }}>
+        <FinancialSummary
+          summary={{
+            revenue: book.revenue,
+            unpaidRoyalty: book.unpaidRoyalty,
+            paidRoyalty: book.paidRoyalty,
+            totalRoyalty: book.totalRoyalty,
+            totalSalesToDate: book.totalSalesToDate,
+          }}
+        />
+      </Box>
 
       <Box sx={{ mt: 3 }}>
         <BookSalesTable bookId={book.id} onChange={loadData} />
