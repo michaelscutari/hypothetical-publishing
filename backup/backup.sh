@@ -22,6 +22,10 @@ DB_HOST="${DB_HOST:-db}"
 DB_NAME="${DB_NAME:-book_publishing}"
 DB_USER="${DB_USERNAME:-}"
 RCLONE_REMOTE="${RCLONE_REMOTE:-}"
+SMTP_FROM="${SMTP_FROM:-}"
+SMTP_PASSWORD="${SMTP_PASSWORD:-}"
+SMTP_TO="${SMTP_TO:-}"
+BACKUP_ENV="${BACKUP_ENV:-dev}"
 
 ACTION="${1:-run}"
 TARGET="${2:-}"
@@ -38,6 +42,27 @@ require_env() {
     if [[ -z "${!1:-}" ]]; then
         die "Required environment variable $1 is not set"
     fi
+}
+
+# Send an email alert via Gmail SMTP + app password. Skips if not configured.
+send_alert() {
+    local subject="$1"
+    local body="$2"
+
+    if [[ -z "$SMTP_FROM" || -z "$SMTP_PASSWORD" || -z "$SMTP_TO" ]]; then
+        log "SMTP not configured — skipping alert"
+        return
+    fi
+
+    log "Sending alert: $subject"
+    curl -s --url "smtps://smtp.gmail.com:465" \
+        --user "${SMTP_FROM}:${SMTP_PASSWORD}" \
+        --mail-from "$SMTP_FROM" \
+        --mail-rcpt "$SMTP_TO" \
+        -T <(printf "From: %s\nTo: %s\nSubject: %s\n\n%s\n" \
+            "$SMTP_FROM" "$SMTP_TO" "$subject" "$body") \
+        && log "Alert sent" \
+        || log "WARNING: Failed to send alert email"
 }
 
 # Run a pg command. Inside a container, connect over the network to DB_HOST.
@@ -179,8 +204,21 @@ cmd_pull() {
 # Dispatch
 # ---------------------------------------------------------------------------
 
+# Run with alerting — sends success/failure email after cmd_run
+run_with_alert() {
+    local output
+    if output=$(cmd_run 2>&1); then
+        echo "$output"
+        send_alert "[backup/$BACKUP_ENV] SUCCESS $(date -u '+%Y-%m-%d')" "$output"
+    else
+        echo "$output"
+        send_alert "[backup/$BACKUP_ENV] FAILED $(date -u '+%Y-%m-%d')" "$output"
+        exit 1
+    fi
+}
+
 case "$ACTION" in
-    run)      cmd_run ;;
+    run)      run_with_alert ;;
     push)     cmd_push ;;
     pull)     cmd_pull ;;
     *)        die "Unknown action: $ACTION (expected: run, push, pull)" ;;

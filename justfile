@@ -22,4 +22,4 @@ format:
 check: api format lint test
 
 backup action="run" target="":
-    ./scripts/backup.sh {{action}} {{target}}
+    ./backup/backup.sh {{action}} {{target}}

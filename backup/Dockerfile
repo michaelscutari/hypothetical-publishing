@@ -1,6 +1,6 @@
 FROM alpine:3.19
 
-RUN apk add --no-cache bash postgresql16-client rclone
+RUN apk add --no-cache bash postgresql16-client rclone curl
 
 COPY crontab /etc/crontabs/root
 COPY entrypoint.sh /entrypoint.sh

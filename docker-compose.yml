@@ -40,8 +40,13 @@ services:
       - DB_HOST=db
       - DB_NAME=book_publishing
       - BACKUP_DIR=/backups
+      - RCLONE_REMOTE=${RCLONE_REMOTE:-}
+      - SMTP_FROM=${SMTP_FROM:-}
+      - SMTP_PASSWORD=${SMTP_PASSWORD:-}
+      - SMTP_TO=${SMTP_TO:-}
+      - BACKUP_ENV=${BACKUP_ENV:-prod}
     volumes:
-      - ./scripts/backup.sh:/scripts/backup.sh:ro
+      - ./backup/backup.sh:/backup/backup.sh:ro
       - ./backups:/backups
       - ${RCLONE_CONFIG:-./rclone.conf}:/root/.config/rclone/rclone.conf:ro
     depends_on:
