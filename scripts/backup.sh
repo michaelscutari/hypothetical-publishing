@@ -21,7 +21,7 @@ BACKUP_DIR="${BACKUP_DIR:-./backups}"
 DB_HOST="${DB_HOST:-db}"
 DB_NAME="${DB_NAME:-book_publishing}"
 DB_USER="${DB_USERNAME:-}"
-RCLONE_REMOTE="${RCLONE_REMOTE:-gdrive:backups}"
+RCLONE_REMOTE="${RCLONE_REMOTE:-}"
 
 ACTION="${1:-run}"
 TARGET="${2:-}"
@@ -109,11 +109,11 @@ cmd_run() {
     prune "weekly"  4
     prune "monthly" 12
 
-    # 6. Push to remote (if rclone is configured)
-    if command -v rclone > /dev/null 2>&1; then
+    # 6. Push to remote (if rclone is available and configured)
+    if command -v rclone > /dev/null 2>&1 && [[ -n "$RCLONE_REMOTE" ]]; then
         cmd_push
     else
-        log "rclone not available — skipping remote upload"
+        log "rclone not configured — skipping remote upload"
     fi
 
     log "Backup complete"
@@ -151,6 +151,7 @@ cmd_push() {
     if ! command -v rclone > /dev/null 2>&1; then
         die "rclone is not installed"
     fi
+    require_env RCLONE_REMOTE
 
     log "Uploading backups to $RCLONE_REMOTE ..."
     rclone copy "$BACKUP_DIR" "$RCLONE_REMOTE" --log-level INFO
@@ -165,6 +166,7 @@ cmd_pull() {
     if ! command -v rclone > /dev/null 2>&1; then
         die "rclone is not installed"
     fi
+    require_env RCLONE_REMOTE
 
     mkdir -p "$BACKUP_DIR"/{daily,weekly,monthly}
 
