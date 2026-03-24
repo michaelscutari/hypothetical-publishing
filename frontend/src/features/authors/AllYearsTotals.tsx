@@ -1,3 +1,4 @@
+import { formatCurrency } from '@/utils/formatting';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -6,7 +7,6 @@ import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
-import { formatCurrency } from '@/utils/formatting';
 import { type AggregatedBook, type TotalsRow } from './royaltyReportUtils';
 
 interface AllYearsTotalsProps {
@@ -29,10 +29,16 @@ export default function AllYearsTotals({ books, totals }: AllYearsTotalsProps) {
             <TableRow>
               <TableCell>Book</TableCell>
               <TableCell align="right">Quantity Sold</TableCell>
-              <TableCell align="right">Quantity Handsold</TableCell>
-              <TableCell align="right">Author Royalty (Unpaid)</TableCell>
-              <TableCell align="right">Author Royalty (Paid)</TableCell>
-              <TableCell align="right">Author Royalty (Total)</TableCell>
+              <TableCell align="right">Handsold</TableCell>
+              <TableCell align="right">Ingram Print</TableCell>
+              <TableCell align="right">Amazon Print</TableCell>
+              <TableCell align="right">Amazon Ebook</TableCell>
+              <TableCell align="right">Other Print</TableCell>
+              <TableCell align="right">Other Ebook</TableCell>
+              <TableCell align="right">KENP</TableCell>
+              <TableCell align="right">Author Royalty (Unpaid USD)</TableCell>
+              <TableCell align="right">Author Royalty (Paid USD)</TableCell>
+              <TableCell align="right">Author Royalty (Total USD)</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -52,6 +58,12 @@ export default function AllYearsTotals({ books, totals }: AllYearsTotalsProps) {
                 </TableCell>
                 <TableCell align="right">{book.quantity}</TableCell>
                 <TableCell align="right">{book.handsold}</TableCell>
+                <TableCell align="right">{book.ingramPrint}</TableCell>
+                <TableCell align="right">{book.amazonPrint}</TableCell>
+                <TableCell align="right">{book.amazonEbook}</TableCell>
+                <TableCell align="right">{book.otherPrint}</TableCell>
+                <TableCell align="right">{book.otherEbook}</TableCell>
+                <TableCell align="right">{book.kenpTotal}</TableCell>
                 <TableCell align="right">{formatCurrency(book.unpaidRoyalty)}</TableCell>
                 <TableCell align="right">{formatCurrency(book.paidRoyalty)}</TableCell>
                 <TableCell align="right" sx={{ fontWeight: 600 }}>
@@ -64,6 +76,12 @@ export default function AllYearsTotals({ books, totals }: AllYearsTotalsProps) {
               <TableCell>Totals</TableCell>
               <TableCell align="right">{totals.quantity}</TableCell>
               <TableCell align="right">{totals.handsold}</TableCell>
+              <TableCell align="right">{totals.ingramPrint}</TableCell>
+              <TableCell align="right">{totals.amazonPrint}</TableCell>
+              <TableCell align="right">{totals.amazonEbook}</TableCell>
+              <TableCell align="right">{totals.otherPrint}</TableCell>
+              <TableCell align="right">{totals.otherEbook}</TableCell>
+              <TableCell align="right">{totals.kenpTotal}</TableCell>
               <TableCell align="right">{formatCurrency(totals.unpaidRoyalty)}</TableCell>
               <TableCell align="right">{formatCurrency(totals.paidRoyalty)}</TableCell>
               <TableCell align="right">{formatCurrency(totals.totalRoyalty)}</TableCell>

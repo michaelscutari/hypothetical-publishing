@@ -31,6 +31,30 @@ export type ReportBookRow = {
      */
     handsold: number;
     /**
+     * Quantity from Ingram Spark print sales
+     */
+    ingramPrint: number;
+    /**
+     * Quantity from Amazon print sales
+     */
+    amazonPrint: number;
+    /**
+     * Quantity from Amazon ebook sales
+     */
+    amazonEbook: number;
+    /**
+     * Quantity from Other distributor print sales
+     */
+    otherPrint: number;
+    /**
+     * Quantity from Other distributor ebook sales
+     */
+    otherEbook: number;
+    /**
+     * Total KENP pages read
+     */
+    kenpTotal: number;
+    /**
      * Unpaid author royalty
      */
     unpaidRoyalty: number;

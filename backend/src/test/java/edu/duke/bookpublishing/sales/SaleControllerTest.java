@@ -168,6 +168,38 @@ class SaleControllerTest {
         comment);
   }
 
+  private void createSaleRecord(
+      Book book,
+      SaleSource saleSource,
+      SaleDistributor distributor,
+      SaleFormat format,
+      int saleMonth,
+      int saleYear,
+      Integer quantitySold,
+      Integer kenp,
+      Currency saleCurrency,
+      String originalPublisherRevenue,
+      String publisherRevenue,
+      String authorRoyalty,
+      boolean hasAuthorBeenPaid) {
+    saleRepository.save(
+        Sale.builder()
+            .book(book)
+            .saleSource(saleSource)
+            .distributor(distributor)
+            .format(format)
+            .saleMonth(saleMonth)
+            .saleYear(saleYear)
+            .quantitySold(quantitySold)
+            .kenp(kenp)
+            .saleCurrency(saleCurrency)
+            .originalPublisherRevenue(new BigDecimal(originalPublisherRevenue))
+            .publisherRevenue(new BigDecimal(publisherRevenue))
+            .authorRoyalty(new BigDecimal(authorRoyalty))
+            .hasAuthorBeenPaid(hasAuthorBeenPaid)
+            .build());
+  }
+
   @Test
   void getAllSalesReturnsEmptyList() throws Exception {
     mockMvc
@@ -805,5 +837,138 @@ class SaleControllerTest {
         .andExpect(jsonPath("$.totalElements").value(2))
         .andExpect(jsonPath("$.totalPages").value(2))
         .andExpect(jsonPath("$.paged").value(true));
+  }
+
+  @Test
+  void getRoyaltyReportBreaksOutSourceQuantitiesAndKenpWithMixedCurrencies() throws Exception {
+    Cookie token = login();
+    Book reportBook = createBook("Report Book", "Report Author", "9780000000099");
+
+    createSaleRecord(
+        reportBook,
+        SaleSource.HAND_SOLD,
+        SaleDistributor.OTHER,
+        SaleFormat.PRINT,
+        1,
+        2024,
+        6,
+        null,
+        Currency.USD,
+        "90.00",
+        "90.00",
+        "9.00",
+        true);
+    createSaleRecord(
+        reportBook,
+        SaleSource.DISTRIBUTOR,
+        SaleDistributor.INGRAM_SPARK,
+        SaleFormat.PRINT,
+        1,
+        2024,
+        5,
+        null,
+        Currency.EUR,
+        "120.00",
+        "130.00",
+        "10.00",
+        false);
+    createSaleRecord(
+        reportBook,
+        SaleSource.DISTRIBUTOR,
+        SaleDistributor.AMAZON,
+        SaleFormat.PRINT,
+        2,
+        2024,
+        4,
+        null,
+        Currency.GBP,
+        "90.00",
+        "110.00",
+        "8.00",
+        true);
+    createSaleRecord(
+        reportBook,
+        SaleSource.DISTRIBUTOR,
+        SaleDistributor.AMAZON,
+        SaleFormat.EBOOK,
+        2,
+        2024,
+        3,
+        null,
+        Currency.USD,
+        "40.00",
+        "40.00",
+        "6.00",
+        false);
+    createSaleRecord(
+        reportBook,
+        SaleSource.DISTRIBUTOR,
+        SaleDistributor.AMAZON,
+        SaleFormat.KINDLE_UNLIMITED,
+        3,
+        2024,
+        1,
+        1200,
+        Currency.JPY,
+        "30.00",
+        "28.00",
+        "4.00",
+        false);
+    createSaleRecord(
+        reportBook,
+        SaleSource.DISTRIBUTOR,
+        SaleDistributor.OTHER,
+        SaleFormat.PRINT,
+        3,
+        2024,
+        2,
+        null,
+        Currency.CAD,
+        "25.00",
+        "22.00",
+        "3.00",
+        true);
+    createSaleRecord(
+        reportBook,
+        SaleSource.DISTRIBUTOR,
+        SaleDistributor.OTHER,
+        SaleFormat.EBOOK,
+        3,
+        2024,
+        7,
+        null,
+        Currency.EUR,
+        "75.00",
+        "80.00",
+        "14.00",
+        false);
+
+    Long authorId = reportBook.getAuthor().getId();
+
+    mockMvc
+        .perform(
+            get("/api/sales/royalty-report")
+                .cookie(token)
+                .param("authorId", String.valueOf(authorId))
+                .param("startQuarter", "1")
+                .param("startYear", "2024")
+                .param("endQuarter", "1")
+                .param("endYear", "2024"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.quarters", hasSize(1)))
+        .andExpect(jsonPath("$.quarters[0].totals.quantity").value(28))
+        .andExpect(jsonPath("$.quarters[0].totals.handsold").value(6))
+        .andExpect(jsonPath("$.quarters[0].totals.ingramPrint").value(5))
+        .andExpect(jsonPath("$.quarters[0].totals.amazonPrint").value(4))
+        .andExpect(jsonPath("$.quarters[0].totals.amazonEbook").value(4))
+        .andExpect(jsonPath("$.quarters[0].totals.otherPrint").value(2))
+        .andExpect(jsonPath("$.quarters[0].totals.otherEbook").value(7))
+        .andExpect(jsonPath("$.quarters[0].totals.kenpTotal").value(1200))
+        .andExpect(jsonPath("$.quarters[0].totals.unpaidRoyalty").value(34.00))
+        .andExpect(jsonPath("$.quarters[0].totals.paidRoyalty").value(20.00))
+        .andExpect(jsonPath("$.quarters[0].totals.totalRoyalty").value(54.00))
+        .andExpect(jsonPath("$.allTime.totals.quantity").value(28))
+        .andExpect(jsonPath("$.allTime.totals.kenpTotal").value(1200))
+        .andExpect(jsonPath("$.allTime.totals.totalRoyalty").value(54.00));
   }
 }

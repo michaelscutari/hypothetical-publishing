@@ -1,3 +1,5 @@
+import { type RoyaltyReportResponse } from '@/api';
+import { formatCurrency } from '@/utils/formatting';
 import Box from '@mui/material/Box';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -7,8 +9,6 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { type RoyaltyReportResponse } from '@/api';
-import { formatCurrency } from '@/utils/formatting';
 import { getQuarterLabel } from './royaltyReportUtils';
 
 type Quarter = RoyaltyReportResponse['quarters'][number];
@@ -71,7 +71,7 @@ export default function YearSection({ year, quarters, books, isFirst }: YearSect
                 <TableCell
                   key={`header-${year}-q${q.quarter}`}
                   align="center"
-                  colSpan={5}
+                  colSpan={11}
                   sx={{ borderLeft: 2, borderColor: 'divider' }}
                 >
                   {getQuarterLabel(q.quarter)}
@@ -91,13 +91,31 @@ export default function YearSection({ year, quarters, books, isFirst }: YearSect
                     Hand
                   </TableCell>
                   <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
-                    Unpaid
+                    Ingram P
                   </TableCell>
                   <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
-                    Paid
+                    Amazon P
                   </TableCell>
                   <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
-                    Total
+                    Amazon E
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
+                    Other P
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
+                    Other E
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
+                    KENP
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
+                    Unpaid USD
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
+                    Paid USD
+                  </TableCell>
+                  <TableCell align="right" sx={{ fontSize: '0.7rem' }}>
+                    Total USD
                   </TableCell>
                 </React.Fragment>
               ))}
@@ -121,6 +139,12 @@ export default function YearSection({ year, quarters, books, isFirst }: YearSect
                         {qb?.quantity ?? 0}
                       </TableCell>
                       <TableCell align="right">{qb?.handsold ?? 0}</TableCell>
+                      <TableCell align="right">{qb?.ingramPrint ?? 0}</TableCell>
+                      <TableCell align="right">{qb?.amazonPrint ?? 0}</TableCell>
+                      <TableCell align="right">{qb?.amazonEbook ?? 0}</TableCell>
+                      <TableCell align="right">{qb?.otherPrint ?? 0}</TableCell>
+                      <TableCell align="right">{qb?.otherEbook ?? 0}</TableCell>
+                      <TableCell align="right">{qb?.kenpTotal ?? 0}</TableCell>
                       <TableCell align="right">{formatCurrency(qb?.unpaidRoyalty ?? 0)}</TableCell>
                       <TableCell align="right">{formatCurrency(qb?.paidRoyalty ?? 0)}</TableCell>
                       <TableCell align="right">{formatCurrency(qb?.totalRoyalty ?? 0)}</TableCell>
@@ -138,6 +162,12 @@ export default function YearSection({ year, quarters, books, isFirst }: YearSect
                     {q.totals.quantity}
                   </TableCell>
                   <TableCell align="right">{q.totals.handsold}</TableCell>
+                  <TableCell align="right">{q.totals.ingramPrint}</TableCell>
+                  <TableCell align="right">{q.totals.amazonPrint}</TableCell>
+                  <TableCell align="right">{q.totals.amazonEbook}</TableCell>
+                  <TableCell align="right">{q.totals.otherPrint}</TableCell>
+                  <TableCell align="right">{q.totals.otherEbook}</TableCell>
+                  <TableCell align="right">{q.totals.kenpTotal}</TableCell>
                   <TableCell align="right">{formatCurrency(q.totals.unpaidRoyalty)}</TableCell>
                   <TableCell align="right">{formatCurrency(q.totals.paidRoyalty)}</TableCell>
                   <TableCell align="right">{formatCurrency(q.totals.totalRoyalty)}</TableCell>
@@ -160,9 +190,15 @@ export default function YearSection({ year, quarters, books, isFirst }: YearSect
                 <TableCell>Book</TableCell>
                 <TableCell align="right">Qty</TableCell>
                 <TableCell align="right">Handsold</TableCell>
-                <TableCell align="right">Unpaid</TableCell>
-                <TableCell align="right">Paid</TableCell>
-                <TableCell align="right">Total</TableCell>
+                <TableCell align="right">Ingram Print</TableCell>
+                <TableCell align="right">Amazon Print</TableCell>
+                <TableCell align="right">Amazon Ebook</TableCell>
+                <TableCell align="right">Other Print</TableCell>
+                <TableCell align="right">Other Ebook</TableCell>
+                <TableCell align="right">KENP</TableCell>
+                <TableCell align="right">Unpaid USD</TableCell>
+                <TableCell align="right">Paid USD</TableCell>
+                <TableCell align="right">Total USD</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -173,12 +209,30 @@ export default function YearSection({ year, quarters, books, isFirst }: YearSect
                     return {
                       quantity: acc.quantity + (qb?.quantity ?? 0),
                       handsold: acc.handsold + (qb?.handsold ?? 0),
+                      ingramPrint: acc.ingramPrint + (qb?.ingramPrint ?? 0),
+                      amazonPrint: acc.amazonPrint + (qb?.amazonPrint ?? 0),
+                      amazonEbook: acc.amazonEbook + (qb?.amazonEbook ?? 0),
+                      otherPrint: acc.otherPrint + (qb?.otherPrint ?? 0),
+                      otherEbook: acc.otherEbook + (qb?.otherEbook ?? 0),
+                      kenpTotal: acc.kenpTotal + (qb?.kenpTotal ?? 0),
                       unpaidRoyalty: acc.unpaidRoyalty + (qb?.unpaidRoyalty ?? 0),
                       paidRoyalty: acc.paidRoyalty + (qb?.paidRoyalty ?? 0),
                       totalRoyalty: acc.totalRoyalty + (qb?.totalRoyalty ?? 0),
                     };
                   },
-                  { quantity: 0, handsold: 0, unpaidRoyalty: 0, paidRoyalty: 0, totalRoyalty: 0 },
+                  {
+                    quantity: 0,
+                    handsold: 0,
+                    ingramPrint: 0,
+                    amazonPrint: 0,
+                    amazonEbook: 0,
+                    otherPrint: 0,
+                    otherEbook: 0,
+                    kenpTotal: 0,
+                    unpaidRoyalty: 0,
+                    paidRoyalty: 0,
+                    totalRoyalty: 0,
+                  },
                 );
 
                 return (
@@ -192,6 +246,12 @@ export default function YearSection({ year, quarters, books, isFirst }: YearSect
                     </TableCell>
                     <TableCell align="right">{metrics.quantity}</TableCell>
                     <TableCell align="right">{metrics.handsold}</TableCell>
+                    <TableCell align="right">{metrics.ingramPrint}</TableCell>
+                    <TableCell align="right">{metrics.amazonPrint}</TableCell>
+                    <TableCell align="right">{metrics.amazonEbook}</TableCell>
+                    <TableCell align="right">{metrics.otherPrint}</TableCell>
+                    <TableCell align="right">{metrics.otherEbook}</TableCell>
+                    <TableCell align="right">{metrics.kenpTotal}</TableCell>
                     <TableCell align="right">{formatCurrency(metrics.unpaidRoyalty)}</TableCell>
                     <TableCell align="right">{formatCurrency(metrics.paidRoyalty)}</TableCell>
                     <TableCell align="right" sx={{ fontWeight: 600 }}>
@@ -208,6 +268,24 @@ export default function YearSection({ year, quarters, books, isFirst }: YearSect
                 </TableCell>
                 <TableCell align="right">
                   {sorted.reduce((t, q) => t + q.totals.handsold, 0)}
+                </TableCell>
+                <TableCell align="right">
+                  {sorted.reduce((t, q) => t + q.totals.ingramPrint, 0)}
+                </TableCell>
+                <TableCell align="right">
+                  {sorted.reduce((t, q) => t + q.totals.amazonPrint, 0)}
+                </TableCell>
+                <TableCell align="right">
+                  {sorted.reduce((t, q) => t + q.totals.amazonEbook, 0)}
+                </TableCell>
+                <TableCell align="right">
+                  {sorted.reduce((t, q) => t + q.totals.otherPrint, 0)}
+                </TableCell>
+                <TableCell align="right">
+                  {sorted.reduce((t, q) => t + q.totals.otherEbook, 0)}
+                </TableCell>
+                <TableCell align="right">
+                  {sorted.reduce((t, q) => t + q.totals.kenpTotal, 0)}
                 </TableCell>
                 <TableCell align="right">
                   {formatCurrency(sorted.reduce((t, q) => t + q.totals.unpaidRoyalty, 0))}
