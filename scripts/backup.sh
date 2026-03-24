@@ -17,7 +17,7 @@ set -euo pipefail
 # ---------------------------------------------------------------------------
 
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
-DB_CONTAINER="${DB_CONTAINER:-$(docker compose ps -q db)}"
+DB_HOST="${DB_HOST:-db}"
 DB_NAME="${DB_NAME:-book_publishing}"
 DB_USER="${DB_USERNAME:-}"
 
@@ -38,6 +38,19 @@ require_env() {
     fi
 }
 
+# Run a pg command. Inside a container, connect over the network to DB_HOST.
+# From the host, use docker exec into the db container (no network needed).
+pg_cmd() {
+    local cmd="$1"; shift
+    if [[ -f /.dockerenv ]]; then
+        "$cmd" -h "$DB_HOST" -U "$DB_USER" "$@"
+    else
+        local container
+        container="$(docker compose ps -q db)"
+        docker exec "$container" "$cmd" -U "$DB_USER" "$@"
+    fi
+}
+
 # ---------------------------------------------------------------------------
 # run — create a backup, promote if applicable, prune old backups
 # ---------------------------------------------------------------------------
@@ -53,7 +66,7 @@ cmd_run() {
 
     # 1. Dump
     log "Starting pg_dump for $DB_NAME ..."
-    if ! docker exec "$DB_CONTAINER" pg_dump -Fc -U "$DB_USER" "$DB_NAME" > "$daily_file"; then
+    if ! pg_cmd pg_dump -Fc "$DB_NAME" > "$daily_file"; then
         rm -f "$daily_file"
         die "pg_dump failed"
     fi
@@ -63,11 +76,15 @@ cmd_run() {
     log "Dump complete: $daily_file ($size)"
 
     # 2. Validate
-    log "Validating dump ..."
-    if ! docker exec -i "$DB_CONTAINER" pg_restore --list < "$daily_file" > /dev/null 2>&1; then
-        die "Dump validation failed — file may be corrupted"
+    if command -v pg_restore > /dev/null 2>&1; then
+        log "Validating dump ..."
+        if ! pg_restore --list "$daily_file" > /dev/null 2>&1; then
+            die "Dump validation failed — file may be corrupted"
+        fi
+        log "Validation passed"
+    else
+        log "pg_restore not found on host — skipping validation"
     fi
-    log "Validation passed"
 
     # 3. Promote to weekly (Sunday = 0 in date +%w on Linux, 7 on some systems)
     local dow
