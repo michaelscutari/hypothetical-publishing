@@ -8,18 +8,20 @@ set -euo pipefail
 #   ./scripts/backup.sh              # run a backup now
 #   ./scripts/backup.sh run          # same as above
 #
+#   ./scripts/backup.sh push         # upload backups to Google Drive
+#   ./scripts/backup.sh pull         # download backups from Google Drive
+#
 # Future subcommands (added in later PRs):
 #   ./scripts/backup.sh list         # list available backups
 #   ./scripts/backup.sh restore <f>  # restore from a backup file
 #   ./scripts/backup.sh validate <f> # validate a backup file
-#   ./scripts/backup.sh push         # sync to Google Drive
-#   ./scripts/backup.sh pull         # fetch from Google Drive
 # ---------------------------------------------------------------------------
 
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 DB_HOST="${DB_HOST:-db}"
 DB_NAME="${DB_NAME:-book_publishing}"
 DB_USER="${DB_USERNAME:-}"
+RCLONE_REMOTE="${RCLONE_REMOTE:-gdrive:backups}"
 
 ACTION="${1:-run}"
 TARGET="${2:-}"
@@ -107,6 +109,13 @@ cmd_run() {
     prune "weekly"  4
     prune "monthly" 12
 
+    # 6. Push to remote (if rclone is configured)
+    if command -v rclone > /dev/null 2>&1; then
+        cmd_push
+    else
+        log "rclone not available — skipping remote upload"
+    fi
+
     log "Backup complete"
 }
 
@@ -135,10 +144,42 @@ prune() {
 }
 
 # ---------------------------------------------------------------------------
+# push — upload local backups to Google Drive (copy-only, never deletes remote)
+# ---------------------------------------------------------------------------
+
+cmd_push() {
+    if ! command -v rclone > /dev/null 2>&1; then
+        die "rclone is not installed"
+    fi
+
+    log "Uploading backups to $RCLONE_REMOTE ..."
+    rclone copy "$BACKUP_DIR" "$RCLONE_REMOTE" --log-level INFO
+    log "Upload complete"
+}
+
+# ---------------------------------------------------------------------------
+# pull — download backups from Google Drive to local
+# ---------------------------------------------------------------------------
+
+cmd_pull() {
+    if ! command -v rclone > /dev/null 2>&1; then
+        die "rclone is not installed"
+    fi
+
+    mkdir -p "$BACKUP_DIR"/{daily,weekly,monthly}
+
+    log "Downloading backups from $RCLONE_REMOTE ..."
+    rclone copy "$RCLONE_REMOTE" "$BACKUP_DIR" --log-level INFO
+    log "Download complete"
+}
+
+# ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
 
 case "$ACTION" in
     run)      cmd_run ;;
-    *)        die "Unknown action: $ACTION (expected: run)" ;;
+    push)     cmd_push ;;
+    pull)     cmd_pull ;;
+    *)        die "Unknown action: $ACTION (expected: run, push, pull)" ;;
 esac
