@@ -5,6 +5,7 @@ import edu.duke.bookpublishing.author.AuthorRepository;
 import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.books.BookService;
+import edu.duke.bookpublishing.currency.CurrencyService;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AllTimeTotals;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
@@ -60,6 +61,7 @@ public class SaleService {
   private final SaleRepository saleRepository;
   private final ImportParser<IngramCsvEntry> ingramCsvParser;
   private final AuthorRepository authorRepository;
+  private final CurrencyService currencyService;
 
   public List<Sale> getAllSales(
       LocalDate startDate,
@@ -192,8 +194,8 @@ public class SaleService {
   public Sale createSale(SaleRequest request) {
     Book book = getOrThrowBookFromRepoById(request.bookId());
 
-    BigDecimal publisherRevenue = resolvePublisherRevenue(request, book);
-    BigDecimal originalPublisherRevenue = publisherRevenue;
+    BigDecimal originalPublisherRevenue = resolvePublisherRevenue(request, book);
+    BigDecimal publisherRevenue = convertToUsd(request.saleCurrency(), originalPublisherRevenue);
     BigDecimal authorRoyaltyRate = resolveAuthorRoyaltyRate(request, book);
     BigDecimal authorRoyalty = computeAuthorRoyalty(publisherRevenue, authorRoyaltyRate);
 
@@ -209,13 +211,8 @@ public class SaleService {
             .saleYear(request.saleYear())
             .quantitySold(request.quantitySold())
             .saleCurrency(request.saleCurrency())
-            .originalPublisherRevenue(originalPublisherRevenue) // TODO:
-            // Change
-            // when
-            // currency
-            // handled
-            // @Michael
-            .publisherRevenue(publisherRevenue) // TODO: Change to be converted value @Michael
+            .originalPublisherRevenue(originalPublisherRevenue)
+            .publisherRevenue(publisherRevenue)
             .authorRoyalty(authorRoyalty)
             .hasAuthorBeenPaid(hasAuthorBeenPaid)
             .comment(request.comment())
@@ -229,8 +226,8 @@ public class SaleService {
     Sale sale = getOrThrowSaleFromRepoById(id);
     Book newBook = getOrThrowBookFromRepoById(request.bookId());
 
-    BigDecimal publisherRevenue = resolvePublisherRevenue(request, newBook);
-    BigDecimal originalPublisherRevenue = publisherRevenue;
+    BigDecimal originalPublisherRevenue = resolvePublisherRevenue(request, newBook);
+    BigDecimal publisherRevenue = convertToUsd(request.saleCurrency(), originalPublisherRevenue);
     BigDecimal authorRoyaltyRate = resolveAuthorRoyaltyRate(request, newBook);
     BigDecimal authorRoyalty = computeAuthorRoyalty(publisherRevenue, authorRoyaltyRate);
 
@@ -243,9 +240,8 @@ public class SaleService {
     sale.setQuantitySold(request.quantitySold());
     sale.setKenp(request.kenp());
     sale.setSaleCurrency(request.saleCurrency());
-    sale.setOriginalPublisherRevenue(originalPublisherRevenue); // TODO: Change when currency
-    // handled @Michael
-    sale.setPublisherRevenue(publisherRevenue); // TODO: Change to be converted value @Michael
+    sale.setOriginalPublisherRevenue(originalPublisherRevenue);
+    sale.setPublisherRevenue(publisherRevenue);
     sale.setAuthorRoyalty(authorRoyalty);
     sale.setComment(request.comment());
 
@@ -551,6 +547,10 @@ public class SaleService {
 
   private Book getOrThrowBookFromRepoById(Long id) {
     return bookRepository.findById(id).orElseThrow(() -> new NotFoundException("Book not found"));
+  }
+
+  private BigDecimal convertToUsd(Currency currency, BigDecimal amount) {
+    return currencyService.convert(currency.name(), "USD", amount);
   }
 
   private BigDecimal resolvePublisherRevenue(SaleRequest request, Book book) {
