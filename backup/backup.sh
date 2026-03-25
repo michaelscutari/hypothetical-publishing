@@ -44,6 +44,18 @@ require_env() {
     fi
 }
 
+# Resolve a backup filename — checks exact path, then BACKUP_DIR/path,
+# then searches all tiers for a matching filename.
+resolve_backup() {
+    local file="$1"
+    if [[ -f "$file" ]]; then echo "$file"; return; fi
+    if [[ -f "$BACKUP_DIR/$file" ]]; then echo "$BACKUP_DIR/$file"; return; fi
+    for tier in daily weekly monthly; do
+        if [[ -f "$BACKUP_DIR/$tier/$file" ]]; then echo "$BACKUP_DIR/$tier/$file"; return; fi
+    done
+    return 1
+}
+
 # Send an email alert via Gmail SMTP + app password. Skips if not configured.
 send_alert() {
     local subject="$1"
@@ -226,12 +238,9 @@ cmd_list() {
 # ---------------------------------------------------------------------------
 
 cmd_validate() {
-    local file="$1"
-    [[ -z "$file" ]] && die "Usage: backup validate <file>"
-
-    # Resolve relative paths within BACKUP_DIR
-    [[ ! -f "$file" && -f "$BACKUP_DIR/$file" ]] && file="$BACKUP_DIR/$file"
-    [[ ! -f "$file" ]] && die "File not found: $file"
+    [[ -z "${1:-}" ]] && die "Usage: backup validate <file>"
+    local file
+    file="$(resolve_backup "$1")" || die "File not found: $1"
 
     if ! command -v pg_restore > /dev/null 2>&1; then
         die "pg_restore not available"
@@ -252,11 +261,9 @@ cmd_validate() {
 # ---------------------------------------------------------------------------
 
 cmd_restore() {
-    local file="$1"
-    [[ -z "$file" ]] && die "Usage: backup restore <file>"
-
-    [[ ! -f "$file" && -f "$BACKUP_DIR/$file" ]] && file="$BACKUP_DIR/$file"
-    [[ ! -f "$file" ]] && die "File not found: $file"
+    [[ -z "${1:-}" ]] && die "Usage: backup restore <file>"
+    local file
+    file="$(resolve_backup "$1")" || die "File not found: $1"
 
     require_env DB_USERNAME
 
