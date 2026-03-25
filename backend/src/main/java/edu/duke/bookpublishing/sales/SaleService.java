@@ -352,7 +352,6 @@ public class SaleService {
     for (List<Sale> bookSales : byBook.values()) {
       Book book = bookSales.get(0).getBook();
       String displayName = bookDisplayName(book);
-      int qty = bookSales.stream().mapToInt(this::quantityOrZero).sum();
       int handsold =
           bookSales.stream()
               .filter(s -> s.getSaleSource() == SaleSource.HAND_SOLD)
@@ -382,8 +381,7 @@ public class SaleService {
                   s ->
                       s.getSaleSource() == SaleSource.DISTRIBUTOR
                           && s.getDistributor() == SaleDistributor.AMAZON
-                          && (s.getFormat() == SaleFormat.EBOOK
-                              || s.getFormat() == SaleFormat.KINDLE_UNLIMITED))
+                          && s.getFormat() == SaleFormat.EBOOK)
               .mapToInt(this::quantityOrZero)
               .sum();
       int otherPrint =
@@ -405,7 +403,15 @@ public class SaleService {
               .mapToInt(this::quantityOrZero)
               .sum();
       int kenpTotal =
-          bookSales.stream().mapToInt(s -> Optional.ofNullable(s.getKenp()).orElse(0)).sum();
+          bookSales.stream()
+              .filter(
+                  s ->
+                      s.getSaleSource() == SaleSource.DISTRIBUTOR
+                          && s.getDistributor() == SaleDistributor.AMAZON
+                          && s.getFormat() == SaleFormat.KINDLE_UNLIMITED)
+              .mapToInt(s -> Optional.ofNullable(s.getKenp()).orElse(0))
+              .sum();
+      int qty = handsold + ingramPrint + amazonPrint + amazonEbook + otherPrint + otherEbook;
       BigDecimal unpaid =
           bookSales.stream()
               .filter(s -> !Boolean.TRUE.equals(s.getHasAuthorBeenPaid()))
