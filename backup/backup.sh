@@ -201,6 +201,86 @@ cmd_pull() {
 }
 
 # ---------------------------------------------------------------------------
+# list — show available backups across all tiers
+# ---------------------------------------------------------------------------
+
+cmd_list() {
+    for tier in daily weekly monthly; do
+        local dir="$BACKUP_DIR/$tier"
+        echo "=== $(echo "$tier" | tr '[:lower:]' '[:upper:]') ==="
+        if [[ -d "$dir" ]] && ls "$dir"/backup-*.dump &>/dev/null; then
+            ls -1 "$dir"/backup-*.dump | sort -r | while read -r f; do
+                local size
+                size="$(du -h "$f" | cut -f1)"
+                printf "  %-10s  %s\n" "$size" "$(basename "$f")"
+            done
+        else
+            echo "  (none)"
+        fi
+        echo ""
+    done
+}
+
+# ---------------------------------------------------------------------------
+# validate — check a backup file for integrity
+# ---------------------------------------------------------------------------
+
+cmd_validate() {
+    local file="$1"
+    [[ -z "$file" ]] && die "Usage: backup validate <file>"
+
+    # Resolve relative paths within BACKUP_DIR
+    [[ ! -f "$file" && -f "$BACKUP_DIR/$file" ]] && file="$BACKUP_DIR/$file"
+    [[ ! -f "$file" ]] && die "File not found: $file"
+
+    if ! command -v pg_restore > /dev/null 2>&1; then
+        die "pg_restore not available"
+    fi
+
+    log "Validating $file ..."
+    if pg_restore --list "$file" > /dev/null 2>&1; then
+        local entries
+        entries="$(pg_restore --list "$file" 2>/dev/null | wc -l | tr -d ' ')"
+        log "Valid — $entries entries"
+    else
+        die "Validation failed — file may be corrupted"
+    fi
+}
+
+# ---------------------------------------------------------------------------
+# restore — restore the database from a backup file
+# ---------------------------------------------------------------------------
+
+cmd_restore() {
+    local file="$1"
+    [[ -z "$file" ]] && die "Usage: backup restore <file>"
+
+    [[ ! -f "$file" && -f "$BACKUP_DIR/$file" ]] && file="$BACKUP_DIR/$file"
+    [[ ! -f "$file" ]] && die "File not found: $file"
+
+    require_env DB_USERNAME
+
+    echo "WARNING: This will overwrite the current database ($DB_NAME)."
+    echo "File: $file"
+    printf "Continue? [y/N] "
+    read -r confirm
+    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+        echo "Aborted."
+        exit 0
+    fi
+
+    log "Restoring $DB_NAME from $file ..."
+    if [[ -f /.dockerenv ]]; then
+        pg_restore --clean --if-exists -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" "$file"
+    else
+        local container
+        container="$(docker compose ps -q db)"
+        docker exec -i "$container" pg_restore --clean --if-exists -U "$DB_USER" -d "$DB_NAME" < "$file"
+    fi
+    log "Restore complete"
+}
+
+# ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
 
@@ -221,5 +301,8 @@ case "$ACTION" in
     run)      run_with_alert ;;
     push)     cmd_push ;;
     pull)     cmd_pull ;;
-    *)        die "Unknown action: $ACTION (expected: run, push, pull)" ;;
+    list)     cmd_list ;;
+    validate) cmd_validate "$TARGET" ;;
+    restore)  cmd_restore "$TARGET" ;;
+    *)        die "Unknown action: $ACTION (expected: run, push, pull, list, validate, restore)" ;;
 esac
