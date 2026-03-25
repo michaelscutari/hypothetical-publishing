@@ -23,12 +23,12 @@ export default function AllYearsTotals({ books, totals }: AllYearsTotalsProps) {
       <Typography variant="subtitle1" className="year-title" sx={{ fontWeight: 600, mb: 1 }}>
         All Years Total
       </Typography>
-      <TableContainer>
+      <TableContainer className="all-years-totals-table report-fit-table">
         <Table size="small">
           <TableHead>
             <TableRow>
               <TableCell>Book</TableCell>
-              <TableCell align="right">Quantity Sold</TableCell>
+              <TableCell align="right">Qty</TableCell>
               <TableCell align="right">Handsold</TableCell>
               <TableCell align="right">Ingram Print</TableCell>
               <TableCell align="right">Amazon Print</TableCell>
@@ -36,9 +36,9 @@ export default function AllYearsTotals({ books, totals }: AllYearsTotalsProps) {
               <TableCell align="right">Other Print</TableCell>
               <TableCell align="right">Other Ebook</TableCell>
               <TableCell align="right">KENP</TableCell>
-              <TableCell align="right">Author Royalty (Unpaid USD)</TableCell>
-              <TableCell align="right">Author Royalty (Paid USD)</TableCell>
-              <TableCell align="right">Author Royalty (Total USD)</TableCell>
+              <TableCell align="right">Unpaid USD</TableCell>
+              <TableCell align="right">Paid USD</TableCell>
+              <TableCell align="right">Total USD</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
