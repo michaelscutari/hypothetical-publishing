@@ -22,7 +22,7 @@ export function truncate(value: string, maxLength = 30): string {
   return value.length > maxLength ? `${value.slice(0, maxLength)}…` : value;
 }
 
-// /** Format a number as currency with the given ISO currency code. */
-// export function formatCurrencyWithCode(n: number, currencyCode: string): string {
-//   return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(n);
-// }
+/** Format a number as currency with the given ISO currency code. */
+export function formatCurrencyWithCode(n: number, currencyCode: string): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: currencyCode }).format(n);
+}
