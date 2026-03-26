@@ -210,6 +210,7 @@ public class SaleService {
             .saleMonth(request.saleMonth())
             .saleYear(request.saleYear())
             .quantitySold(request.quantitySold())
+            .kenp(request.kenp())
             .saleCurrency(request.saleCurrency())
             .originalPublisherRevenue(originalPublisherRevenue)
             .publisherRevenue(publisherRevenue)
