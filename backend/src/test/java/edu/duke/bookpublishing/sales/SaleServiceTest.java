@@ -134,7 +134,7 @@ class SaleServiceTest {
   @Test
   void getAllSalesWithoutFiltersUsesSpecification() {
     Sort sort = Sort.by("saleYear").descending();
-    saleService.getAllSales(null, null, null, null, null, null, sort);
+    saleService.getAllSales(null, null, null, null, null, null, null, null, sort);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Sort.class));
   }
@@ -144,7 +144,7 @@ class SaleServiceTest {
     LocalDate startDate = LocalDate.of(2024, 1, 1);
     LocalDate endDate = LocalDate.of(2024, 12, 31);
     Sort sort = Sort.by("saleYear").descending();
-    saleService.getAllSales(startDate, endDate, null, null, null, null, sort);
+    saleService.getAllSales(startDate, endDate, null, null, null, null, null, null, sort);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Sort.class));
   }
@@ -152,7 +152,7 @@ class SaleServiceTest {
   @Test
   void getAllSalesWithQueryUsesSpecification() {
     Sort sort = Sort.by("saleYear").descending();
-    saleService.getAllSales(null, null, null, null, null, "test query", sort);
+    saleService.getAllSales(null, null, null, null, null, null, null, "test query", sort);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Sort.class));
   }
@@ -160,7 +160,7 @@ class SaleServiceTest {
   @Test
   void getPagedSalesWithoutFiltersUsesSpecification() {
     Pageable pageable = mock(Pageable.class);
-    saleService.getPagedSales(null, null, null, null, null, null, pageable);
+    saleService.getPagedSales(null, null, null, null, null, null, null, null, pageable);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Pageable.class));
   }
@@ -170,7 +170,7 @@ class SaleServiceTest {
     Pageable pageable = mock(Pageable.class);
     LocalDate startDate = LocalDate.of(2024, 1, 1);
     LocalDate endDate = LocalDate.of(2024, 12, 31);
-    saleService.getPagedSales(startDate, endDate, null, null, null, null, pageable);
+    saleService.getPagedSales(startDate, endDate, null, null, null, null, null, null, pageable);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Pageable.class));
   }
@@ -178,7 +178,7 @@ class SaleServiceTest {
   @Test
   void getPagedSalesWithQueryUsesSpecification() {
     Pageable pageable = mock(Pageable.class);
-    saleService.getPagedSales(null, null, null, null, null, "test query", pageable);
+    saleService.getPagedSales(null, null, null, null, null, null, null, "test query", pageable);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Pageable.class));
   }
