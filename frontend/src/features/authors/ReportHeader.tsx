@@ -1,7 +1,7 @@
+import { type RoyaltyReportResponse } from '@/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
-import { type RoyaltyReportResponse } from '@/api';
-import { getQuarterLabel, getGeneratedDate } from './royaltyReportUtils';
+import { getGeneratedDate, getQuarterLabel } from './royaltyReportUtils';
 
 interface ReportHeaderProps {
   reportData: RoyaltyReportResponse;
@@ -40,6 +40,9 @@ export default function ReportHeader({ reportData }: ReportHeaderProps) {
         <Typography variant="body1" sx={{ mb: 1 }}>
           <strong>Report Period:</strong> {getQuarterLabel(reportData.startQuarter)}{' '}
           {reportData.startYear} – {getQuarterLabel(reportData.endQuarter)} {reportData.endYear}
+        </Typography>
+        <Typography variant="body1" sx={{ mb: 1 }}>
+          <strong>Monetary Values:</strong> USD
         </Typography>
       </Box>
     </Box>

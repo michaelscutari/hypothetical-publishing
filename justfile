@@ -20,3 +20,6 @@ format:
     cd frontend && npm run format
 
 check: api format lint test
+
+backup action="run" target="":
+    ./backup/backup.sh {{action}} {{target}}
