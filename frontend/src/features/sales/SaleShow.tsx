@@ -1,3 +1,11 @@
+import { SalesService, type SaleResponse } from '@/api';
+import FullPageLoader from '@/components/FullPageLoader';
+import PageContainer from '@/components/PageContainer';
+import PaidStatusChip from '@/components/PaidStatusChip';
+import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { getErrorMessage } from '@/utils/error';
+import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -11,14 +19,6 @@ import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { SalesService, type SaleResponse } from '@/api';
-import { getErrorMessage } from '@/utils/error';
-import { formatCurrency, formatMonthYear } from '@/utils/formatting';
-import { useDialogs } from '@/hooks/useDialogs/useDialogs';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import FullPageLoader from '@/components/FullPageLoader';
-import PageContainer from '@/components/PageContainer';
-import PaidStatusChip from '@/components/PaidStatusChip';
 
 export default function SaleShow() {
   const { saleId } = useParams();
@@ -56,9 +56,7 @@ export default function SaleShow() {
   }, [navigate, saleId]);
 
   const handleSaleDelete = React.useCallback(async () => {
-    if (!sale) {
-      return;
-    }
+    if (!sale) return;
 
     const confirmed = await dialogs.confirm(
       `Do you wish to delete this sale record for ${sale.bookTitle}?`,
@@ -74,9 +72,7 @@ export default function SaleShow() {
       setIsLoading(true);
       try {
         await SalesService.deleteSale(Number(saleId));
-
         navigate('/sales');
-
         notifications.show('Sale record deleted successfully.', {
           severity: 'success',
           autoHideDuration: 3000,
@@ -98,11 +94,31 @@ export default function SaleShow() {
     navigate(backPath);
   }, [navigate, backPath]);
 
+  const formatSaleSource = (source: string) => {
+    if (source === 'DISTRIBUTOR') return 'Distributor';
+    if (source === 'HAND_SOLD') return 'Hand Sold';
+    return '—';
+  };
+
+  const formatDistributor = (dist: string | null | undefined) => {
+    if (!dist) return '—';
+    if (dist === 'INGRAM_SPARK') return 'Ingram Spark';
+    if (dist === 'AMAZON') return 'Amazon';
+    if (dist === 'OTHER') return 'Other';
+    return dist;
+  };
+
+  const formatFormat = (fmt: string | null | undefined) => {
+    if (!fmt) return '—';
+    if (fmt === 'PRINT') return 'Print';
+    if (fmt === 'EBOOK') return 'Ebook';
+    if (fmt === 'KINDLE_UNLIMITED') return 'Kindle Unlimited';
+    return fmt;
+  };
+
   const pageTitle = `Sale Record ${saleId}`;
 
-  if (isLoading) {
-    return <FullPageLoader />;
-  }
+  if (isLoading) return <FullPageLoader />;
 
   if (error) {
     return (
@@ -122,6 +138,10 @@ export default function SaleShow() {
   }
 
   if (!sale) return null;
+
+  const isDistributor = sale.saleSource === 'DISTRIBUTOR';
+  const isKindleUnlimited = sale.format === 'KINDLE_UNLIMITED';
+  const isNonUSD = sale.saleCurrency && sale.saleCurrency !== 'USD';
 
   return (
     <PageContainer
@@ -154,6 +174,7 @@ export default function SaleShow() {
       </Stack>
       <Divider sx={{ my: 3 }} />
       <Grid container spacing={2} sx={{ width: '100%' }}>
+        {/* Book */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Paper sx={{ px: 2, py: 1 }}>
             <Typography variant="overline">Book</Typography>
@@ -169,10 +190,7 @@ export default function SaleShow() {
                   color: 'inherit',
                   textDecoration: 'none',
                   cursor: 'pointer',
-                  '&:hover': {
-                    textDecoration: 'underline',
-                    color: 'primary.main',
-                  },
+                  '&:hover': { textDecoration: 'underline', color: 'primary.main' },
                 }}
               >
                 {sale.bookTitle}
@@ -183,6 +201,8 @@ export default function SaleShow() {
             </Typography>
           </Paper>
         </Grid>
+
+        {/* Sale Period */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Paper sx={{ px: 2, py: 1 }}>
             <Typography variant="overline">Sale Period</Typography>
@@ -191,34 +211,88 @@ export default function SaleShow() {
             </Typography>
           </Paper>
         </Grid>
+
+        {/* Sale Source */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Paper sx={{ px: 2, py: 1 }}>
             <Typography variant="overline">Sale Source</Typography>
             <Typography variant="body1" sx={{ mb: 1 }}>
-              {sale.saleSource === 'DISTRIBUTOR'
-                ? 'Distributor'
-                : sale.saleSource === 'HAND_SOLD'
-                  ? 'Hand Sold'
-                  : '—'}
+              {formatSaleSource(sale.saleSource)}
             </Typography>
           </Paper>
         </Grid>
+
+        {/* Distributor — only for distributor sales */}
+        {isDistributor && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Distributor</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {formatDistributor(sale.distributor)}
+              </Typography>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* Format */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Quantity Sold</Typography>
+            <Typography variant="overline">Format</Typography>
             <Typography variant="body1" sx={{ mb: 1 }}>
-              {sale.quantitySold}
+              {formatFormat(sale.format)}
             </Typography>
           </Paper>
         </Grid>
+
+        {/* Quantity Sold — only for non-Kindle Unlimited */}
+        {!isKindleUnlimited && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Quantity Sold</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {sale.quantitySold ?? '—'}
+              </Typography>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* KENP — only for Kindle Unlimited */}
+        {isKindleUnlimited && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">KENP</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {sale.kenp ?? '—'}
+              </Typography>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* Publisher Revenue (original currency) — only shown if non-USD */}
+        {isDistributor && isNonUSD && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Publisher Revenue ({sale.saleCurrency})</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {Number(sale.originalPublisherRevenue).toFixed(2)} {sale.saleCurrency}
+              </Typography>
+            </Paper>
+          </Grid>
+        )}
+
+        {/* Publisher Revenue (USD) */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Publisher Revenue</Typography>
+            <Typography variant="overline">
+              Publisher Revenue {isDistributor && isNonUSD ? '(USD)' : ''}
+            </Typography>
             <Typography variant="body1" sx={{ mb: 1 }}>
               {formatCurrency(Number(sale.publisherRevenue))}
             </Typography>
           </Paper>
         </Grid>
+
+        {/* Author Royalty */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Paper sx={{ px: 2, py: 1 }}>
             <Typography variant="overline">Author Royalty</Typography>
@@ -227,6 +301,8 @@ export default function SaleShow() {
             </Typography>
           </Paper>
         </Grid>
+
+        {/* Comment */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Paper sx={{ px: 2, py: 1 }}>
             <Typography variant="overline">Comment</Typography>
@@ -235,6 +311,8 @@ export default function SaleShow() {
             </Typography>
           </Paper>
         </Grid>
+
+        {/* Payment Status */}
         <Grid size={{ xs: 12, sm: 6 }}>
           <Paper sx={{ px: 2, py: 1 }}>
             <Typography variant="overline">Payment Status</Typography>
