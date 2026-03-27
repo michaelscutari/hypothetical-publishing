@@ -146,6 +146,15 @@
 
   .year-title {
     page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  .quarter-breakdown-title,
+  .year-totals-title {
+    page-break-after: avoid;
+    break-after: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 
   .book-section {
@@ -184,6 +193,16 @@
   /* Prevent quarter headers from orphaning at bottom of page */
   .quarter-header {
     page-break-after: avoid;
+    break-after: avoid;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .quarter-header + .MuiTableContainer-root,
+  .quarter-breakdown-title + .quarterly-table,
+  .year-totals-title + .year-totals-table {
+    page-break-before: avoid;
+    break-before: avoid;
   }
 
   /* Try to keep each quarter table together on one page */
@@ -245,9 +264,43 @@
 @media screen {
   .report-container {
     padding: 2rem;
+    overflow-x: auto;
   }
 
   .report-page {
+    width: min(96vw, 11in);
+    max-width: 11in;
+    min-height: 8.5in;
     page-break-inside: auto;
+  }
+
+  .report-fit-table {
+    overflow-x: hidden !important;
+  }
+
+  .report-fit-table table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .report-fit-table .MuiTableCell-root {
+    font-size: 0.68rem;
+    padding: 4px 3px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  .report-fit-table .MuiTableHead-root .MuiTableCell-root {
+    font-size: 0.62rem;
+    line-height: 1.15;
+  }
+
+  .report-fit-table .MuiTableCell-root:first-child {
+    width: 20%;
+  }
+
+  .report-fit-table .MuiTableCell-root:not(:first-child) {
+    width: 7.27%;
   }
 }

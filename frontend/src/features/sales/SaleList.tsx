@@ -23,7 +23,7 @@ import { useDialogs } from '@/hooks/useDialogs/useDialogs';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import { useServerDataGrid } from '@/hooks/useServerDataGrid';
 import { getErrorMessage } from '@/utils/error';
-import { formatCurrency, formatMonthYear } from '@/utils/formatting';
+import { formatCurrency, formatCurrencyWithCode, formatMonthYear } from '@/utils/formatting';
 import {
   GridActionsCellItem,
   type GridColDef,
@@ -205,6 +205,30 @@ export default function SaleList() {
         },
       },
       {
+        field: 'distributor',
+        headerName: 'Distributor',
+        flex: 1,
+        minWidth: 130,
+        valueGetter: (_value, row) => {
+          if (row.distributor === 'INGRAM_SPARK') return 'Ingram Spark';
+          if (row.distributor === 'AMAZON') return 'Amazon';
+          if (row.distributor === 'OTHER') return 'Other';
+          return row.distributor;
+        },
+      },
+      {
+        field: 'format',
+        headerName: 'Format',
+        flex: 0.9,
+        minWidth: 110,
+        valueGetter: (_value, row) => {
+          if (row.format === 'PRINT') return 'Print';
+          if (row.format === 'EBOOK') return 'Ebook';
+          if (row.format === 'KINDLE_UNLIMITED') return 'Kindle Unlimited';
+          return row.format;
+        },
+      },
+      {
         field: 'saleYear',
         headerName: 'Date',
         flex: 1,
@@ -213,14 +237,28 @@ export default function SaleList() {
       },
       {
         field: 'quantitySold',
-        headerName: 'Qty',
+        headerName: 'Qty / KENP',
         type: 'number',
         flex: 0.8,
         minWidth: 90,
+        valueGetter: (_value, row) =>
+          row.format === 'KINDLE_UNLIMITED' ? row.kenp : row.quantitySold,
+      },
+      {
+        field: 'originalPublisherRevenue',
+        headerName: 'Revenue (Original)',
+        type: 'number',
+        flex: 1,
+        minWidth: 150,
+        renderCell: (params) =>
+          formatCurrencyWithCode(
+            Number(params.row.originalPublisherRevenue),
+            params.row.saleCurrency,
+          ),
       },
       {
         field: 'publisherRevenue',
-        headerName: 'Revenue',
+        headerName: 'Revenue (USD)',
         type: 'number',
         flex: 1,
         minWidth: 120,

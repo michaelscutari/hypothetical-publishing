@@ -17,6 +17,17 @@ public record ReportBookRow(
         Integer seriesPosition,
     @Schema(description = "Total quantity sold", requiredMode = REQUIRED) int quantity,
     @Schema(description = "Quantity from handsold source", requiredMode = REQUIRED) int handsold,
+    @Schema(description = "Quantity from Ingram Spark print sales", requiredMode = REQUIRED)
+        int ingramPrint,
+    @Schema(description = "Quantity from Amazon print sales", requiredMode = REQUIRED)
+        int amazonPrint,
+    @Schema(description = "Quantity from Amazon ebook sales", requiredMode = REQUIRED)
+        int amazonEbook,
+    @Schema(description = "Quantity from Other distributor print sales", requiredMode = REQUIRED)
+        int otherPrint,
+    @Schema(description = "Quantity from Other distributor ebook sales", requiredMode = REQUIRED)
+        int otherEbook,
+    @Schema(description = "Total KENP pages read", requiredMode = REQUIRED) int kenpTotal,
     @Schema(description = "Unpaid author royalty", requiredMode = REQUIRED)
         BigDecimal unpaidRoyalty,
     @Schema(description = "Paid author royalty", requiredMode = REQUIRED) BigDecimal paidRoyalty,
