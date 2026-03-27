@@ -1,3 +1,17 @@
+import {
+  BooksService,
+  SaleRequest,
+  SalesService,
+  type BookResponse,
+  type SaleResponse,
+} from '@/api';
+import FullPageLoader from '@/components/FullPageLoader';
+import PageContainer from '@/components/PageContainer';
+import { MONTH_NAMES } from '@/constants/months';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { getErrorMessage } from '@/utils/error';
+import { isValidMonetaryInput } from '@/utils/monetary';
+import { computePublisherRevenue, computeSaleRoyalty } from '@/utils/royalty';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -16,20 +30,6 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import {
-  BooksService,
-  SaleRequest,
-  SalesService,
-  type BookResponse,
-  type SaleResponse,
-} from '@/api';
-import { MONTH_NAMES } from '@/constants/months';
-import { getErrorMessage } from '@/utils/error';
-import { isValidMonetaryInput } from '@/utils/monetary';
-import { computePublisherRevenue, computeSaleRoyalty } from '@/utils/royalty';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import FullPageLoader from '@/components/FullPageLoader';
-import PageContainer from '@/components/PageContainer';
 
 export default function SaleEdit() {
   const { saleId } = useParams();
@@ -52,7 +52,15 @@ export default function SaleEdit() {
   const [saleSource, setSaleSource] = React.useState<SaleRequest.saleSource>(
     SaleRequest.saleSource.DISTRIBUTOR,
   );
+  const [distributor, setDistributor] = React.useState<SaleRequest.distributor>(
+    SaleRequest.distributor.OTHER,
+  );
+  const [format, setFormat] = React.useState<SaleRequest.format>(SaleRequest.format.PRINT);
+  const [saleCurrency, setSaleCurrency] = React.useState<SaleRequest.saleCurrency>(
+    SaleRequest.saleCurrency.USD,
+  );
   const [hasAuthorBeenPaid, setHasAuthorBeenPaid] = React.useState<boolean>(false);
+  const [kenp, setKenp] = React.useState<number | undefined>(undefined);
   const [comment, setComment] = React.useState<string>('');
 
   const computedRevenue = React.useMemo(() => {
@@ -84,25 +92,25 @@ export default function SaleEdit() {
     setIsLoading(true);
 
     try {
-      // Load sale
       const saleData = await SalesService.getSaleById(Number(saleId));
       setSale(saleData);
 
-      // Set form values
       setSaleMonth(saleData.saleMonth);
       setSaleYear(saleData.saleYear);
       setQuantitySold(saleData.quantitySold);
       setPublisherRevenue(String(saleData.publisherRevenue));
       setAuthorRoyalty(String(saleData.authorRoyalty));
       setSaleSource(saleData.saleSource as SaleRequest.saleSource);
+      setDistributor(saleData.distributor as SaleRequest.distributor);
+      setFormat(saleData.format as SaleRequest.format);
+      setSaleCurrency(saleData.saleCurrency as SaleRequest.saleCurrency);
       setHasAuthorBeenPaid(saleData.hasAuthorBeenPaid);
+      setKenp(saleData.kenp ?? undefined);
       setComment(saleData.comment ?? '');
 
-      // Load all books for dropdown
       const booksResponse = await BooksService.getAllBooks(undefined, 0, 100, false);
       setBooks(booksResponse.content ?? []);
 
-      // Find and set selected book
       const book = (booksResponse.content ?? []).find((b) => b.id === saleData.bookId);
       setSelectedBook(book ?? null);
     } catch (loadError) {
@@ -123,6 +131,23 @@ export default function SaleEdit() {
     }
   }, [computedRevenue, computedRoyalty, saleSource]);
 
+  // Reset format when saleSource or distributor changes to avoid invalid combinations
+  React.useEffect(() => {
+    if (saleSource === SaleRequest.saleSource.HAND_SOLD) {
+      setFormat(SaleRequest.format.PRINT);
+    } else if (
+      distributor === SaleRequest.distributor.INGRAM_SPARK &&
+      format !== SaleRequest.format.PRINT
+    ) {
+      setFormat(SaleRequest.format.PRINT);
+    } else if (
+      distributor === SaleRequest.distributor.OTHER &&
+      format === SaleRequest.format.KINDLE_UNLIMITED
+    ) {
+      setFormat(SaleRequest.format.PRINT);
+    }
+  }, [saleSource, distributor, format]);
+
   const handleSubmit = React.useCallback(
     async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
@@ -140,12 +165,16 @@ export default function SaleEdit() {
         await SalesService.updateSale(Number(saleId), {
           bookId: selectedBook.id,
           saleSource,
-          distributor: sale?.distributor ?? SaleRequest.distributor.OTHER,
-          format: sale?.format ?? SaleRequest.format.PRINT,
+          distributor: saleSource === SaleRequest.saleSource.DISTRIBUTOR ? distributor : undefined,
+          format,
           saleMonth,
           saleYear,
-          quantitySold,
-          saleCurrency: sale?.saleCurrency ?? SaleRequest.saleCurrency.USD,
+          quantitySold: format === SaleRequest.format.KINDLE_UNLIMITED ? 0 : quantitySold,
+          kenp: format === SaleRequest.format.KINDLE_UNLIMITED ? kenp : undefined,
+          saleCurrency:
+            saleSource === SaleRequest.saleSource.HAND_SOLD
+              ? SaleRequest.saleCurrency.USD
+              : saleCurrency,
           originalPublisherRevenue:
             saleSource === SaleRequest.saleSource.DISTRIBUTOR
               ? parseFloat(publisherRevenue)
@@ -153,7 +182,7 @@ export default function SaleEdit() {
           publisherRevenue:
             saleSource === SaleRequest.saleSource.DISTRIBUTOR
               ? parseFloat(publisherRevenue)
-              : computedRevenue,
+              : undefined,
           hasAuthorBeenPaid,
           comment: comment || undefined,
         });
@@ -183,12 +212,15 @@ export default function SaleEdit() {
       quantitySold,
       publisherRevenue,
       hasAuthorBeenPaid,
+      kenp,
+      distributor,
+      format,
+      saleCurrency,
       saleId,
       notifications,
       navigate,
       saleSource,
       comment,
-      sale,
       computedRevenue,
     ],
   );
@@ -196,6 +228,14 @@ export default function SaleEdit() {
   const handleBack = React.useCallback(() => {
     navigate(`/sales/${saleId}`);
   }, [navigate, saleId]);
+
+  const getCurrencySymbol = (currency: SaleRequest.saleCurrency) => {
+    return (
+      new Intl.NumberFormat('en', { style: 'currency', currency, minimumFractionDigits: 0 })
+        .formatToParts(0)
+        .find((p) => p.type === 'currency')?.value ?? currency
+    );
+  };
 
   if (isLoading) {
     return <FullPageLoader />;
@@ -229,6 +269,7 @@ export default function SaleEdit() {
     >
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
         <Grid container spacing={2} sx={{ mb: 2, width: '100%' }}>
+          {/* Sale Month */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth>
               <InputLabel id="sale-month-label">Sale Month</InputLabel>
@@ -247,6 +288,7 @@ export default function SaleEdit() {
             </FormControl>
           </Grid>
 
+          {/* Sale Year */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               type="number"
@@ -259,13 +301,12 @@ export default function SaleEdit() {
             />
           </Grid>
 
+          {/* Book */}
           <Grid size={{ xs: 12 }}>
             <Autocomplete
               options={books}
               value={selectedBook}
-              onChange={(_, value) => {
-                setSelectedBook(value);
-              }}
+              onChange={(_, value) => setSelectedBook(value)}
               getOptionLabel={(option) => `${option.title} - ${option.author} (${option.isbn13})`}
               isOptionEqualToValue={(option, value) => option.id === value.id}
               renderInput={(params) => (
@@ -288,6 +329,7 @@ export default function SaleEdit() {
             />
           </Grid>
 
+          {/* Sale Source */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControl fullWidth>
               <InputLabel id="sale-source-label">Sale Source</InputLabel>
@@ -303,6 +345,88 @@ export default function SaleEdit() {
             </FormControl>
           </Grid>
 
+          {/* Distributor — only shown for distributor sales */}
+          {saleSource === SaleRequest.saleSource.DISTRIBUTOR && (
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel id="distributor-label">Distributor</InputLabel>
+                <Select
+                  labelId="distributor-label"
+                  label="Distributor"
+                  value={distributor}
+                  onChange={(e) => setDistributor(e.target.value as SaleRequest.distributor)}
+                >
+                  <MenuItem value={SaleRequest.distributor.INGRAM_SPARK}>Ingram Spark</MenuItem>
+                  <MenuItem value={SaleRequest.distributor.AMAZON}>Amazon</MenuItem>
+                  <MenuItem value={SaleRequest.distributor.OTHER}>Other</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
+
+          {/* Format */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <FormControl fullWidth>
+              <InputLabel id="format-label">Format</InputLabel>
+              <Select
+                labelId="format-label"
+                label="Format"
+                value={format}
+                onChange={(e) => setFormat(e.target.value as SaleRequest.format)}
+                disabled={saleSource === SaleRequest.saleSource.HAND_SOLD}
+              >
+                {saleSource === SaleRequest.saleSource.HAND_SOLD ? (
+                  <MenuItem value={SaleRequest.format.PRINT}>Print</MenuItem>
+                ) : distributor === SaleRequest.distributor.INGRAM_SPARK ? (
+                  <MenuItem value={SaleRequest.format.PRINT}>Print</MenuItem>
+                ) : distributor === SaleRequest.distributor.AMAZON ? (
+                  [
+                    <MenuItem key="print" value={SaleRequest.format.PRINT}>
+                      Print
+                    </MenuItem>,
+                    <MenuItem key="ebook" value={SaleRequest.format.EBOOK}>
+                      Ebook
+                    </MenuItem>,
+                    <MenuItem key="ku" value={SaleRequest.format.KINDLE_UNLIMITED}>
+                      Kindle Unlimited
+                    </MenuItem>,
+                  ]
+                ) : (
+                  [
+                    <MenuItem key="print" value={SaleRequest.format.PRINT}>
+                      Print
+                    </MenuItem>,
+                    <MenuItem key="ebook" value={SaleRequest.format.EBOOK}>
+                      Ebook
+                    </MenuItem>,
+                  ]
+                )}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          {/* Currency — only shown for distributor sales */}
+          {saleSource === SaleRequest.saleSource.DISTRIBUTOR && (
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <FormControl fullWidth>
+                <InputLabel id="currency-label">Currency</InputLabel>
+                <Select
+                  labelId="currency-label"
+                  label="Currency"
+                  value={saleCurrency}
+                  onChange={(e) => setSaleCurrency(e.target.value as SaleRequest.saleCurrency)}
+                >
+                  {Object.values(SaleRequest.saleCurrency).map((currency) => (
+                    <MenuItem key={currency} value={currency}>
+                      {currency}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          )}
+
+          {/* Quantity Sold — disabled for Kindle Unlimited */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               type="number"
@@ -310,11 +434,27 @@ export default function SaleEdit() {
               onChange={(e) => setQuantitySold(Number(e.target.value))}
               label="Quantity Sold"
               fullWidth
+              disabled={format === SaleRequest.format.KINDLE_UNLIMITED}
               inputProps={{ min: 0 }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
 
+          {/* KENP — disabled unless Kindle Unlimited */}
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <TextField
+              type="number"
+              value={kenp ?? ''}
+              onChange={(e) => setKenp(e.target.value ? Number(e.target.value) : undefined)}
+              label="KENP"
+              fullWidth
+              disabled={format !== SaleRequest.format.KINDLE_UNLIMITED}
+              inputProps={{ min: 0 }}
+              onWheel={(e) => (e.target as HTMLElement).blur()}
+            />
+          </Grid>
+
+          {/* Publisher Revenue — disabled for handsold (auto-computed) */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               type="text"
@@ -327,11 +467,20 @@ export default function SaleEdit() {
               disabled={saleSource === SaleRequest.saleSource.HAND_SOLD}
               inputProps={{ inputMode: 'decimal' }}
               InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    {getCurrencySymbol(
+                      saleSource === SaleRequest.saleSource.HAND_SOLD
+                        ? SaleRequest.saleCurrency.USD
+                        : saleCurrency,
+                    )}
+                  </InputAdornment>
+                ),
               }}
             />
           </Grid>
 
+          {/* Author Royalty — always read-only, auto-computed */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <TextField
               type="text"
@@ -340,11 +489,20 @@ export default function SaleEdit() {
               fullWidth
               inputProps={{ inputMode: 'decimal', readOnly: true }}
               InputProps={{
-                startAdornment: <InputAdornment position="start">$</InputAdornment>,
+                startAdornment: (
+                  <InputAdornment position="start">
+                    {getCurrencySymbol(
+                      saleSource === SaleRequest.saleSource.HAND_SOLD
+                        ? SaleRequest.saleCurrency.USD
+                        : saleCurrency,
+                    )}
+                  </InputAdornment>
+                ),
               }}
             />
           </Grid>
 
+          {/* Comment */}
           <Grid size={{ xs: 12 }}>
             <TextField
               value={comment}
@@ -356,6 +514,7 @@ export default function SaleEdit() {
             />
           </Grid>
 
+          {/* Author Paid */}
           <Grid size={{ xs: 12, sm: 6 }}>
             <FormControlLabel
               control={

@@ -25,6 +25,9 @@ dist/
 *.env
 application-local.properties
 
+# Backups
+backups/
+
 # AI
 .claude/
 requirements/
