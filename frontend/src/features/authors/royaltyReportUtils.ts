@@ -17,6 +17,12 @@ export interface AggregatedBook {
   seriesPosition?: number;
   quantity: number;
   handsold: number;
+  ingramPrint: number;
+  amazonPrint: number;
+  amazonEbook: number;
+  otherPrint: number;
+  otherEbook: number;
+  kenpTotal: number;
   unpaidRoyalty: number;
   paidRoyalty: number;
   totalRoyalty: number;
@@ -32,6 +38,12 @@ export function aggregateAllYearsBooks(quarters: Quarter[]): AggregatedBook[] {
       if (existing) {
         existing.quantity += book.quantity;
         existing.handsold += book.handsold;
+        existing.ingramPrint += book.ingramPrint;
+        existing.amazonPrint += book.amazonPrint;
+        existing.amazonEbook += book.amazonEbook;
+        existing.otherPrint += book.otherPrint;
+        existing.otherEbook += book.otherEbook;
+        existing.kenpTotal += book.kenpTotal;
         existing.unpaidRoyalty += book.unpaidRoyalty;
         existing.paidRoyalty += book.paidRoyalty;
         existing.totalRoyalty += book.totalRoyalty;
@@ -42,6 +54,12 @@ export function aggregateAllYearsBooks(quarters: Quarter[]): AggregatedBook[] {
           seriesPosition: book.seriesPosition ?? undefined,
           quantity: book.quantity,
           handsold: book.handsold,
+          ingramPrint: book.ingramPrint,
+          amazonPrint: book.amazonPrint,
+          amazonEbook: book.amazonEbook,
+          otherPrint: book.otherPrint,
+          otherEbook: book.otherEbook,
+          kenpTotal: book.kenpTotal,
           unpaidRoyalty: book.unpaidRoyalty,
           paidRoyalty: book.paidRoyalty,
           totalRoyalty: book.totalRoyalty,
@@ -56,6 +74,12 @@ export function aggregateAllYearsBooks(quarters: Quarter[]): AggregatedBook[] {
 export interface TotalsRow {
   quantity: number;
   handsold: number;
+  ingramPrint: number;
+  amazonPrint: number;
+  amazonEbook: number;
+  otherPrint: number;
+  otherEbook: number;
+  kenpTotal: number;
   unpaidRoyalty: number;
   paidRoyalty: number;
   totalRoyalty: number;
@@ -66,11 +90,29 @@ export function computeAllYearsTotals(quarters: Quarter[]): TotalsRow {
     (totals, quarter) => ({
       quantity: totals.quantity + quarter.totals.quantity,
       handsold: totals.handsold + quarter.totals.handsold,
+      ingramPrint: totals.ingramPrint + quarter.totals.ingramPrint,
+      amazonPrint: totals.amazonPrint + quarter.totals.amazonPrint,
+      amazonEbook: totals.amazonEbook + quarter.totals.amazonEbook,
+      otherPrint: totals.otherPrint + quarter.totals.otherPrint,
+      otherEbook: totals.otherEbook + quarter.totals.otherEbook,
+      kenpTotal: totals.kenpTotal + quarter.totals.kenpTotal,
       unpaidRoyalty: totals.unpaidRoyalty + quarter.totals.unpaidRoyalty,
       paidRoyalty: totals.paidRoyalty + quarter.totals.paidRoyalty,
       totalRoyalty: totals.totalRoyalty + quarter.totals.totalRoyalty,
     }),
-    { quantity: 0, handsold: 0, unpaidRoyalty: 0, paidRoyalty: 0, totalRoyalty: 0 },
+    {
+      quantity: 0,
+      handsold: 0,
+      ingramPrint: 0,
+      amazonPrint: 0,
+      amazonEbook: 0,
+      otherPrint: 0,
+      otherEbook: 0,
+      kenpTotal: 0,
+      unpaidRoyalty: 0,
+      paidRoyalty: 0,
+      totalRoyalty: 0,
+    },
   );
 }
 
