@@ -21,5 +21,7 @@ format:
 
 check: api format lint test
 
+set dotenv-load
+
 backup action="run" target="":
     ./backup/backup.sh {{action}} {{target}}
