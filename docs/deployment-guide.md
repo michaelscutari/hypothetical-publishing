@@ -102,6 +102,29 @@ docker compose --profile prod down -v
 
 The `-v` flag deletes the `postgres_data` volume. The next `docker compose up` will create a new empty database and Hibernate will recreate the schema.
 
+## Disaster Recovery
+
+To restore the system from a backup after a fresh deploy:
+
+1. Complete the deployment steps above so the application is running with an empty database.
+2. Set up the backup system following the [Backup Admin Guide](backup-admin-guide.md) (rclone config, `.env` variables).
+3. Pull backups from Google Drive:
+
+```bash
+just backup pull
+```
+
+4. Restore from the desired backup:
+
+```bash
+just backup list
+just backup restore backup-2026-03-24.dump
+```
+
+The backend does not need to be restarted after a restore.
+
+For full details on the backup system, see the [Backup Admin Guide](backup-admin-guide.md).
+
 ## Updating
 
 To deploy new changes:
