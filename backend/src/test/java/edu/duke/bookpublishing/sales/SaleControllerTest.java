@@ -276,12 +276,319 @@ class SaleControllerTest {
   }
 
   @Test
-  void createHandsoldSaleRejectsInvalidDistributorValidation() throws Exception {
+  void createHandsoldSaleSucceeds() throws Exception {
     Cookie token = login();
     Book book = createBook();
 
     SaleRequest request =
         saleRequest(book.getId(), SaleSource.HAND_SOLD, 2, 2024, 10, null, false, "Handsale");
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.saleSource").value("HAND_SOLD"))
+        .andExpect(jsonPath("$.distributor", nullValue()));
+  }
+
+  @Test
+  void createHandsoldSaleRejectsNonNullDistributor() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.HAND_SOLD,
+            SaleDistributor.AMAZON,
+            SaleFormat.PRINT,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            null,
+            null,
+            false,
+            "Handsale");
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createDistributorSaleRejectsNullDistributor() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            null,
+            SaleFormat.PRINT,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            new BigDecimal("50.00"),
+            new BigDecimal("50.00"),
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createKindleUnlimitedSaleSucceeds() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.AMAZON,
+            SaleFormat.KINDLE_UNLIMITED,
+            2,
+            2024,
+            null,
+            500,
+            Currency.USD,
+            new BigDecimal("50.00"),
+            new BigDecimal("50.00"),
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.format").value("KINDLE_UNLIMITED"))
+        .andExpect(jsonPath("$.kenp").value(500))
+        .andExpect(jsonPath("$.quantitySold", nullValue()));
+  }
+
+  @Test
+  void createHandsoldSaleRejectsEbookFormat() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.HAND_SOLD,
+            null,
+            SaleFormat.EBOOK,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            null,
+            null,
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createSaleRejectsInvalidFormatForDistributor() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.INGRAM_SPARK,
+            SaleFormat.EBOOK,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            new BigDecimal("50.00"),
+            new BigDecimal("50.00"),
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createKindleUnlimitedSaleRejectsQuantitySold() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.AMAZON,
+            SaleFormat.KINDLE_UNLIMITED,
+            2,
+            2024,
+            10,
+            500,
+            Currency.USD,
+            new BigDecimal("50.00"),
+            new BigDecimal("50.00"),
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createPrintSaleRejectsNullQuantitySold() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.OTHER,
+            SaleFormat.PRINT,
+            2,
+            2024,
+            null,
+            null,
+            Currency.USD,
+            new BigDecimal("50.00"),
+            new BigDecimal("50.00"),
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createEbookSaleSucceeds() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.AMAZON,
+            SaleFormat.EBOOK,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            new BigDecimal("50.00"),
+            new BigDecimal("50.00"),
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.format").value("EBOOK"))
+        .andExpect(jsonPath("$.distributor").value("AMAZON"));
+  }
+
+  @Test
+  void createHandsoldSaleRejectsNonUsdCurrency() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.HAND_SOLD,
+            null,
+            SaleFormat.PRINT,
+            2,
+            2024,
+            10,
+            null,
+            Currency.GBP,
+            null,
+            null,
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createKindleUnlimitedSaleRejectsNullKenp() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.AMAZON,
+            SaleFormat.KINDLE_UNLIMITED,
+            2,
+            2024,
+            null,
+            null,
+            Currency.USD,
+            new BigDecimal("50.00"),
+            new BigDecimal("50.00"),
+            false,
+            null);
 
     mockMvc
         .perform(

@@ -56,7 +56,7 @@ public class Sale {
   private SaleSource saleSource;
 
   @Enumerated(EnumType.STRING)
-  @Column(name = "distributor", nullable = false)
+  @Column(name = "distributor")
   private SaleDistributor distributor;
 
   @Enumerated(EnumType.STRING)
@@ -74,7 +74,7 @@ public class Sale {
   private Integer saleYear;
 
   @Positive
-  @Column(name = "quantity_sold", nullable = false)
+  @Column(name = "quantity_sold")
   private Integer quantitySold;
 
   @Positive

@@ -36,11 +36,7 @@ public record SaleRequest(
             requiredMode = REQUIRED)
         @NotNull(message = "Sale source is required")
         SaleSource saleSource,
-    @Schema(
-            description = "The distributor through which the sale was made",
-            example = "AMAZON",
-            requiredMode = REQUIRED)
-        @NotNull(message = "Distributor is required")
+    @Schema(description = "The distributor through which the sale was made", example = "AMAZON")
         SaleDistributor distributor,
     @Schema(
             description = "The format of the book that was sold",
@@ -105,97 +101,32 @@ public record SaleRequest(
     return !requested.isAfter(YearMonth.now());
   }
 
+  @AssertTrue(message = "Invalid fields for sale source")
+  @Schema(hidden = true)
+  public boolean isValidForSource() {
+    if (saleSource == null) return true;
+    if (saleSource == SaleSource.HAND_SOLD) {
+      return distributor == null
+          && (format == null || format == SaleFormat.PRINT)
+          && publisherRevenue == null
+          && (saleCurrency == null || saleCurrency == Currency.USD);
+    }
+    // DISTRIBUTOR
+    return distributor != null
+        && publisherRevenue != null
+        && (format == null || distributor.allowsFormat(format));
+  }
+
   @AssertTrue(
       message =
-          "Publisher revenue must be provided for distributor sales and omitted for handsold sales")
+          "KINDLE_UNLIMITED requires KENP and no quantity; other formats require quantity and no"
+              + " KENP")
   @Schema(hidden = true)
-  public boolean isPublisherRevenueValidForSource() {
-    if (saleSource == null) return true;
-    if (saleSource == SaleSource.DISTRIBUTOR) {
-      return publisherRevenue != null;
-    }
-    return publisherRevenue == null;
-  }
-
-  @AssertTrue(message = "Distributor only present if saleSource is Distributor")
-  @Schema(hidden = true)
-  public boolean isDistributorValid() {
-    if (distributor == null) return true;
-    if (saleSource == SaleSource.DISTRIBUTOR) {
-      return distributor != null;
-    }
-    return distributor == null;
-  }
-
-  @AssertTrue(message = "Hand sold distributor must be print")
-  @Schema(hidden = true)
-  public boolean isFormatValidForHandsold() {
-    if (format == null) return true;
-    if (saleSource == SaleSource.HAND_SOLD) {
-      return format == SaleFormat.PRINT;
-    }
-    return true;
-  }
-
-  @AssertTrue(message = "Format must be print for Ingram Spark distributor")
-  @Schema(hidden = true)
-  public boolean isFormatValidForIngramSparkDistributor() {
-    if (format == null) return true;
-    if (distributor == SaleDistributor.INGRAM_SPARK) {
-      return format == SaleFormat.PRINT;
-    }
-    return true;
-  }
-
-  @AssertTrue(message = "Format must be either PRINT or EBOOK for distributor \"other\"")
-  @Schema(hidden = true)
-  public boolean isFormatValidForOtherDistributor() {
-    if (format == null) return true;
-    if (distributor == SaleDistributor.OTHER) {
-      return format == SaleFormat.PRINT || format == SaleFormat.EBOOK;
-    }
-    return true;
-  }
-
-  @AssertTrue(message = "Format must be PRINT, EBOOK, or KINDLE_UNLIMITED for Distrbutor Amazon")
-  @Schema(hidden = true)
-  public boolean isFormatValidForAmazonDistributor() {
-    if (format == null) return true;
-    if (distributor == SaleDistributor.AMAZON) {
-      return format == SaleFormat.PRINT
-          || format == SaleFormat.EBOOK
-          || format == SaleFormat.KINDLE_UNLIMITED;
-    }
-    return true;
-  }
-
-  @AssertTrue(message = "Quantity sold is unspecified if format is KINDLE_UNLIMITED")
-  @Schema(hidden = true)
-  public boolean isQuantitySoldValid() {
-    if (quantitySold == null) return true;
-    if (format == SaleFormat.KINDLE_UNLIMITED) {
-      return quantitySold == null;
-    }
-    return quantitySold != null;
-  }
-
-  @AssertTrue(message = "KENP is required for format KINDLE_UNLIMITED")
-  @Schema(hidden = true)
-  public boolean isKenpValid() {
+  public boolean isFormatFieldsValid() {
     if (format == null) return true;
     if (format == SaleFormat.KINDLE_UNLIMITED) {
-      return kenp != null;
+      return kenp != null && quantitySold == null;
     }
-    return kenp == null;
-  }
-
-  @AssertTrue(message = "Hand sold records must have currency of USD")
-  @Schema(hidden = true)
-  public boolean isHandSoldCurrencyValid() {
-    if (saleSource == null || saleCurrency == null) return true;
-    if (saleSource == SaleSource.HAND_SOLD) {
-      return saleCurrency == Currency.USD;
-    }
-    return saleCurrency != null;
+    return quantitySold != null && kenp == null;
   }
 }
