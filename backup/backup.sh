@@ -44,18 +44,6 @@ require_env() {
     fi
 }
 
-# Resolve a backup filename — checks exact path, then BACKUP_DIR/path,
-# then searches all tiers for a matching filename.
-resolve_backup() {
-    local file="$1"
-    if [[ -f "$file" ]]; then echo "$file"; return; fi
-    if [[ -f "$BACKUP_DIR/$file" ]]; then echo "$BACKUP_DIR/$file"; return; fi
-    for tier in daily weekly monthly; do
-        if [[ -f "$BACKUP_DIR/$tier/$file" ]]; then echo "$BACKUP_DIR/$tier/$file"; return; fi
-    done
-    return 1
-}
-
 # Send an email alert via Gmail SMTP + app password. Skips if not configured.
 send_alert() {
     local subject="$1"
@@ -213,81 +201,6 @@ cmd_pull() {
 }
 
 # ---------------------------------------------------------------------------
-# list — show available backups across all tiers
-# ---------------------------------------------------------------------------
-
-cmd_list() {
-    for tier in daily weekly monthly; do
-        local dir="$BACKUP_DIR/$tier"
-        echo "=== $(echo "$tier" | tr '[:lower:]' '[:upper:]') ==="
-        if [[ -d "$dir" ]] && ls "$dir"/backup-*.dump &>/dev/null; then
-            ls -1 "$dir"/backup-*.dump | sort -r | while read -r f; do
-                local size
-                size="$(du -h "$f" | cut -f1)"
-                printf "  %-10s  %s\n" "$size" "$(basename "$f")"
-            done
-        else
-            echo "  (none)"
-        fi
-        echo ""
-    done
-}
-
-# ---------------------------------------------------------------------------
-# validate — check a backup file for integrity
-# ---------------------------------------------------------------------------
-
-cmd_validate() {
-    [[ -z "${1:-}" ]] && die "Usage: backup validate <file>"
-    local file
-    file="$(resolve_backup "$1")" || die "File not found: $1"
-
-    if ! command -v pg_restore > /dev/null 2>&1; then
-        die "pg_restore not available"
-    fi
-
-    log "Validating $file ..."
-    if pg_restore --list "$file" > /dev/null 2>&1; then
-        local entries
-        entries="$(pg_restore --list "$file" 2>/dev/null | wc -l | tr -d ' ')"
-        log "Valid — $entries entries"
-    else
-        die "Validation failed — file may be corrupted"
-    fi
-}
-
-# ---------------------------------------------------------------------------
-# restore — restore the database from a backup file
-# ---------------------------------------------------------------------------
-
-cmd_restore() {
-    [[ -z "${1:-}" ]] && die "Usage: backup restore <file>"
-    local file
-    file="$(resolve_backup "$1")" || die "File not found: $1"
-
-    require_env DB_USERNAME
-
-    echo "WARNING: This will overwrite the current database ($DB_NAME)."
-    echo "File: $file"
-    printf "Continue? [y/N] "
-    read -r confirm
-    if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
-        echo "Aborted."
-        exit 0
-    fi
-
-    log "Restoring $DB_NAME from $file ..."
-    if [[ -f /.dockerenv ]]; then
-        pg_restore --clean --if-exists -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" "$file"
-    else
-        local container
-        container="$(docker compose ps -q db)"
-        docker exec -i "$container" pg_restore --clean --if-exists -U "$DB_USER" -d "$DB_NAME" < "$file"
-    fi
-    log "Restore complete"
-}
-
-# ---------------------------------------------------------------------------
 # Dispatch
 # ---------------------------------------------------------------------------
 
@@ -308,8 +221,5 @@ case "$ACTION" in
     run)      run_with_alert ;;
     push)     cmd_push ;;
     pull)     cmd_pull ;;
-    list)     cmd_list ;;
-    validate) cmd_validate "$TARGET" ;;
-    restore)  cmd_restore "$TARGET" ;;
-    *)        die "Unknown action: $ACTION (expected: run, push, pull, list, validate, restore)" ;;
+    *)        die "Unknown action: $ACTION (expected: run, push, pull)" ;;
 esac

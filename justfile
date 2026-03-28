@@ -79,9 +79,5 @@ format:
 [group('code quality')]
 check: api format lint test
 
-# --- backup ---
-
-# database backup (run, list, validate, restore, push, pull)
-[group('backup')]
-backup *args:
-    ./backup/backup.sh {{args}}
+backup action="run" target="":
+    ./backup/backup.sh {{action}} {{target}}

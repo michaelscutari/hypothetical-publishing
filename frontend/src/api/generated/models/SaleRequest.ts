@@ -17,7 +17,7 @@ export type SaleRequest = {
     /**
      * The distributor through which the sale was made
      */
-    distributor: SaleRequest.distributor;
+    distributor?: SaleRequest.distributor;
     /**
      * The format of the book that was sold
      */
