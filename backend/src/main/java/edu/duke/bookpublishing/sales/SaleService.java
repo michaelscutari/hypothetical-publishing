@@ -31,7 +31,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -736,24 +735,29 @@ public class SaleService {
 
   private String getCommentFromCSV(
       MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
-    return String.format(
-        "Ingram: Format='%s' Market='%s' File='%s' (%s)",
-        ingramCsvEntry.getFormat(),
-        ingramCsvEntry.getSalesMarket(),
-        file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown",
-        parsedBatch.timestamp());
+    String comment =
+        String.format(
+            "Ingram: Format='%s' Market='%s' File='%s' (%s)",
+            ImportParser.truncateField(ingramCsvEntry.getFormat(), ImportParser.MAX_FORMAT_LENGTH),
+            ImportParser.truncateField(
+                ingramCsvEntry.getSalesMarket(), ImportParser.MAX_MARKET_LENGTH),
+            ImportParser.truncateField(
+                file.getOriginalFilename(), ImportParser.MAX_FILENAME_LENGTH),
+            ImportParser.formatCommentTimestamp(parsedBatch.timestamp()));
+    return ImportParser.truncateComment(comment);
   }
 
   private String getCommentFromAmazon(
       MultipartFile file, LocalDateTime parsedTimestamp, AmazonXlsxEntry row) {
-    String formattedTimestamp =
-        parsedTimestamp.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-    return String.format(
-        "Amazon: Market='%s' File='%s' Sheet='%s' (%s)",
-        row.marketplace(),
-        file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown",
-        row.sheetName(),
-        formattedTimestamp);
+    String comment =
+        String.format(
+            "Amazon: Market='%s' File='%s' Sheet='%s' (%s)",
+            ImportParser.truncateField(row.marketplace(), ImportParser.MAX_MARKET_LENGTH),
+            ImportParser.truncateField(
+                file.getOriginalFilename(), ImportParser.MAX_FILENAME_LENGTH),
+            ImportParser.truncateField(row.sheetName(), ImportParser.MAX_SHEET_LENGTH),
+            ImportParser.formatCommentTimestamp(parsedTimestamp));
+    return ImportParser.truncateComment(comment);
   }
 
   private void saveSalesToRepo(List<Sale> sales) {

@@ -527,7 +527,8 @@ class SaleServiceTest {
     assertThat(firstSaved.getAuthorRoyalty()).isEqualByComparingTo("5.10");
     assertThat(firstSaved.getHasAuthorBeenPaid()).isFalse();
     assertThat(firstSaved.getComment())
-        .contains("Ingram: Format='Hardcover' Market='US' File='ingram.csv' (" + timestamp);
+        .isEqualTo(
+            "Ingram: Format='Hardcover' Market='US' File='ingram.csv' (2024-01-02 03:04:00)");
 
     Sale secondSaved = saved.get(1);
     assertThat(secondSaved.getDistributor()).isEqualTo(SaleDistributor.INGRAM_SPARK);
@@ -568,6 +569,45 @@ class SaleServiceTest {
     verify(saleRepository).saveAll(salesCaptor.capture());
     Sale saved = salesCaptor.getValue().get(0);
     assertThat(saved.getSaleCurrency()).isEqualTo(Currency.USD);
+  }
+
+  @Test
+  void importFromCsvTruncatesCommentFieldsAndCapsCommentLength() {
+    String longFileName = "f".repeat(140) + ".csv";
+    MultipartFile file = new MockMultipartFile("file", longFileName, "text/csv", "data".getBytes());
+    LocalDateTime timestamp = LocalDateTime.of(2024, 1, 2, 15, 6, 7);
+
+    IngramCsvEntry entry = new IngramCsvEntry();
+    entry.setIsbn("9780743273565");
+    entry.setNetQty(1L);
+    entry.setNetCompensation(new BigDecimal("5.00"));
+    entry.setFormat("Hardcover-" + "X".repeat(80));
+    entry.setSalesMarket("United Kingdom Marketplace-" + "Y".repeat(120));
+
+    ParsedBatch<IngramCsvEntry> parsedBatch =
+        new ParsedBatch<>(timestamp, List.of(entry), List.of());
+
+    when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
+    when(saleRepository.saveAll(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0, List.class));
+
+    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    var result = saleService.importSales(request);
+
+    assertThat(result.savedSales()).hasSize(1);
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Sale>> salesCaptor = ArgumentCaptor.forClass(List.class);
+    verify(saleRepository).saveAll(salesCaptor.capture());
+    Sale saved = salesCaptor.getValue().get(0);
+
+    assertThat(saved.getComment()).hasSizeLessThanOrEqualTo(256);
+    assertThat(saved.getComment()).contains("(2024-01-02 15:06:07)");
+
+    String actualFileInComment =
+        saved.getComment().replaceFirst(".*File='", "").replaceFirst("'.*", "");
+    assertThat(actualFileInComment).hasSizeLessThanOrEqualTo(ImportParser.MAX_FILENAME_LENGTH);
   }
 
   @Test
@@ -788,7 +828,7 @@ class SaleServiceTest {
             false,
             null);
 
-    Sale result = saleService.createSale(request);
+    saleService.createSale(request);
 
     verify(saleRepository).save(saleCaptor.capture());
     Sale saved = saleCaptor.getValue();
