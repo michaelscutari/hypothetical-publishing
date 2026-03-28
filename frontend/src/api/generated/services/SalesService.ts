@@ -97,6 +97,8 @@ export class SalesService {
      * @param endDate
      * @param authorId
      * @param saleSource
+     * @param distributor
+     * @param format
      * @param query
      * @param bookId
      * @returns PagedResponseSaleResponse OK
@@ -111,7 +113,9 @@ export class SalesService {
         startDate?: string,
         endDate?: string,
         authorId?: number,
-        saleSource?: string,
+        saleSource?: 'DISTRIBUTOR' | 'HAND_SOLD',
+        distributor?: 'INGRAM_SPARK' | 'AMAZON' | 'OTHER',
+        format?: 'PRINT' | 'EBOOK' | 'KINDLE_UNLIMITED',
         query?: string,
         bookId?: number,
     ): CancelablePromise<PagedResponseSaleResponse> {
@@ -128,6 +132,8 @@ export class SalesService {
                 'endDate': endDate,
                 'authorId': authorId,
                 'saleSource': saleSource,
+                'distributor': distributor,
+                'format': format,
                 'query': query,
                 'bookId': bookId,
             },
@@ -194,6 +200,44 @@ export class SalesService {
                 'endQuarter': endQuarter,
                 'endYear': endYear,
                 'includeEmptyQuarters': includeEmptyQuarters,
+            },
+        });
+    }
+    /**
+     * Exports filtered sales as CSV
+     * @param startDate
+     * @param endDate
+     * @param authorId
+     * @param saleSource
+     * @param distributor
+     * @param format
+     * @param query
+     * @param bookId
+     * @returns any OK
+     * @throws ApiError
+     */
+    public static exportSalesCsv(
+        startDate?: string,
+        endDate?: string,
+        authorId?: number,
+        saleSource?: 'DISTRIBUTOR' | 'HAND_SOLD',
+        distributor?: 'INGRAM_SPARK' | 'AMAZON' | 'OTHER',
+        format?: 'PRINT' | 'EBOOK' | 'KINDLE_UNLIMITED',
+        query?: string,
+        bookId?: number,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sales/export',
+            query: {
+                'startDate': startDate,
+                'endDate': endDate,
+                'authorId': authorId,
+                'saleSource': saleSource,
+                'distributor': distributor,
+                'format': format,
+                'query': query,
+                'bookId': bookId,
             },
         });
     }
