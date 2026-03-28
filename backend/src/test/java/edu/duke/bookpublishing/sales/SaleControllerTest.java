@@ -182,6 +182,9 @@ class SaleControllerTest {
       String publisherRevenue,
       String authorRoyalty,
       boolean hasAuthorBeenPaid) {
+    Integer normalizedQuantity = format == SaleFormat.KINDLE_UNLIMITED ? null : quantitySold;
+    Integer normalizedKenp = format == SaleFormat.KINDLE_UNLIMITED ? kenp : null;
+
     saleRepository.save(
         Sale.builder()
             .book(book)
@@ -190,8 +193,8 @@ class SaleControllerTest {
             .format(format)
             .saleMonth(saleMonth)
             .saleYear(saleYear)
-            .quantitySold(quantitySold)
-            .kenp(kenp)
+            .quantitySold(normalizedQuantity)
+            .kenp(normalizedKenp)
             .saleCurrency(saleCurrency)
             .originalPublisherRevenue(new BigDecimal(originalPublisherRevenue))
             .publisherRevenue(new BigDecimal(publisherRevenue))
@@ -1064,7 +1067,7 @@ class SaleControllerTest {
   }
 
   @Test
-  void importIngramCsvAddsSales() throws Exception {
+  void importSalesCsvAddsSales() throws Exception {
     Cookie token = login();
 
     List.of(
@@ -1083,7 +1086,7 @@ class SaleControllerTest {
     ClassPathResource csvResource = new ClassPathResource("testfiles/Ingram 202509.csv");
     MockMultipartFile csvFile =
         new MockMultipartFile(
-            "csvFile",
+            "importFile",
             "Ingram 202509.csv",
             "text/csv",
             csvResource.getInputStream().readAllBytes());
@@ -1099,8 +1102,9 @@ class SaleControllerTest {
                 .characterEncoding(StandardCharsets.UTF_8.name()))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.savedSales", hasSize(9)))
-        .andExpect(jsonPath("$.csvErrors", hasSize(0)))
-        .andExpect(jsonPath("$.savingErrors", hasSize(0)));
+        .andExpect(jsonPath("$.parseErrors", hasSize(0)))
+        .andExpect(jsonPath("$.validationErrors", hasSize(0)))
+        .andExpect(jsonPath("$.warnings", hasSize(0)));
 
     assertThat(saleRepository.count()).isEqualTo(9L);
   }

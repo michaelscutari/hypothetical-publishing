@@ -404,7 +404,7 @@ export default function SaleList() {
             sx={{ minWidth: 200 }}
           />
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl size="small" sx={{ minWidth: 130 }}>
             <InputLabel>Sale Source</InputLabel>
             <Select
               value={saleSource}
@@ -421,7 +421,7 @@ export default function SaleList() {
             New Sale
           </Button>
           <Button variant="outlined" onClick={handleImportClick} startIcon={<UploadFileIcon />}>
-            Import CSV
+            Import File
           </Button>
         </Stack>
       }

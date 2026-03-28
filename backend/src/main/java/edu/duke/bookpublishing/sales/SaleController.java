@@ -3,13 +3,13 @@ package edu.duke.bookpublishing.sales;
 import edu.duke.bookpublishing.common.SortUtils;
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
-import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
-import edu.duke.bookpublishing.sales.dto.IngramImportResponse;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
 import edu.duke.bookpublishing.sales.dto.RoyaltyReportResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import edu.duke.bookpublishing.sales.dto.SalesImportRequest;
+import edu.duke.bookpublishing.sales.dto.SalesImportResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -145,9 +145,9 @@ public class SaleController {
   @Operation(operationId = "importCsv", summary = "Imports or previews a CSV file")
   @PostMapping(path = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   @Transactional
-  public IngramImportResponse importIngramCsv(
-      @Valid @ModelAttribute IngramImportRequest ingramImportRequest) {
-    return saleService.importSalesFromCsv(ingramImportRequest);
+  public SalesImportResponse importSales(
+      @Valid @ModelAttribute SalesImportRequest salesImportRequest) {
+    return saleService.importSales(salesImportRequest);
   }
 
   // ------- PUT MAPPINGS -------
