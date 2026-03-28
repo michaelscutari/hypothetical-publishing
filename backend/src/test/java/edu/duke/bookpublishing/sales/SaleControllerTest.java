@@ -1282,4 +1282,151 @@ class SaleControllerTest {
         .andExpect(jsonPath("$.allTime.totals.kenpTotal").value(1200))
         .andExpect(jsonPath("$.allTime.totals.totalRoyalty").value(54.00));
   }
+
+  // ------- CSV Export Tests -------
+
+  @Test
+  void exportCsvReturnsHeadersWhenNoSales() throws Exception {
+    Cookie token = login();
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/sales/export").cookie(token))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    String csv = result.getResponse().getContentAsString();
+    assertThat(csv).contains("Date");
+    assertThat(csv).contains("Pub. Revenue (Original)");
+    assertThat(csv).contains("Royalty Status");
+    assertThat(result.getResponse().getContentType()).startsWith("text/csv");
+    // BOM check
+    byte[] bytes = result.getResponse().getContentAsByteArray();
+    assertThat(bytes[0]).isEqualTo((byte) 0xEF);
+    assertThat(bytes[1]).isEqualTo((byte) 0xBB);
+    assertThat(bytes[2]).isEqualTo((byte) 0xBF);
+  }
+
+  @Test
+  void exportCsvContainsSaleData() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    createSale(
+        token,
+        saleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            3,
+            2024,
+            10,
+            new BigDecimal("100.00"),
+            false,
+            "test comment"));
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/sales/export").cookie(token))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    String csv = result.getResponse().getContentAsString();
+    String[] lines = csv.split("\n");
+    assertThat(lines).hasSize(2); // header + 1 row
+    assertThat(lines[1]).contains("2024-03");
+    assertThat(lines[1]).contains("Test Book");
+    assertThat(lines[1]).contains("Test Author");
+    assertThat(lines[1]).contains("Distributor");
+    assertThat(lines[1]).contains("Other");
+    assertThat(lines[1]).contains("Print");
+    assertThat(lines[1]).contains("Unpaid");
+    assertThat(lines[1]).contains("test comment");
+  }
+
+  @Test
+  void exportCsvHandsoldShowsNADistributor() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    saleRepository.save(
+        Sale.builder()
+            .book(book)
+            .saleSource(SaleSource.HAND_SOLD)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
+            .saleMonth(6)
+            .saleYear(2024)
+            .quantitySold(5)
+            .saleCurrency(Currency.USD)
+            .publisherRevenue(new BigDecimal("50.00"))
+            .originalPublisherRevenue(new BigDecimal("50.00"))
+            .authorRoyalty(new BigDecimal("5.00"))
+            .hasAuthorBeenPaid(false)
+            .build());
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/sales/export").cookie(token))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    String csv = result.getResponse().getContentAsString();
+    String[] lines = csv.split("\n");
+    assertThat(lines[1]).contains("Handsold");
+    assertThat(lines[1]).contains("\"N/A\"");
+  }
+
+  @Test
+  void exportCsvRespectsFilters() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    createSale(
+        token,
+        saleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            10,
+            new BigDecimal("100.00"),
+            false,
+            null));
+    saleRepository.save(
+        Sale.builder()
+            .book(book)
+            .saleSource(SaleSource.HAND_SOLD)
+            .distributor(SaleDistributor.OTHER)
+            .format(SaleFormat.PRINT)
+            .saleMonth(2)
+            .saleYear(2024)
+            .quantitySold(5)
+            .saleCurrency(Currency.USD)
+            .publisherRevenue(new BigDecimal("50.00"))
+            .originalPublisherRevenue(new BigDecimal("50.00"))
+            .authorRoyalty(new BigDecimal("5.00"))
+            .hasAuthorBeenPaid(false)
+            .build());
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/sales/export").cookie(token).param("saleSource", "DISTRIBUTOR"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    String csv = result.getResponse().getContentAsString();
+    String[] lines = csv.split("\n");
+    assertThat(lines).hasSize(2); // header + 1 filtered row
+    assertThat(lines[1]).contains("Distributor");
+    assertThat(lines[1]).doesNotContain("Handsold");
+  }
+
+  @Test
+  void exportCsvRejectsInvalidSaleSource() throws Exception {
+    Cookie token = login();
+
+    mockMvc
+        .perform(get("/api/sales/export").cookie(token).param("saleSource", "INVALID"))
+        .andExpect(status().isBadRequest());
+  }
 }
