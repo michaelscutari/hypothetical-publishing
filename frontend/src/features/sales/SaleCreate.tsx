@@ -84,7 +84,13 @@ export default function SaleCreate() {
       if (!next[index] || !next[index].isPlaceholder) return prev;
       next[index] = { ...next[index], isPlaceholder: false };
       if (index === next.length - 1) {
-        next.push(createEmptyRecord({ saleDate: next[index].saleDate }, true));
+        next.push(createEmptyRecord({
+          saleDate: next[index].saleDate,
+          saleSource: next[index].saleSource,
+          distributor: next[index].distributor,
+          format: next[index].format,
+          saleCurrency: next[index].saleCurrency,
+        }, true));
       }
       return next;
     });
@@ -126,20 +132,26 @@ export default function SaleCreate() {
       const bookChanged = updates.book !== undefined;
       const saleSourceChanged = updates.saleSource !== undefined;
       const quantityChanged = updates.quantitySold !== undefined;
+      const formatChanged = updates.format !== undefined;
 
-      if (revenueChanged || bookChanged || saleSourceChanged || quantityChanged) {
-        const computedRevenue =
-          next.book && next.quantitySold != null
-            ? computePublisherRevenue(
-                next.saleSource,
-                Number(next.book.coverPrice),
-                Number(next.book.printCost),
-                next.quantitySold,
-                next.publisherRevenue,
-              )
-            : next.saleSource === SaleRequest.saleSource.DISTRIBUTOR
-              ? next.publisherRevenue
-              : null;
+      if (revenueChanged || bookChanged || saleSourceChanged || quantityChanged || formatChanged) {
+        const isNextDistributor = next.saleSource === SaleRequest.saleSource.DISTRIBUTOR;
+
+        let computedRevenue: number | null;
+        if (isNextDistributor) {
+          computedRevenue = next.publisherRevenue;
+        } else if (next.book && next.quantitySold != null) {
+          computedRevenue = computePublisherRevenue(
+            next.saleSource,
+            Number(next.book.coverPrice),
+            Number(next.book.printCost),
+            next.quantitySold,
+            next.publisherRevenue,
+          );
+        } else {
+          computedRevenue = null;
+        }
+
         next.publisherRevenue = computedRevenue;
         next.authorRoyalty = next.book
           ? computeSaleRoyalty(
@@ -156,7 +168,13 @@ export default function SaleCreate() {
       if (index === newRecords.length - 1 && !next.isPlaceholder) {
         const hasGhostAlready = prev.length > index + 1 && prev[index + 1]?.isPlaceholder;
         if (!hasGhostAlready) {
-          newRecords.push(createEmptyRecord({ saleDate: next.saleDate }, true));
+          newRecords.push(createEmptyRecord({
+            saleDate: next.saleDate,
+            saleSource: next.saleSource,
+            distributor: next.distributor,
+            format: next.format,
+            saleCurrency: next.saleCurrency,
+          }, true));
         }
       }
 
@@ -220,21 +238,21 @@ export default function SaleCreate() {
 
     try {
       const promises = filledRecords.map((record) => {
+        const isHandsold = record.saleSource === SaleRequest.saleSource.HAND_SOLD;
+        const isKU = record.format === SaleRequest.format.KINDLE_UNLIMITED;
         const resolvedRevenue = record.publisherRevenue ?? 0;
         const req = {
           bookId: record.book!.id!,
           saleSource: record.saleSource,
-          distributor: SaleRequest.distributor.OTHER,
-          format: SaleRequest.format.PRINT,
+          distributor: isHandsold ? undefined : (record.distributor ?? undefined),
+          format: record.format,
           saleMonth: record.saleDate!.month() + 1,
           saleYear: record.saleDate!.year(),
-          quantitySold: record.quantitySold!,
-          saleCurrency: SaleRequest.saleCurrency.USD,
-          originalPublisherRevenue: resolvedRevenue,
-          publisherRevenue:
-            record.saleSource === SaleRequest.saleSource.DISTRIBUTOR
-              ? record.publisherRevenue!
-              : resolvedRevenue,
+          quantitySold: isKU ? undefined : record.quantitySold!,
+          kenp: isKU ? record.kenp! : undefined,
+          saleCurrency: isHandsold ? SaleRequest.saleCurrency.USD : record.saleCurrency,
+          originalPublisherRevenue: isHandsold ? resolvedRevenue : record.publisherRevenue!,
+          publisherRevenue: isHandsold ? undefined : record.publisherRevenue!,
           hasAuthorBeenPaid: record.hasAuthorBeenPaid,
           comment: record.comment || undefined,
         };
@@ -291,26 +309,19 @@ export default function SaleCreate() {
 
         <TableContainer component={Paper}>
           <Table size="small" sx={{ tableLayout: 'fixed' }}>
-            <colgroup>
-              <col style={{ width: '18%' }} />
-              <col style={{ width: '18%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '12%' }} />
-              <col style={{ width: '10%' }} />
-              <col style={{ width: '6%' }} />
-              <col style={{ width: '6%' }} />
-            </colgroup>
             <TableHead>
-              <TableRow sx={{ '& th': { whiteSpace: 'nowrap' } }}>
+              <TableRow sx={{ '& th': { whiteSpace: 'nowrap', fontSize: '0.8rem' } }}>
                 <TableCell>Book</TableCell>
-                <TableCell>Sale Date (Month/Year)</TableCell>
-                <TableCell>Sale Source</TableCell>
-                <TableCell>Quantity</TableCell>
-                <TableCell>Publisher Revenue</TableCell>
-                <TableCell>Author Royalty</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Source</TableCell>
+                <TableCell>Distributor</TableCell>
+                <TableCell>Format</TableCell>
+                <TableCell>Currency</TableCell>
+                <TableCell>Qty / KENP</TableCell>
+                <TableCell>Revenue</TableCell>
+                <TableCell>Royalty</TableCell>
                 <TableCell>Comment</TableCell>
-                <TableCell>Payment Status</TableCell>
+                <TableCell>Paid</TableCell>
                 <TableCell></TableCell>
               </TableRow>
             </TableHead>

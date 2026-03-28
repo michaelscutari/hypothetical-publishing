@@ -48,6 +48,9 @@ export default function SaleCreateRow({
   onOpenCommentDialog,
   onDeleteRecord,
 }: SaleCreateRowProps) {
+  const isDistributor = record.saleSource === SaleRequest.saleSource.DISTRIBUTOR;
+  const isKU = record.format === SaleRequest.format.KINDLE_UNLIMITED;
+
   const handleBookChange = React.useCallback(
     (_event: React.SyntheticEvent, value: BookResponse | null) => {
       onUpdateRecord(index, { book: value, errors: {} });
@@ -75,10 +78,70 @@ export default function SaleCreateRow({
 
   const handleSaleSourceChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      onUpdateRecord(index, {
-        saleSource: event.target.value as SaleRequest.saleSource,
-        errors: {},
-      });
+      const source = event.target.value as SaleRequest.saleSource;
+      const updates: Partial<SaleRecordInput> = { saleSource: source, errors: {} };
+      if (source === SaleRequest.saleSource.HAND_SOLD) {
+        updates.distributor = null;
+        updates.format = SaleRequest.format.PRINT;
+        updates.saleCurrency = SaleRequest.saleCurrency.USD;
+        updates.kenp = null;
+      } else if (!record.distributor) {
+        updates.distributor = SaleRequest.distributor.OTHER;
+      }
+      onUpdateRecord(index, updates);
+    },
+    [index, record.distributor, onUpdateRecord],
+  );
+
+  const handleDistributorChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const dist = event.target.value as SaleRequest.distributor;
+      const updates: Partial<SaleRecordInput> = { distributor: dist, errors: {} };
+      // Reset format if invalid for new distributor
+      if (dist === SaleRequest.distributor.INGRAM_SPARK && record.format !== SaleRequest.format.PRINT) {
+        updates.format = SaleRequest.format.PRINT;
+        updates.kenp = null;
+      } else if (dist === SaleRequest.distributor.OTHER && record.format === SaleRequest.format.KINDLE_UNLIMITED) {
+        updates.format = SaleRequest.format.PRINT;
+        updates.kenp = null;
+      }
+      onUpdateRecord(index, updates);
+    },
+    [index, record.format, onUpdateRecord],
+  );
+
+  const handleFormatChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const fmt = event.target.value as SaleRequest.format;
+      const updates: Partial<SaleRecordInput> = { format: fmt, errors: {} };
+      if (fmt === SaleRequest.format.KINDLE_UNLIMITED) {
+        updates.quantitySold = null;
+      } else {
+        updates.kenp = null;
+      }
+      onUpdateRecord(index, updates);
+    },
+    [index, onUpdateRecord],
+  );
+
+  const handleCurrencyChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      onUpdateRecord(index, { saleCurrency: event.target.value as SaleRequest.saleCurrency, errors: {} });
+    },
+    [index, onUpdateRecord],
+  );
+
+  const handleKenpChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const value = event.target.value.trim();
+      if (value === '') {
+        onUpdateRecord(index, { kenp: null, errors: {} });
+        return;
+      }
+      if (!/^\d+$/.test(value)) return;
+      const parsed = Number.parseInt(value, 10);
+      if (!Number.isSafeInteger(parsed) || parsed <= 0) return;
+      onUpdateRecord(index, { kenp: parsed, errors: {} });
     },
     [index, onUpdateRecord],
   );
@@ -207,13 +270,69 @@ export default function SaleCreateRow({
 
       <TableCell>
         <TextField
+          select
+          size="small"
+          value={isDistributor ? (record.distributor ?? '') : 'N/A'}
+          onFocus={() => onActivateRow(index)}
+          onChange={handleDistributorChange}
+          error={!!record.errors.distributor}
+          disabled={!isDistributor}
+          fullWidth
+        >
+          {!isDistributor && <MenuItem value="N/A">N/A</MenuItem>}
+          <MenuItem value={SaleRequest.distributor.INGRAM_SPARK}>Ingram Spark</MenuItem>
+          <MenuItem value={SaleRequest.distributor.AMAZON}>Amazon</MenuItem>
+          <MenuItem value={SaleRequest.distributor.OTHER}>Other</MenuItem>
+        </TextField>
+      </TableCell>
+
+      <TableCell>
+        <TextField
+          select
+          size="small"
+          value={record.format}
+          onFocus={() => onActivateRow(index)}
+          onChange={handleFormatChange}
+          disabled={!isDistributor}
+          fullWidth
+        >
+          <MenuItem value={SaleRequest.format.PRINT}>Print</MenuItem>
+          {isDistributor && record.distributor !== SaleRequest.distributor.INGRAM_SPARK && (
+            <MenuItem value={SaleRequest.format.EBOOK}>Ebook</MenuItem>
+          )}
+          {isDistributor && record.distributor === SaleRequest.distributor.AMAZON && (
+            <MenuItem value={SaleRequest.format.KINDLE_UNLIMITED}>KU</MenuItem>
+          )}
+        </TextField>
+      </TableCell>
+
+      <TableCell>
+        <TextField
+          select
+          size="small"
+          value={isDistributor ? record.saleCurrency : SaleRequest.saleCurrency.USD}
+          onFocus={() => onActivateRow(index)}
+          onChange={handleCurrencyChange}
+          disabled={!isDistributor}
+          fullWidth
+        >
+          {Object.values(SaleRequest.saleCurrency).map((c) => (
+            <MenuItem key={c} value={c}>{c}</MenuItem>
+          ))}
+        </TextField>
+      </TableCell>
+
+      <TableCell>
+        <TextField
           size="small"
           type="text"
-          placeholder="1"
-          value={Number.isFinite(record.quantitySold) ? record.quantitySold : ''}
+          placeholder={isKU ? 'KENP' : 'Qty'}
+          value={isKU
+            ? (Number.isFinite(record.kenp) ? record.kenp : '')
+            : (Number.isFinite(record.quantitySold) ? record.quantitySold : '')}
           onFocus={() => onActivateRow(index)}
-          onChange={handleQuantityChange}
-          error={!!record.errors.quantitySold}
+          onChange={isKU ? handleKenpChange : handleQuantityChange}
+          error={isKU ? !!record.errors.kenp : !!record.errors.quantitySold}
           inputProps={{ inputMode: 'numeric', pattern: '[0-9]*', min: 1 }}
           fullWidth
         />
@@ -227,12 +346,12 @@ export default function SaleCreateRow({
           value={record.publisherRevenueInput}
           onFocus={() => onActivateRow(index)}
           onChange={handleRevenueChange}
-          disabled={record.saleSource === SaleRequest.saleSource.HAND_SOLD}
+          disabled={!isDistributor}
           error={!!record.errors.publisherRevenue}
           inputProps={{ inputMode: 'decimal' }}
           fullWidth
           InputProps={{
-            startAdornment: <Typography>$</Typography>,
+            startAdornment: <Typography>{isDistributor ? record.saleCurrency : 'USD'}</Typography>,
           }}
         />
       </TableCell>

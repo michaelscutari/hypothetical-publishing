@@ -298,6 +298,20 @@ export default function BookShow() {
                 </Typography>
               </Stack>
             )}
+            {book.amazonEbookAsin && (
+              <Stack direction="row" spacing={1} alignItems="baseline">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ minWidth: 160, fontWeight: 600 }}
+                >
+                  Amazon ASIN
+                </Typography>
+                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                  {book.amazonEbookAsin}
+                </Typography>
+              </Stack>
+            )}
           </Stack>
         </Grid>
 
