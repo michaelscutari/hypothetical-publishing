@@ -21,10 +21,11 @@ export function computePublisherRevenue(
   saleSource: 'HAND_SOLD' | 'DISTRIBUTOR',
   coverPrice: number,
   printCost: number,
-  quantity: number,
+  quantity: number | null,
   distributorRevenue: number | null,
 ): number | null {
   if (saleSource === 'DISTRIBUTOR') return distributorRevenue;
+  if (quantity == null) return null;
   return computeHandsoldRevenue(coverPrice, printCost, quantity);
 }
 
