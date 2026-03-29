@@ -22,6 +22,10 @@ public final class SortUtils {
           (directions != null && i < directions.size())
               ? Sort.Direction.fromString(directions.get(i))
               : Sort.Direction.ASC;
+      // Req 3.1.1: sorting by original revenue groups by currency first
+      if ("originalPublisherRevenue".equals(fields.get(i))) {
+        orders.add(new Sort.Order(dir, "saleCurrency"));
+      }
       orders.add(new Sort.Order(dir, fields.get(i)));
     }
     return Sort.by(orders);
