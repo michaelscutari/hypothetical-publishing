@@ -1,3 +1,6 @@
+import { BooksService, type AuthorResponse, type BookResponse } from '@/api';
+import { MONTH_NAMES } from '@/constants/months';
+import { useDebounce } from '@/hooks/useDebounce';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import SearchIcon from '@mui/icons-material/Search';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -14,9 +17,6 @@ import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { BooksService, type AuthorResponse, type BookResponse } from '@/api';
-import { MONTH_NAMES } from '@/constants/months';
-import { useDebounce } from '@/hooks/useDebounce';
 import AuthorField from './AuthorField';
 import CoverImageField from './CoverImageField';
 
@@ -119,10 +119,20 @@ export default function BookForm(props: BookFormProps) {
       const value = event.target.value;
       onFieldChange(
         event.target.name as keyof BookFormState['values'],
-        value === '' ? null : value,
+        value === '' ? null : Number(value) / 100,
       );
     },
     [onFieldChange],
+  );
+
+  const formatRoyaltyRateForInput = React.useCallback(
+    (value: number | string | null | undefined) => {
+      if (value == null || value === '') return '';
+      const rate = Number(value);
+      if (Number.isNaN(rate)) return '';
+      return String(rate * 100);
+    },
+    [],
   );
 
   const handleSelectChange = React.useCallback(
@@ -302,29 +312,35 @@ export default function BookForm(props: BookFormProps) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
-              type="text"
-              value={formValues.distributorAuthorRoyaltyRate ?? ''}
+              type="number"
+              value={formatRoyaltyRateForInput(formValues.distributorAuthorRoyaltyRate)}
               onChange={handleRoyaltyFieldChange}
               name="distributorAuthorRoyaltyRate"
-              label="Distributor Royalty Rate"
+              label="Distributor Royalty Rate (%)"
               error={!!formErrors.distributorAuthorRoyaltyRate}
-              helperText={formErrors.distributorAuthorRoyaltyRate ?? ' '}
+              helperText={
+                formErrors.distributorAuthorRoyaltyRate ?? 'Enter a percentage from 0 to 100'
+              }
               fullWidth
-              inputProps={{ inputMode: 'decimal' }}
+              inputProps={{ inputMode: 'decimal', min: 0, max: 100, step: '0.01' }}
+              InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
-              type="text"
-              value={formValues.handsoldAuthorRoyaltyRate ?? ''}
+              type="number"
+              value={formatRoyaltyRateForInput(formValues.handsoldAuthorRoyaltyRate)}
               onChange={handleRoyaltyFieldChange}
               name="handsoldAuthorRoyaltyRate"
-              label="Handsold Royalty Rate"
+              label="Handsold Royalty Rate (%)"
               error={!!formErrors.handsoldAuthorRoyaltyRate}
-              helperText={formErrors.handsoldAuthorRoyaltyRate ?? ' '}
+              helperText={
+                formErrors.handsoldAuthorRoyaltyRate ?? 'Enter a percentage from 0 to 100'
+              }
               fullWidth
-              inputProps={{ inputMode: 'decimal' }}
+              inputProps={{ inputMode: 'decimal', min: 0, max: 100, step: '0.01' }}
+              InputProps={{ endAdornment: <InputAdornment position="end">%</InputAdornment> }}
               onWheel={(e) => (e.target as HTMLElement).blur()}
             />
           </Grid>
