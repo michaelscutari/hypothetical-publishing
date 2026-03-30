@@ -269,12 +269,12 @@ export default function BookForm(props: BookFormProps) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
-              value={formValues.asin ?? ''}
+              value={formValues.amazonEbookAsin ?? ''}
               onChange={handleTextFieldChange}
-              name="asin"
+              name="amazonEbookAsin"
               label="Amazon Ebook ASIN"
-              error={!!formErrors.asin}
-              helperText={formErrors.asin ?? ' '}
+              error={!!formErrors.amazonEbookAsin}
+              helperText={formErrors.amazonEbookAsin ?? ' '}
               fullWidth
             />
           </Grid>
