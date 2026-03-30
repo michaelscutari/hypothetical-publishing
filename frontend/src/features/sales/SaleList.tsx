@@ -1,9 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import CommentIcon from '@mui/icons-material/Comment';
 import DeleteIcon from '@mui/icons-material/Delete';
-import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
@@ -52,6 +50,7 @@ export default function SaleList() {
   const [endDate, setEndDate] = React.useState<Dayjs | null>(null);
   const [selectedAuthor, setSelectedAuthor] = React.useState<AuthorResponse | null>(null);
   const [saleSource, setSaleSource] = React.useState<string>('all');
+  const [format, setFormat] = React.useState<string>('all');
   const [authors, setAuthors] = React.useState<AuthorResponse[]>([]);
 
   const fetchFn = React.useCallback(
@@ -59,15 +58,14 @@ export default function SaleList() {
       const sortFields = sortModel?.map((col) => col.field);
       const sortDirections = sortModel?.map((col) => col.sort ?? 'desc');
 
-      // Date range filter - requirement 3.1.2
       const startDateParam = startDate
         ? startDate.startOf('month').format('YYYY-MM-DD')
         : undefined;
       const endDateParam = endDate ? endDate.endOf('month').format('YYYY-MM-DD') : undefined;
 
-      // Author and sale source filters - requirement 3.1.2
       const authorIdParam = selectedAuthor?.id;
       const saleSourceParam = saleSource === 'all' ? undefined : saleSource.toUpperCase();
+      const formatParam = format === 'all' ? undefined : format.toUpperCase();
 
       return SalesService.getSales(
         params.page,
@@ -79,9 +77,11 @@ export default function SaleList() {
         endDateParam,
         authorIdParam,
         saleSourceParam,
+        undefined,
+        formatParam,
       );
     },
-    [sortModel, startDate, endDate, selectedAuthor, saleSource],
+    [sortModel, startDate, endDate, selectedAuthor, saleSource, format],
   );
 
   const {
@@ -125,8 +125,9 @@ export default function SaleList() {
     if (endDate) params.set('endDate', endDate.endOf('month').format('YYYY-MM-DD'));
     if (selectedAuthor?.id) params.set('authorId', String(selectedAuthor.id));
     if (saleSource !== 'all') params.set('saleSource', saleSource.toUpperCase());
+    if (format !== 'all') params.set('format', format.toUpperCase());
     window.open(`/api/sales/export?${params.toString()}`, '_blank');
-  }, [startDate, endDate, selectedAuthor, saleSource]);
+  }, [startDate, endDate, selectedAuthor, saleSource, format]);
 
   const handleRowDelete = React.useCallback(
     (sale: SaleResponse) => async () => {
@@ -347,7 +348,7 @@ export default function SaleList() {
       title={pageTitle}
       breadcrumbs={[{ title: pageTitle }]}
       actions={
-        <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap" useFlexGap>
+        <Stack direction="row" alignItems="center" spacing={0.5} flexWrap="wrap" useFlexGap>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <div>
               <IconButton size="small" aria-label="refresh" onClick={refresh}>
@@ -411,10 +412,10 @@ export default function SaleList() {
             )}
             value={selectedAuthor}
             onChange={(_, newValue) => setSelectedAuthor(newValue)}
-            sx={{ minWidth: 200 }}
+            sx={{ minWidth: 150 }}
           />
 
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+          <FormControl size="small" sx={{ minWidth: 110 }}>
             <InputLabel>Sale Source</InputLabel>
             <Select
               value={saleSource}
@@ -427,13 +428,28 @@ export default function SaleList() {
             </Select>
           </FormControl>
 
+          <FormControl size="small" sx={{ width: 110 }}>
+            <InputLabel shrink>Format</InputLabel>
+            <Select
+              value={format}
+              label="Format"
+              onChange={(e: SelectChangeEvent) => setFormat(e.target.value)}
+              notched
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="print">Print</MenuItem>
+              <MenuItem value="ebook">Ebook</MenuItem>
+              <MenuItem value="kindle_unlimited">Kindle Unlimited</MenuItem>
+            </Select>
+          </FormControl>
+
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             New Sale
           </Button>
-          <Button variant="outlined" onClick={handleImportClick} startIcon={<UploadFileIcon />}>
+          <Button variant="outlined" onClick={handleImportClick}>
             Import
           </Button>
-          <Button variant="outlined" onClick={handleExportClick} startIcon={<DownloadIcon />}>
+          <Button variant="outlined" onClick={handleExportClick}>
             Export
           </Button>
         </Stack>
