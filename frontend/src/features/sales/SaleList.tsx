@@ -53,36 +53,36 @@ export default function SaleList() {
   const [format, setFormat] = React.useState<string>('all');
   const [authors, setAuthors] = React.useState<AuthorResponse[]>([]);
 
- const fetchFn = React.useCallback(
-  async (params: { page: number; pageSize: number; showAll: boolean }) => {
-    const sortFields = sortModel?.map((col) => col.field);
-    const sortDirections = sortModel?.map((col) => col.sort ?? 'desc');
+  const fetchFn = React.useCallback(
+    async (params: { page: number; pageSize: number; showAll: boolean }) => {
+      const sortFields = sortModel?.map((col) => col.field);
+      const sortDirections = sortModel?.map((col) => col.sort ?? 'desc');
 
-    const startDateParam = startDate
-      ? startDate.startOf('month').format('YYYY-MM-DD')
-      : undefined;
-    const endDateParam = endDate ? endDate.endOf('month').format('YYYY-MM-DD') : undefined;
+      const startDateParam = startDate
+        ? startDate.startOf('month').format('YYYY-MM-DD')
+        : undefined;
+      const endDateParam = endDate ? endDate.endOf('month').format('YYYY-MM-DD') : undefined;
 
-    const authorIdParam = selectedAuthor?.id;
-    const saleSourceParam = saleSource === 'all' ? undefined : saleSource.toUpperCase();
-    const formatParam = format === 'all' ? undefined : format.toUpperCase();
+      const authorIdParam = selectedAuthor?.id;
+      const saleSourceParam = saleSource === 'all' ? undefined : saleSource.toUpperCase();
+      const formatParam = format === 'all' ? undefined : format.toUpperCase();
 
-    return SalesService.getSales(
-      params.page,
-      params.pageSize,
-      params.showAll,
-      sortFields,
-      sortDirections,
-      startDateParam,
-      endDateParam,
-      authorIdParam,
-      saleSourceParam,
-      undefined,
-      formatParam,
-    );
-  },
-  [sortModel, startDate, endDate, selectedAuthor, saleSource, format],
-);
+      return SalesService.getSales(
+        params.page,
+        params.pageSize,
+        params.showAll,
+        sortFields,
+        sortDirections,
+        startDateParam,
+        endDateParam,
+        authorIdParam,
+        saleSourceParam,
+        undefined,
+        formatParam,
+      );
+    },
+    [sortModel, startDate, endDate, selectedAuthor, saleSource, format],
+  );
 
   const {
     rows,
@@ -119,15 +119,15 @@ export default function SaleList() {
 
   const handleImportClick = React.useCallback(() => navigate('/sales/import'), [navigate]);
 
-const handleExportClick = React.useCallback(() => {
-  const params = new URLSearchParams();
-  if (startDate) params.set('startDate', startDate.startOf('month').format('YYYY-MM-DD'));
-  if (endDate) params.set('endDate', endDate.endOf('month').format('YYYY-MM-DD'));
-  if (selectedAuthor?.id) params.set('authorId', String(selectedAuthor.id));
-  if (saleSource !== 'all') params.set('saleSource', saleSource.toUpperCase());
-  if (format !== 'all') params.set('format', format.toUpperCase());
-  window.open(`/api/sales/export?${params.toString()}`, '_blank');
-}, [startDate, endDate, selectedAuthor, saleSource, format]);
+  const handleExportClick = React.useCallback(() => {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate.startOf('month').format('YYYY-MM-DD'));
+    if (endDate) params.set('endDate', endDate.endOf('month').format('YYYY-MM-DD'));
+    if (selectedAuthor?.id) params.set('authorId', String(selectedAuthor.id));
+    if (saleSource !== 'all') params.set('saleSource', saleSource.toUpperCase());
+    if (format !== 'all') params.set('format', format.toUpperCase());
+    window.open(`/api/sales/export?${params.toString()}`, '_blank');
+  }, [startDate, endDate, selectedAuthor, saleSource, format]);
 
   const handleRowDelete = React.useCallback(
     (sale: SaleResponse) => async () => {
@@ -348,7 +348,7 @@ const handleExportClick = React.useCallback(() => {
       title={pageTitle}
       breadcrumbs={[{ title: pageTitle }]}
       actions={
-       <Stack direction="row" alignItems="center" spacing={0.5} flexWrap="wrap" useFlexGap>
+        <Stack direction="row" alignItems="center" spacing={0.5} flexWrap="wrap" useFlexGap>
           <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
             <div>
               <IconButton size="small" aria-label="refresh" onClick={refresh}>
@@ -428,20 +428,20 @@ const handleExportClick = React.useCallback(() => {
             </Select>
           </FormControl>
 
-         <FormControl size="small" sx={{ width: 110 }}>
-  <InputLabel shrink>Format</InputLabel>
-  <Select
-    value={format}
-    label="Format"
-    onChange={(e: SelectChangeEvent) => setFormat(e.target.value)}
-    notched
-  >
-    <MenuItem value="all">All</MenuItem>
-    <MenuItem value="print">Print</MenuItem>
-    <MenuItem value="ebook">Ebook</MenuItem>
-    <MenuItem value="kindle_unlimited">Kindle Unlimited</MenuItem>
-  </Select>
-</FormControl>
+          <FormControl size="small" sx={{ width: 110 }}>
+            <InputLabel shrink>Format</InputLabel>
+            <Select
+              value={format}
+              label="Format"
+              onChange={(e: SelectChangeEvent) => setFormat(e.target.value)}
+              notched
+            >
+              <MenuItem value="all">All</MenuItem>
+              <MenuItem value="print">Print</MenuItem>
+              <MenuItem value="ebook">Ebook</MenuItem>
+              <MenuItem value="kindle_unlimited">Kindle Unlimited</MenuItem>
+            </Select>
+          </FormControl>
 
           <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
             New Sale

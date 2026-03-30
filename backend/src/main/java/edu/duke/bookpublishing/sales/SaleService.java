@@ -67,79 +67,81 @@ public class SaleService {
   private final AuthorRepository authorRepository;
   private final CurrencyService currencyService;
 
- public List<Sale> getAllSales(
-    LocalDate startDate,
-    LocalDate endDate,
-    Long authorId,
-    Long bookId,
-    SaleSource saleSource,
-    SaleDistributor distributor,
-    SaleFormat format,
-    String query,
-    Sort sort) {
-  Specification<Sale> spec =
-      buildSaleSpecification(startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
-  return saleRepository.findAll(spec, sort);
-}
+  public List<Sale> getAllSales(
+      LocalDate startDate,
+      LocalDate endDate,
+      Long authorId,
+      Long bookId,
+      SaleSource saleSource,
+      SaleDistributor distributor,
+      SaleFormat format,
+      String query,
+      Sort sort) {
+    Specification<Sale> spec =
+        buildSaleSpecification(
+            startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
+    return saleRepository.findAll(spec, sort);
+  }
 
- public Page<Sale> getPagedSales(
-    LocalDate startDate,
-    LocalDate endDate,
-    Long authorId,
-    Long bookId,
-    SaleSource saleSource,
-    SaleDistributor distributor,
-    SaleFormat format,
-    String query,
-    Pageable pageable) {
-  Specification<Sale> spec =
-      buildSaleSpecification(startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
-  return saleRepository.findAll(spec, pageable);
-}
+  public Page<Sale> getPagedSales(
+      LocalDate startDate,
+      LocalDate endDate,
+      Long authorId,
+      Long bookId,
+      SaleSource saleSource,
+      SaleDistributor distributor,
+      SaleFormat format,
+      String query,
+      Pageable pageable) {
+    Specification<Sale> spec =
+        buildSaleSpecification(
+            startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
+    return saleRepository.findAll(spec, pageable);
+  }
 
   private Specification<Sale> buildSaleSpecification(
-    LocalDate startDate,
-    LocalDate endDate,
-    Long authorId,
-    Long bookId,
-    SaleSource saleSource,
-    SaleDistributor distributor,
-    SaleFormat format,
-    String query) {
-  Specification<Sale> spec = Specification.where(null);
+      LocalDate startDate,
+      LocalDate endDate,
+      Long authorId,
+      Long bookId,
+      SaleSource saleSource,
+      SaleDistributor distributor,
+      SaleFormat format,
+      String query) {
+    Specification<Sale> spec = Specification.where(null);
 
-  if (startDate != null || endDate != null) {
-    LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
-    LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
-    spec = spec.and(SaleSpecifications.withinDateRange(specStartDate, specEndDate));
+    if (startDate != null || endDate != null) {
+      LocalDate specStartDate = Optional.ofNullable(startDate).orElse(MIN_SALE_START_DATE);
+      LocalDate specEndDate = Optional.ofNullable(endDate).orElse(MAX_SALE_END_DATE);
+      spec = spec.and(SaleSpecifications.withinDateRange(specStartDate, specEndDate));
+    }
+
+    if (authorId != null) {
+      spec = spec.and(SaleSpecifications.byAuthor(authorId));
+    }
+
+    if (bookId != null) {
+      spec = spec.and(SaleSpecifications.byBook(bookId));
+    }
+
+    if (saleSource != null) {
+      spec = spec.and(SaleSpecifications.bySaleSource(saleSource));
+    }
+
+    if (distributor != null) {
+      spec = spec.and(SaleSpecifications.byDistributor(distributor));
+    }
+
+    if (format != null) {
+      spec = spec.and(SaleSpecifications.byFormat(format));
+    }
+
+    if (query != null && !query.isBlank()) {
+      spec = spec.and(SaleSpecifications.matchesQuery(query));
+    }
+
+    return spec;
   }
-
-  if (authorId != null) {
-    spec = spec.and(SaleSpecifications.byAuthor(authorId));
-  }
-
-  if (bookId != null) {
-    spec = spec.and(SaleSpecifications.byBook(bookId));
-  }
-
-  if (saleSource != null) {
-    spec = spec.and(SaleSpecifications.bySaleSource(saleSource));
-  }
-
-  if (distributor != null) {
-    spec = spec.and(SaleSpecifications.byDistributor(distributor));
-  }
-
-  if (format != null) {
-    spec = spec.and(SaleSpecifications.byFormat(format));
-  }
-
-  if (query != null && !query.isBlank()) {
-    spec = spec.and(SaleSpecifications.matchesQuery(query));
-  }
-
-  return spec;
-}
 
   /**
    * Builds grouped author payments data in the required sort order.

@@ -75,21 +75,21 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
         : undefined;
       const endDateParam = endMonth ? endMonth.endOf('month').format('YYYY-MM-DD') : undefined;
 
-     const response = await SalesService.getSales(
-  0,
-  1000,
-  true,
-  fields,
-  directions,
-  startDateParam,
-  endDateParam,
-  undefined,  
-  undefined,  
-  undefined,  
-  undefined,  
-  undefined,  
-  bookId,     
-);
+      const response = await SalesService.getSales(
+        0,
+        1000,
+        true,
+        fields,
+        directions,
+        startDateParam,
+        endDateParam,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        bookId,
+      );
       setSales(response.content ?? []);
     } catch (loadError) {
       notifications.show(`Failed to load sales: ${getErrorMessage(loadError)}`, {
