@@ -72,11 +72,14 @@ public class SaleService {
       LocalDate endDate,
       Long authorId,
       Long bookId,
-      String saleSource,
+      SaleSource saleSource,
+      SaleDistributor distributor,
+      SaleFormat format,
       String query,
       Sort sort) {
     Specification<Sale> spec =
-        buildSaleSpecification(startDate, endDate, authorId, bookId, saleSource, query);
+        buildSaleSpecification(
+            startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
     return saleRepository.findAll(spec, sort);
   }
 
@@ -85,11 +88,14 @@ public class SaleService {
       LocalDate endDate,
       Long authorId,
       Long bookId,
-      String saleSource,
+      SaleSource saleSource,
+      SaleDistributor distributor,
+      SaleFormat format,
       String query,
       Pageable pageable) {
     Specification<Sale> spec =
-        buildSaleSpecification(startDate, endDate, authorId, bookId, saleSource, query);
+        buildSaleSpecification(
+            startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
     return saleRepository.findAll(spec, pageable);
   }
 
@@ -98,7 +104,9 @@ public class SaleService {
       LocalDate endDate,
       Long authorId,
       Long bookId,
-      String saleSource,
+      SaleSource saleSource,
+      SaleDistributor distributor,
+      SaleFormat format,
       String query) {
     Specification<Sale> spec = Specification.where(null);
 
@@ -116,13 +124,16 @@ public class SaleService {
       spec = spec.and(SaleSpecifications.byBook(bookId));
     }
 
-    if (saleSource != null && !saleSource.isBlank()) {
-      try {
-        SaleSource source = SaleSource.valueOf(saleSource.toUpperCase());
-        spec = spec.and(SaleSpecifications.bySaleSource(source));
-      } catch (IllegalArgumentException e) {
-        // Ignore invalid sale source values
-      }
+    if (saleSource != null) {
+      spec = spec.and(SaleSpecifications.bySaleSource(saleSource));
+    }
+
+    if (distributor != null) {
+      spec = spec.and(SaleSpecifications.byDistributor(distributor));
+    }
+
+    if (format != null) {
+      spec = spec.and(SaleSpecifications.byFormat(format));
     }
 
     if (query != null && !query.isBlank()) {

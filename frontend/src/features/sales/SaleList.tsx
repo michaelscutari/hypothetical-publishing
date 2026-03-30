@@ -1,6 +1,7 @@
 import AddIcon from '@mui/icons-material/Add';
 import CommentIcon from '@mui/icons-material/Comment';
 import DeleteIcon from '@mui/icons-material/Delete';
+import DownloadIcon from '@mui/icons-material/Download';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -117,6 +118,15 @@ export default function SaleList() {
   const handleCreateClick = React.useCallback(() => navigate('/sales/new'), [navigate]);
 
   const handleImportClick = React.useCallback(() => navigate('/sales/import'), [navigate]);
+
+  const handleExportClick = React.useCallback(() => {
+    const params = new URLSearchParams();
+    if (startDate) params.set('startDate', startDate.startOf('month').format('YYYY-MM-DD'));
+    if (endDate) params.set('endDate', endDate.endOf('month').format('YYYY-MM-DD'));
+    if (selectedAuthor?.id) params.set('authorId', String(selectedAuthor.id));
+    if (saleSource !== 'all') params.set('saleSource', saleSource.toUpperCase());
+    window.open(`/api/sales/export?${params.toString()}`, '_blank');
+  }, [startDate, endDate, selectedAuthor, saleSource]);
 
   const handleRowDelete = React.useCallback(
     (sale: SaleResponse) => async () => {
@@ -367,7 +377,7 @@ export default function SaleList() {
                   clearable: true,
                 },
               }}
-              sx={{ width: 160 }}
+              sx={{ width: 120 }}
             />
             <DatePicker
               label="End"
@@ -389,7 +399,7 @@ export default function SaleList() {
                   clearable: true,
                 },
               }}
-              sx={{ width: 160 }}
+              sx={{ width: 120 }}
             />
           </LocalizationProvider>
 
@@ -404,7 +414,7 @@ export default function SaleList() {
             sx={{ minWidth: 200 }}
           />
 
-          <FormControl size="small" sx={{ minWidth: 130 }}>
+          <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Sale Source</InputLabel>
             <Select
               value={saleSource}
@@ -421,7 +431,10 @@ export default function SaleList() {
             New Sale
           </Button>
           <Button variant="outlined" onClick={handleImportClick} startIcon={<UploadFileIcon />}>
-            Import File
+            Import
+          </Button>
+          <Button variant="outlined" onClick={handleExportClick} startIcon={<DownloadIcon />}>
+            Export
           </Button>
         </Stack>
       }
