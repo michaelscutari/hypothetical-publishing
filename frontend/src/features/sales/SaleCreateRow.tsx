@@ -98,10 +98,16 @@ export default function SaleCreateRow({
       const dist = event.target.value as SaleRequest.distributor;
       const updates: Partial<SaleRecordInput> = { distributor: dist, errors: {} };
       // Reset format if invalid for new distributor
-      if (dist === SaleRequest.distributor.INGRAM_SPARK && record.format !== SaleRequest.format.PRINT) {
+      if (
+        dist === SaleRequest.distributor.INGRAM_SPARK &&
+        record.format !== SaleRequest.format.PRINT
+      ) {
         updates.format = SaleRequest.format.PRINT;
         updates.kenp = null;
-      } else if (dist === SaleRequest.distributor.OTHER && record.format === SaleRequest.format.KINDLE_UNLIMITED) {
+      } else if (
+        dist === SaleRequest.distributor.OTHER &&
+        record.format === SaleRequest.format.KINDLE_UNLIMITED
+      ) {
         updates.format = SaleRequest.format.PRINT;
         updates.kenp = null;
       }
@@ -126,7 +132,10 @@ export default function SaleCreateRow({
 
   const handleCurrencyChange = React.useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      onUpdateRecord(index, { saleCurrency: event.target.value as SaleRequest.saleCurrency, errors: {} });
+      onUpdateRecord(index, {
+        saleCurrency: event.target.value as SaleRequest.saleCurrency,
+        errors: {},
+      });
     },
     [index, onUpdateRecord],
   );
@@ -317,7 +326,9 @@ export default function SaleCreateRow({
           fullWidth
         >
           {Object.values(SaleRequest.saleCurrency).map((c) => (
-            <MenuItem key={c} value={c}>{c}</MenuItem>
+            <MenuItem key={c} value={c}>
+              {c}
+            </MenuItem>
           ))}
         </TextField>
       </TableCell>
@@ -327,9 +338,15 @@ export default function SaleCreateRow({
           size="small"
           type="text"
           placeholder={isKU ? 'KENP' : 'Qty'}
-          value={isKU
-            ? (Number.isFinite(record.kenp) ? record.kenp : '')
-            : (Number.isFinite(record.quantitySold) ? record.quantitySold : '')}
+          value={
+            isKU
+              ? Number.isFinite(record.kenp)
+                ? record.kenp
+                : ''
+              : Number.isFinite(record.quantitySold)
+                ? record.quantitySold
+                : ''
+          }
           onFocus={() => onActivateRow(index)}
           onChange={isKU ? handleKenpChange : handleQuantityChange}
           error={isKU ? !!record.errors.kenp : !!record.errors.quantitySold}

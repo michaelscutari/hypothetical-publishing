@@ -84,13 +84,18 @@ export default function SaleCreate() {
       if (!next[index] || !next[index].isPlaceholder) return prev;
       next[index] = { ...next[index], isPlaceholder: false };
       if (index === next.length - 1) {
-        next.push(createEmptyRecord({
-          saleDate: next[index].saleDate,
-          saleSource: next[index].saleSource,
-          distributor: next[index].distributor,
-          format: next[index].format,
-          saleCurrency: next[index].saleCurrency,
-        }, true));
+        next.push(
+          createEmptyRecord(
+            {
+              saleDate: next[index].saleDate,
+              saleSource: next[index].saleSource,
+              distributor: next[index].distributor,
+              format: next[index].format,
+              saleCurrency: next[index].saleCurrency,
+            },
+            true,
+          ),
+        );
       }
       return next;
     });
@@ -168,13 +173,18 @@ export default function SaleCreate() {
       if (index === newRecords.length - 1 && !next.isPlaceholder) {
         const hasGhostAlready = prev.length > index + 1 && prev[index + 1]?.isPlaceholder;
         if (!hasGhostAlready) {
-          newRecords.push(createEmptyRecord({
-            saleDate: next.saleDate,
-            saleSource: next.saleSource,
-            distributor: next.distributor,
-            format: next.format,
-            saleCurrency: next.saleCurrency,
-          }, true));
+          newRecords.push(
+            createEmptyRecord(
+              {
+                saleDate: next.saleDate,
+                saleSource: next.saleSource,
+                distributor: next.distributor,
+                format: next.format,
+                saleCurrency: next.saleCurrency,
+              },
+              true,
+            ),
+          );
         }
       }
 
