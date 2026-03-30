@@ -19,6 +19,8 @@ public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificat
 
   Optional<Book> findByIsbn10(String isbn10);
 
+  List<Book> findAllByAmazonEbookAsinIgnoreCase(String asin);
+
   List<Book> findBySeriesNameIgnoreCaseOrderBySeriesPositionAsc(String seriesName);
 
   @Query(

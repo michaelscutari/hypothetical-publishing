@@ -73,6 +73,6 @@ export type BookResponse = {
     /**
      * Amazon ASIN number
      */
-    asin?: string;
+    amazonEbookAsin?: string;
 };
 

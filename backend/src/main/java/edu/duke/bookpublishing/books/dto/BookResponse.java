@@ -29,7 +29,7 @@ public record BookResponse(
         Long totalSalesToDate,
     @Schema(description = "Whether this book has a cover image", requiredMode = REQUIRED)
         Boolean hasCover,
-    @Schema(description = "Amazon ASIN number") String asin) {
+    @Schema(description = "Amazon ASIN number") String amazonEbookAsin) {
 
   public static BookResponse from(Book book) {
     return from(book, 0L);

@@ -15,6 +15,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Positive;
@@ -74,7 +75,7 @@ public class Sale {
   private Integer saleYear;
 
   @Positive
-  @Column(name = "quantity_sold")
+  @Column(name = "quantity_sold", nullable = true)
   private Integer quantitySold;
 
   @Positive
@@ -108,4 +109,16 @@ public class Sale {
 
   @Column(name = "comment", length = 256)
   private String comment;
+
+  @AssertTrue(
+      message = "KINDLE_UNLIMITED requires KENP and no quantity; print/ebook require quantity")
+  public boolean isFormatFieldsValid() {
+    if (format == null) {
+      return true;
+    }
+    if (format == SaleFormat.KINDLE_UNLIMITED) {
+      return kenp != null && quantitySold == null;
+    }
+    return quantitySold != null && kenp == null;
+  }
 }
