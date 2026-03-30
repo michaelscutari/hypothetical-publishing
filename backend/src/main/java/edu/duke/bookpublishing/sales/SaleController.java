@@ -10,9 +10,14 @@ import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
 import edu.duke.bookpublishing.sales.dto.SalesImportRequest;
 import edu.duke.bookpublishing.sales.dto.SalesImportResponse;
+import edu.duke.bookpublishing.sales.enums.SaleDistributor;
+import edu.duke.bookpublishing.sales.enums.SaleFormat;
+import edu.duke.bookpublishing.sales.enums.SaleSource;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +53,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class SaleController {
 
   private final SaleService saleService;
+  private final SaleCsvExporter saleCsvExporter;
 
   // ------- GET MAPPINGS -------
 
@@ -64,7 +70,9 @@ public class SaleController {
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
           LocalDate endDate,
       @RequestParam(required = false) Long authorId,
-      @RequestParam(required = false) String saleSource,
+      @RequestParam(required = false) SaleSource saleSource,
+      @RequestParam(required = false) SaleDistributor distributor,
+      @RequestParam(required = false) SaleFormat format,
       @RequestParam(required = false) String query,
       @RequestParam(required = false) Long bookId) {
 
@@ -72,15 +80,49 @@ public class SaleController {
 
     if (showAll) {
       List<Sale> sales =
-          saleService.getAllSales(startDate, endDate, authorId, bookId, saleSource, query, sort);
+          saleService.getAllSales(
+              startDate, endDate, authorId, bookId, saleSource, distributor, format, query, sort);
       return PagedResponse.unpaged(sales, SaleResponse::from);
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
     Page<Sale> sales =
         saleService.getPagedSales(
-            startDate, endDate, authorId, bookId, saleSource, query, pageable);
+            startDate, endDate, authorId, bookId, saleSource, distributor, format, query, pageable);
     return PagedResponse.paged(sales, SaleResponse::from);
+  }
+
+  @Operation(operationId = "exportSalesCsv", summary = "Exports filtered sales as CSV")
+  @GetMapping("/export")
+  public void exportSalesCsv(
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate startDate,
+      @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+          LocalDate endDate,
+      @RequestParam(required = false) Long authorId,
+      @RequestParam(required = false) SaleSource saleSource,
+      @RequestParam(required = false) SaleDistributor distributor,
+      @RequestParam(required = false) SaleFormat format,
+      @RequestParam(required = false) String query,
+      @RequestParam(required = false) Long bookId,
+      HttpServletResponse response)
+      throws IOException {
+
+    List<Sale> sales =
+        saleService.getAllSales(
+            startDate,
+            endDate,
+            authorId,
+            bookId,
+            saleSource,
+            distributor,
+            format,
+            query,
+            Sort.unsorted());
+
+    response.setContentType("text/csv; charset=UTF-8");
+    response.setHeader("Content-Disposition", "attachment; filename=\"sales-export.csv\"");
+    saleCsvExporter.write(sales, response.getOutputStream());
   }
 
   @Operation(operationId = "getAuthorPayments", summary = "Gets grouped author payments view")

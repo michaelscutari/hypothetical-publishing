@@ -7,21 +7,31 @@ package edu.duke.bookpublishing.sales.enums;
  * @author Daniel Rodriguez-Florido
  */
 public enum Currency {
-  AUD, // Australia
-  BRL, // Brazil
-  CAD, // Canada
-  CNY, // China
-  EGP, // Egypt
-  EUR, // Belgium, France, Germany, Italy, Netherlands, Spain
-  INR, // India
-  JPY, // Japan
-  MXN, // Mexico
-  PLN, // Poland
-  SAR, // Saudi Arabia
-  SGD, // Singapore
-  SEK, // Sweden
-  TRY, // Turkey
-  AED, // United Arab Emirates
-  GBP, // United Kingdom
-  USD, // United States
+  AUD(2),
+  BRL(2),
+  CAD(2),
+  CNY(2),
+  EGP(2),
+  EUR(2),
+  INR(2),
+  JPY(0),
+  MXN(2),
+  PLN(2),
+  SAR(2),
+  SGD(2),
+  SEK(2),
+  TRY(2),
+  AED(2),
+  GBP(2),
+  USD(2);
+
+  private final int fractionalDigits;
+
+  Currency(int fractionalDigits) {
+    this.fractionalDigits = fractionalDigits;
+  }
+
+  public int getFractionalDigits() {
+    return fractionalDigits;
+  }
 }
