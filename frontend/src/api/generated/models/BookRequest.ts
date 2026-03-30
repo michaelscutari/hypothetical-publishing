@@ -57,6 +57,6 @@ export type BookRequest = {
     /**
      * Amazon ASIN Number
      */
-    asin?: string;
+    amazonEbookAsin?: string;
 };
 

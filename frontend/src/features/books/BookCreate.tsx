@@ -187,6 +187,7 @@ export default function BookCreate() {
         seriesPosition: formValues.seriesPosition ?? undefined,
         coverPrice: formValues.coverPrice ?? 0,
         printCost: formValues.printCost ?? 0,
+        amazonEbookAsin: formValues.amazonEbookAsin ?? undefined,
         coverImage: formValues.coverImage ?? undefined,
       };
       const book: BookResponse = await BooksService.createBook(request);

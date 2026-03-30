@@ -62,7 +62,7 @@ public record BookRequest(
         @NotNull(message = "Print cost is required")
         @DecimalMin("0.00")
         BigDecimal printCost,
-    @Schema(description = "Amazon ASIN Number") @ASIN String asin) {
+    @Schema(description = "Amazon ASIN Number") @ASIN String amazonEbookAsin) {
 
   @Schema(hidden = true)
   @AssertTrue(message = "Cover price must be greater than print cost")
