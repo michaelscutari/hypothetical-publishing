@@ -1,3 +1,13 @@
+import { BooksService, type BookResponse } from '@/api';
+import PageContainer from '@/components/PageContainer';
+import SortDialog, { type SortOption } from '@/components/SortDialog';
+import StandardDataGrid from '@/components/StandardDataGrid';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { useServerDataGrid } from '@/hooks/useServerDataGrid';
+import { getErrorMessage } from '@/utils/error';
+import { formatMonthYear } from '@/utils/formatting';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -19,25 +29,17 @@ import {
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getErrorMessage } from '@/utils/error';
-import { formatMonthYear } from '@/utils/formatting';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useServerDataGrid } from '@/hooks/useServerDataGrid';
-import { BooksService, type BookResponse } from '@/api';
-import { useDialogs } from '@/hooks/useDialogs/useDialogs';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PageContainer from '@/components/PageContainer';
-import SortDialog, { type SortOption } from '@/components/SortDialog';
-import StandardDataGrid from '@/components/StandardDataGrid';
 
 const BOOK_SORT_OPTIONS: SortOption[] = [
   { field: 'author', label: 'Author' },
   { field: 'title', label: 'Title' },
+  { field: 'isbn13', label: 'ISBN-13' },
+  { field: 'isbn10', label: 'ISBN-10' },
+  { field: 'amazonEbookAsin', label: 'Amazon ASIN' },
   { field: 'publicationDate', label: 'Publication Date' },
   { field: 'seriesName', label: 'Series Name' },
   { field: 'seriesPosition', label: 'Series Position' },
-  { field: 'distributorAuthorRoyaltyRate', label: 'Distributor Royalty' },
-  { field: 'handsoldAuthorRoyaltyRate', label: 'Handsold Royalty' },
+  { field: 'totalSalesToDate', label: 'Total Sales' },
 ];
 
 const BOOK_DEFAULT_SORT: GridSortModel = [
@@ -173,6 +175,12 @@ export default function BookList() {
       { field: 'title', headerName: 'Title', width: 200 },
       { field: 'author', headerName: 'Author', width: 180 },
       { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
+      { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
+      {
+        field: 'amazonEbookAsin',
+        headerName: 'Amazon ASIN',
+        width: 130,
+      },
       {
         field: 'seriesPosition',
         headerName: 'Series',
