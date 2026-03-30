@@ -6,21 +6,23 @@ import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.books.BookService;
 import edu.duke.bookpublishing.currency.CurrencyService;
+import edu.duke.bookpublishing.exception.custom.AmbiguousLookupException;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AllTimeTotals;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
-import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
-import edu.duke.bookpublishing.sales.dto.IngramImportResponse;
 import edu.duke.bookpublishing.sales.dto.QuarterSection;
 import edu.duke.bookpublishing.sales.dto.ReportBookRow;
 import edu.duke.bookpublishing.sales.dto.RoyaltyReportResponse;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SaleResponse;
+import edu.duke.bookpublishing.sales.dto.SalesImportRequest;
+import edu.duke.bookpublishing.sales.dto.SalesImportResponse;
 import edu.duke.bookpublishing.sales.enums.Currency;
 import edu.duke.bookpublishing.sales.enums.SaleDistributor;
 import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
+import edu.duke.bookpublishing.sales.parser.AmazonXlsxEntry;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
@@ -28,6 +30,7 @@ import edu.duke.bookpublishing.sales.parser.ParsingError;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -60,6 +63,7 @@ public class SaleService {
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
   private final ImportParser<IngramCsvEntry> ingramCsvParser;
+  private final ImportParser<AmazonXlsxEntry> amazonXlsxParser;
   private final AuthorRepository authorRepository;
   private final CurrencyService currencyService;
 
@@ -505,47 +509,128 @@ public class SaleService {
         .build();
   }
 
-  // CSV Import
   @Transactional
-  public IngramImportResponse importSalesFromCsv(IngramImportRequest ingramImportRequest) {
+  public SalesImportResponse importSales(SalesImportRequest salesImportRequest) {
+    MultipartFile file = salesImportRequest.importFile();
+    String contentType = file.getContentType() == null ? "" : file.getContentType();
+    String filename = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
 
-    ParsedBatch<IngramCsvEntry> parsedBatch = ingramCsvParser.parse(ingramImportRequest.csvFile());
+    if (ingramCsvParser.supports(contentType, filename)) {
+      return importIngramCsv(salesImportRequest);
+    }
+    if (amazonXlsxParser.supports(contentType, filename)) {
+      return importAmazonXlsx(salesImportRequest);
+    }
 
-    List<IngramCsvEntry> rows = parsedBatch.records();
-    List<ParsingError> csvErrors = parsedBatch.parsingErrors();
+    return new SalesImportResponse(
+        List.of(),
+        List.of(new ParsingError(0, null, "import.file.unsupportedType")),
+        List.of(),
+        List.of());
+  }
 
-    if (!csvErrors.isEmpty()) {
-      return new IngramImportResponse(List.of(), csvErrors, List.of());
+  private SalesImportResponse importIngramCsv(SalesImportRequest salesImportRequest) {
+    List<ParsingError> requiredDateErrors = new ArrayList<>();
+    if (salesImportRequest.saleMonth() == null) {
+      requiredDateErrors.add(new ParsingError(0, null, "saleMonth.isRequired"));
+    }
+    if (salesImportRequest.saleYear() == null) {
+      requiredDateErrors.add(new ParsingError(0, null, "year.isRequired"));
+    }
+
+    if (!requiredDateErrors.isEmpty()) {
+      return new SalesImportResponse(List.of(), List.of(), requiredDateErrors, List.of());
+    }
+
+    ParsedBatch<IngramCsvEntry> parsedBatch =
+        ingramCsvParser.parse(salesImportRequest.importFile());
+    List<ParsingError> parseErrors = parsedBatch.parsingErrors();
+
+    if (!parseErrors.isEmpty()) {
+      return new SalesImportResponse(List.of(), parseErrors, List.of(), List.of());
     }
 
     List<Sale> sales = new ArrayList<>();
-    List<ParsingError> domainErrors = new ArrayList<>();
+    List<ParsingError> validationErrors = new ArrayList<>();
 
     int rowNum = 0;
-    for (IngramCsvEntry csvEntry : rows) {
+    for (IngramCsvEntry csvEntry : parsedBatch.records()) {
       rowNum++;
       try {
-        Sale sale = mapIngramCsvRowToSale(ingramImportRequest, parsedBatch, csvEntry);
+        Sale sale = mapIngramCsvRowToSale(salesImportRequest, parsedBatch, csvEntry);
         sales.add(sale);
       } catch (NotFoundException e) {
-        domainErrors.add(new ParsingError(rowNum, null, "book.notFound"));
+        validationErrors.add(new ParsingError(rowNum, null, "book.notFound"));
       } catch (RuntimeException e) {
-        domainErrors.add(new ParsingError(rowNum, null, "sale.mappingFailed"));
+        validationErrors.add(new ParsingError(rowNum, null, "sale.mappingFailed"));
       }
     }
 
-    if (!domainErrors.isEmpty()) {
-      return new IngramImportResponse(List.of(), List.of(), domainErrors);
+    if (!validationErrors.isEmpty()) {
+      return new SalesImportResponse(List.of(), List.of(), validationErrors, List.of());
     }
 
-    // Save if not preview
-    if (!ingramImportRequest.isPreview()) {
+    if (!salesImportRequest.isPreview()) {
       saveSalesToRepo(sales);
     }
 
     List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
+    return new SalesImportResponse(saleResponses, List.of(), List.of(), List.of());
+  }
 
-    return new IngramImportResponse(saleResponses, List.of(), List.of());
+  private SalesImportResponse importAmazonXlsx(SalesImportRequest salesImportRequest) {
+    ParsedBatch<AmazonXlsxEntry> parsedBatch =
+        amazonXlsxParser.parse(salesImportRequest.importFile());
+    List<ParsingError> parseErrors = parsedBatch.parsingErrors();
+
+    if (!parseErrors.isEmpty()) {
+      return new SalesImportResponse(
+          List.of(), parseErrors, List.of(), parsedBatch.parsingWarnings());
+    }
+
+    List<Sale> sales = new ArrayList<>();
+    List<ParsingError> validationErrors = new ArrayList<>();
+
+    for (AmazonXlsxEntry row : parsedBatch.records()) {
+      try {
+        Sale sale =
+            mapAmazonXlsxRowToSale(salesImportRequest.importFile(), parsedBatch.timestamp(), row);
+        sales.add(sale);
+      } catch (AmbiguousLookupException e) {
+        validationErrors.add(
+            new ParsingError(
+                row.sourceRowNumber(), null, "book.asin.multipleMatches", row.sheetName()));
+      } catch (NotFoundException e) {
+        validationErrors.add(
+            new ParsingError(row.sourceRowNumber(), null, "book.notFound", row.sheetName()));
+      } catch (RuntimeException e) {
+        validationErrors.add(
+            new ParsingError(row.sourceRowNumber(), null, "sale.mappingFailed", row.sheetName()));
+      }
+    }
+
+    if (!validationErrors.isEmpty()) {
+      return new SalesImportResponse(
+          List.of(), List.of(), validationErrors, parsedBatch.parsingWarnings());
+    }
+
+    if (!salesImportRequest.isPreview()
+        && !parsedBatch.parsingWarnings().isEmpty()
+        && !Boolean.TRUE.equals(salesImportRequest.acknowledgeWarnings())) {
+      return new SalesImportResponse(
+          List.of(),
+          List.of(),
+          List.of(new ParsingError(0, null, "import.warnings.mustAcknowledge")),
+          parsedBatch.parsingWarnings());
+    }
+
+    if (!salesImportRequest.isPreview()) {
+      saveSalesToRepo(sales);
+    }
+
+    List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
+    return new SalesImportResponse(
+        saleResponses, List.of(), List.of(), parsedBatch.parsingWarnings());
   }
 
   private Sale getOrThrowSaleFromRepoById(Long id) {
@@ -588,7 +673,7 @@ public class SaleService {
   }
 
   private Sale mapIngramCsvRowToSale(
-      IngramImportRequest ingramImportRequest,
+      SalesImportRequest salesImportRequest,
       ParsedBatch<IngramCsvEntry> parsedBatch,
       IngramCsvEntry ingramCsvEntry) {
 
@@ -605,8 +690,8 @@ public class SaleService {
         .saleSource(SaleSource.DISTRIBUTOR)
         .distributor(SaleDistributor.INGRAM_SPARK)
         .format(resolveIngramFormat(ingramCsvEntry.getFormat()))
-        .saleMonth(ingramImportRequest.saleMonth())
-        .saleYear(ingramImportRequest.saleYear())
+        .saleMonth(salesImportRequest.saleMonth())
+        .saleYear(salesImportRequest.saleYear())
         .book(book)
         .quantitySold(Math.toIntExact(ingramCsvEntry.getNetQty()))
         .saleCurrency(Currency.USD) // CSV Import is always USD Value
@@ -614,18 +699,65 @@ public class SaleService {
         .publisherRevenue(ingramCsvEntry.getNetCompensation())
         .authorRoyalty(authorRoyalty)
         .hasAuthorBeenPaid(false)
-        .comment(getCommentFromCSV(ingramImportRequest.csvFile(), parsedBatch, ingramCsvEntry))
+        .comment(getCommentFromCSV(salesImportRequest.importFile(), parsedBatch, ingramCsvEntry))
+        .build();
+  }
+
+  private Sale mapAmazonXlsxRowToSale(
+      MultipartFile file, LocalDateTime parsedTimestamp, AmazonXlsxEntry row) {
+    Book book =
+        (row.format() == SaleFormat.PRINT
+                ? bookService.findBookByIsbn(row.isbn())
+                : bookService.findBookByAmazonEbookAsin(row.asin()))
+            .orElseThrow(() -> new NotFoundException("Book not found"));
+
+    BigDecimal publisherRevenueUsd = convertToUsd(row.currency(), row.royalty());
+    BigDecimal authorRoyaltyRate = SaleSource.DISTRIBUTOR.getRoyaltyRate(book);
+    BigDecimal authorRoyalty = computeAuthorRoyalty(publisherRevenueUsd, authorRoyaltyRate);
+
+    return Sale.builder()
+        .saleSource(SaleSource.DISTRIBUTOR)
+        .distributor(SaleDistributor.AMAZON)
+        .format(row.format())
+        .saleMonth(row.saleMonth())
+        .saleYear(row.saleYear())
+        .book(book)
+        .quantitySold(row.quantitySold())
+        .kenp(row.kenp())
+        .saleCurrency(row.currency())
+        .originalPublisherRevenue(row.royalty())
+        .publisherRevenue(publisherRevenueUsd)
+        .authorRoyalty(authorRoyalty)
+        .hasAuthorBeenPaid(false)
+        .comment(getCommentFromAmazon(file, parsedTimestamp, row))
         .build();
   }
 
   private String getCommentFromCSV(
       MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
-    return String.format(
-        "Ingram: Format='%s' Market='%s' File='%s' (%s)",
-        ingramCsvEntry.getFormat(),
-        ingramCsvEntry.getSalesMarket(),
-        file.getOriginalFilename() != null ? file.getOriginalFilename() : "unknown",
-        parsedBatch.timestamp());
+    String comment =
+        String.format(
+            "Ingram: Format='%s' Market='%s' File='%s' (%s)",
+            ImportParser.truncateField(ingramCsvEntry.getFormat(), ImportParser.MAX_FORMAT_LENGTH),
+            ImportParser.truncateField(
+                ingramCsvEntry.getSalesMarket(), ImportParser.MAX_MARKET_LENGTH),
+            ImportParser.truncateField(
+                file.getOriginalFilename(), ImportParser.MAX_FILENAME_LENGTH),
+            ImportParser.formatCommentTimestamp(parsedBatch.timestamp()));
+    return ImportParser.truncateComment(comment);
+  }
+
+  private String getCommentFromAmazon(
+      MultipartFile file, LocalDateTime parsedTimestamp, AmazonXlsxEntry row) {
+    String comment =
+        String.format(
+            "Amazon: Market='%s' File='%s' Sheet='%s' (%s)",
+            ImportParser.truncateField(row.marketplace(), ImportParser.MAX_MARKET_LENGTH),
+            ImportParser.truncateField(
+                file.getOriginalFilename(), ImportParser.MAX_FILENAME_LENGTH),
+            ImportParser.truncateField(row.sheetName(), ImportParser.MAX_SHEET_LENGTH),
+            ImportParser.formatCommentTimestamp(parsedTimestamp));
+    return ImportParser.truncateComment(comment);
   }
 
   private void saveSalesToRepo(List<Sale> sales) {

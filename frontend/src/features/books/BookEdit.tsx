@@ -214,6 +214,7 @@ export default function BookEdit() {
         seriesPosition: formValues.seriesPosition ?? undefined,
         coverPrice: formValues.coverPrice ?? 0,
         printCost: formValues.printCost ?? 0,
+        amazonEbookAsin: formValues.amazonEbookAsin ?? undefined,
       };
       const updatedData = await BooksService.updateBook(Number(bookId), request);
       setBook(updatedData);

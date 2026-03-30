@@ -26,6 +26,7 @@ public record BookDetailResponse(
     @Schema(description = "Series position") Integer seriesPosition,
     @Schema(description = "Cover price (USD)", requiredMode = REQUIRED) BigDecimal coverPrice,
     @Schema(description = "Print cost (USD)", requiredMode = REQUIRED) BigDecimal printCost,
+    @Schema(description = "Amazon Ebook ASIN") String amazonEbookAsin,
     @Schema(description = "Total sales quantity to date", requiredMode = REQUIRED)
         Long totalSalesToDate,
     @Schema(description = "Total publisher revenue earned from this book", requiredMode = REQUIRED)
@@ -57,6 +58,7 @@ public record BookDetailResponse(
         book.getSeriesPosition(),
         book.getCoverPrice(),
         book.getPrintCost(),
+        book.getAmazonEbookAsin(),
         financialSummary.totalUnitsSold(),
         financialSummary.revenue(),
         financialSummary.unpaidRoyalty(),

@@ -2,8 +2,6 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-import type { IngramImportRequest } from '../models/IngramImportRequest';
-import type { IngramImportResponse } from '../models/IngramImportResponse';
 import type { MarkAllPaidRequest } from '../models/MarkAllPaidRequest';
 import type { MarkAllPaidResponse } from '../models/MarkAllPaidResponse';
 import type { PagedResponseAuthorPaymentGroupResponse } from '../models/PagedResponseAuthorPaymentGroupResponse';
@@ -11,6 +9,8 @@ import type { PagedResponseSaleResponse } from '../models/PagedResponseSaleRespo
 import type { RoyaltyReportResponse } from '../models/RoyaltyReportResponse';
 import type { SaleRequest } from '../models/SaleRequest';
 import type { SaleResponse } from '../models/SaleResponse';
+import type { SalesImportRequest } from '../models/SalesImportRequest';
+import type { SalesImportResponse } from '../models/SalesImportResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -152,12 +152,12 @@ export class SalesService {
     /**
      * Imports or previews a CSV file
      * @param formData
-     * @returns IngramImportResponse OK
+     * @returns SalesImportResponse OK
      * @throws ApiError
      */
     public static importCsv(
-        formData?: IngramImportRequest,
-    ): CancelablePromise<IngramImportResponse> {
+        formData?: SalesImportRequest,
+    ): CancelablePromise<SalesImportResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sales/import',

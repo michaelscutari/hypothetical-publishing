@@ -7,7 +7,11 @@ import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
+import FormControl from '@mui/material/FormControl';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import Paper from '@mui/material/Paper';
+import Radio from '@mui/material/Radio';
+import RadioGroup from '@mui/material/RadioGroup';
 import Stack from '@mui/material/Stack';
 import Table from '@mui/material/Table';
 import TableBody from '@mui/material/TableBody';
@@ -23,27 +27,37 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  SalesService,
-  type IngramImportResponse,
-  type ParsingError,
-  type SaleResponse,
-} from '@/api';
+import { SalesService, type ParsingError, type SaleResponse } from '@/api';
+import PageContainer from '@/components/PageContainer';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PageContainer from '@/components/PageContainer';
 
 type ErrorState = {
-  csvErrors: ParsingError[];
-  savingErrors: ParsingError[];
+  parseErrors: ParsingError[];
+  validationErrors: ParsingError[];
+  warnings: ParsingError[];
+};
+
+type ImportMode = 'csv' | 'xlsx';
+
+type SalesImportResponseShape = {
+  savedSales?: SaleResponse[];
+  parseErrors?: ParsingError[];
+  validationErrors?: ParsingError[];
+  warnings?: ParsingError[];
+  csvErrors?: ParsingError[];
+  savingErrors?: ParsingError[];
 };
 
 const ERROR_MESSAGE_MAP: Record<string, string> = {
   'sale.mappingFailed':
-    'This row could not be converted to a sale. Check ISBN, quantities, and compensation',
+    'This row could not be converted to a sale. Check ISBN/ASIN and numeric values.',
   'book.notFound': 'Book does not exist on the website catalog',
+  'book.asin.multipleMatches':
+    'Multiple books share this ASIN. Update catalog so each ASIN maps to one book.',
   'isbn.isRequired': 'ISBN is required',
+  'asin.isRequired': 'ASIN is required',
   'title.isRequired': 'Title is required',
   'author.invalidFormat': 'Author must be in "Last, First" format',
   'format.isRequired': 'Format is required',
@@ -53,17 +67,21 @@ const ERROR_MESSAGE_MAP: Record<string, string> = {
   'netCompensation.mustBeGreaterThanZero': 'Net Compensation must be greater than 0',
   'netCompensation.isRequired': 'Net Compensation is required',
   'salesMarket.isRequired': 'Sales Market is required',
-  'returnedQty.mustBeZero': 'Returned Qty must be 0 for Ingram imports',
-  'grossQty.mustEqual.netQty': 'Gross Qty must equal Net Qty',
+  'returnedQty.mustBeZero': 'Units Refunded must be 0',
+  'grossQty.mustEqual.netQty': 'Units Sold must equal Net Units Sold',
+  'import.file.unsupportedType': 'Only CSV and Amazon XLSX files are supported.',
+  'import.warnings.mustAcknowledge': 'Please review warnings before commit.',
 };
 
 const getFriendlyErrorMessage = (error: ParsingError) => {
   const rawMessage = error.errorMessage?.trim();
   if (!rawMessage) return 'Unknown error.';
+
   const mapped = ERROR_MESSAGE_MAP[rawMessage];
   if (mapped) return mapped;
+
   if (rawMessage.startsWith('Failed to read file:')) {
-    return 'Unable to read the CSV file. Please re-export it and try again.';
+    return 'Unable to read the file. Please re-export it and try again.';
   }
   if (/numberformat|for input string/i.test(rawMessage)) {
     return 'One of the numeric fields has an invalid value.';
@@ -71,25 +89,31 @@ const getFriendlyErrorMessage = (error: ParsingError) => {
   return rawMessage;
 };
 
+const asResponse = (response: unknown): SalesImportResponseShape =>
+  response as SalesImportResponseShape;
+
 export default function SaleImport() {
   const navigate = useNavigate();
   const notifications = useNotifications();
   const fileInputId = React.useId();
 
+  const [importMode, setImportMode] = React.useState<ImportMode>('csv');
   const [saleDate, setSaleDate] = React.useState<Dayjs | null>(null);
   const [csvFile, setCsvFile] = React.useState<File | null>(null);
   const [validationError, setValidationError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
   const [errorState, setErrorState] = React.useState<ErrorState>({
-    csvErrors: [],
-    savingErrors: [],
+    parseErrors: [],
+    validationErrors: [],
+    warnings: [],
   });
   const [isErrorDialogOpen, setIsErrorDialogOpen] = React.useState(false);
   const [previewSales, setPreviewSales] = React.useState<SaleResponse[]>([]);
+  const [previewWarnings, setPreviewWarnings] = React.useState<ParsingError[]>([]);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = React.useState(false);
 
-  const hasErrors = errorState.csvErrors.length > 0 || errorState.savingErrors.length > 0;
+  const hasErrors = errorState.parseErrors.length > 0 || errorState.validationErrors.length > 0;
 
   const handleBack = React.useCallback(() => {
     navigate('/sales');
@@ -102,37 +126,87 @@ export default function SaleImport() {
     event.currentTarget.value = '';
   }, []);
 
+  const handleImportModeChange = React.useCallback(
+    (_event: React.ChangeEvent<HTMLInputElement>, nextMode: string) => {
+      if (nextMode !== 'csv' && nextMode !== 'xlsx') {
+        return;
+      }
+      setImportMode(nextMode);
+      setCsvFile(null);
+      setSaleDate(null);
+      setValidationError(null);
+    },
+    [],
+  );
+
+  const acceptedFileTypes =
+    importMode === 'csv'
+      ? '.csv,text/csv'
+      : '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
   const buildRequest = React.useCallback(
-    (isPreview: boolean) => {
-      if (!saleDate || !csvFile) return null;
+    (isPreview: boolean, acknowledgeWarnings = false) => {
+      if (!csvFile) return null;
       return {
-        saleMonth: saleDate.month() + 1,
-        saleYear: saleDate.year(),
+        saleMonth: saleDate ? saleDate.month() + 1 : undefined,
+        saleYear: saleDate ? saleDate.year() : undefined,
+        importFile: csvFile,
+        // Keep legacy key during transition until frontend API client is regenerated.
         csvFile,
         isPreview,
+        acknowledgeWarnings,
       };
     },
     [csvFile, saleDate],
   );
 
-  const handleResponse = React.useCallback((response: IngramImportResponse) => {
-    const csvErrors = response.csvErrors ?? [];
-    const savingErrors = response.savingErrors ?? [];
-    if (csvErrors.length > 0 || savingErrors.length > 0) {
-      setErrorState({ csvErrors, savingErrors });
-      setIsErrorDialogOpen(true);
-      return false;
-    }
-    const sales = response.savedSales ?? [];
-    setPreviewSales(sales);
-    setIsPreviewDialogOpen(true);
-    return true;
+  const normalizeErrors = React.useCallback((response: SalesImportResponseShape) => {
+    const parseErrors = response.parseErrors ?? response.csvErrors ?? [];
+    const validationErrors = response.validationErrors ?? response.savingErrors ?? [];
+    const warnings = response.warnings ?? [];
+    return { parseErrors, validationErrors, warnings };
   }, []);
+
+  const handleResponse = React.useCallback(
+    (response: SalesImportResponseShape) => {
+      const { parseErrors, validationErrors, warnings } = normalizeErrors(response);
+      if (parseErrors.length > 0 || validationErrors.length > 0) {
+        setErrorState({ parseErrors, validationErrors, warnings });
+        setIsErrorDialogOpen(true);
+        return false;
+      }
+      const sales = response.savedSales ?? [];
+      setPreviewWarnings(warnings);
+      setPreviewSales(sales);
+      setIsPreviewDialogOpen(true);
+      return true;
+    },
+    [normalizeErrors],
+  );
 
   const handlePreview = React.useCallback(async () => {
     setValidationError(null);
-    if (!saleDate || !csvFile) {
-      setValidationError('Please choose a month/year and a CSV file.');
+    const fileName = csvFile?.name.toLowerCase() ?? '';
+    const isCsvFile = fileName.endsWith('.csv');
+    const isXlsxFile = fileName.endsWith('.xlsx');
+
+    if (!csvFile) {
+      setValidationError('Please choose a file to import.');
+      return;
+    }
+
+    if (importMode === 'csv' && !isCsvFile) {
+      setValidationError('Import mode is CSV, so please upload a .csv file.');
+      return;
+    }
+
+    if (importMode === 'xlsx' && !isXlsxFile) {
+      setValidationError('Import mode is Amazon XLSX, so please upload a .xlsx file.');
+      return;
+    }
+
+    if (importMode === 'csv' && !saleDate) {
+      setValidationError('CSV imports require a Sale Month/Year.');
       return;
     }
 
@@ -141,28 +215,27 @@ export default function SaleImport() {
 
     setIsSubmitting(true);
     try {
-      const response = await SalesService.importCsv(payload);
+      const response = asResponse(await SalesService.importCsv(payload));
       handleResponse(response);
     } catch (error) {
       setValidationError(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
-  }, [buildRequest, csvFile, handleResponse, saleDate]);
+  }, [buildRequest, csvFile, handleResponse, importMode, saleDate]);
 
   const handleCommit = React.useCallback(async () => {
-    const payload = buildRequest(false);
+    const payload = buildRequest(false, true);
     if (!payload) return;
 
     setIsSubmitting(true);
     try {
-      const response = await SalesService.importCsv(payload);
-      const csvErrors = response.csvErrors ?? [];
-      const savingErrors = response.savingErrors ?? [];
+      const response = asResponse(await SalesService.importCsv(payload));
+      const { parseErrors, validationErrors, warnings } = normalizeErrors(response);
 
-      if (csvErrors.length > 0 || savingErrors.length > 0) {
+      if (parseErrors.length > 0 || validationErrors.length > 0) {
         setIsPreviewDialogOpen(false);
-        setErrorState({ csvErrors, savingErrors });
+        setErrorState({ parseErrors, validationErrors, warnings });
         setIsErrorDialogOpen(true);
         return;
       }
@@ -178,10 +251,10 @@ export default function SaleImport() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [buildRequest, navigate, notifications]);
+  }, [buildRequest, navigate, normalizeErrors, notifications]);
 
-  const renderErrorTable = React.useCallback((title: string, errors: ParsingError[]) => {
-    if (errors.length === 0) return null;
+  const renderIssueTable = React.useCallback((title: string, issues: ParsingError[]) => {
+    if (issues.length === 0) return null;
     return (
       <Box>
         <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1 }}>
@@ -191,14 +264,17 @@ export default function SaleImport() {
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell width={90}>Row</TableCell>
+                <TableCell width={130}>Sheet/Row</TableCell>
                 <TableCell width={240}>Message</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {errors.map((error, index) => (
+              {issues.map((error, index) => (
                 <TableRow key={`${title}-${index}`}>
-                  <TableCell>{error.rowNumber ?? '-'}</TableCell>
+                  <TableCell>
+                    {error.sheetName ? `${error.sheetName} / ` : ''}
+                    {error.rowNumber ?? '-'}
+                  </TableCell>
                   <TableCell>{getFriendlyErrorMessage(error)}</TableCell>
                 </TableRow>
               ))}
@@ -211,7 +287,7 @@ export default function SaleImport() {
 
   return (
     <PageContainer
-      breadcrumbs={[{ title: 'Sales Records', path: '/sales' }, { title: 'Import CSV' }]}
+      breadcrumbs={[{ title: 'Sales Records', path: '/sales' }, { title: 'Import Sales File' }]}
       actions={
         <Button variant="text" startIcon={<ArrowBackIcon />} onClick={handleBack}>
           Back to Sales
@@ -221,10 +297,17 @@ export default function SaleImport() {
       <Stack spacing={2}>
         <Paper sx={{ p: 3 }} variant="outlined">
           <Stack spacing={2}>
-            <Typography variant="h5">Import Ingram CSV</Typography>
+            <Typography variant="h5">Import Sales File</Typography>
             <Typography variant="body2" color="text.secondary">
-              Upload a CSV and preview the sales before committing them to the repository.
+              Upload a sales file (CSV or Amazon XLSX) and preview before committing.
             </Typography>
+
+            <FormControl>
+              <RadioGroup row value={importMode} onChange={handleImportModeChange}>
+                <FormControlLabel value="csv" control={<Radio />} label="CSV Import" />
+                <FormControlLabel value="xlsx" control={<Radio />} label="Amazon XLSX Import" />
+              </RadioGroup>
+            </FormControl>
 
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems="center">
               <Button
@@ -235,12 +318,12 @@ export default function SaleImport() {
                 size="small"
                 sx={{ height: 40, minWidth: 140 }}
               >
-                Choose CSV
+                Choose File
               </Button>
               <input
                 id={fileInputId}
                 type="file"
-                accept=".csv,text/csv"
+                accept={acceptedFileTypes}
                 hidden
                 onChange={handleFileChange}
               />
@@ -253,27 +336,29 @@ export default function SaleImport() {
                 placeholder="No file selected"
               />
 
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Sale Month/Year"
-                  value={saleDate}
-                  onChange={(v) => setSaleDate(v)}
-                  views={['year', 'month']}
-                  format="MM/YYYY"
-                  openTo="year"
-                  minDate={dayjs('1900-01-01')}
-                  maxDate={dayjs()}
-                  slotProps={{
-                    textField: {
-                      size: 'small',
-                      placeholder: 'MM/YYYY',
-                      InputLabelProps: { shrink: true },
-                    },
-                    toolbar: { hidden: true },
-                    field: { clearable: true },
-                  }}
-                />
-              </LocalizationProvider>
+              {importMode === 'csv' ? (
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Sale Month/Year"
+                    value={saleDate}
+                    onChange={(v) => setSaleDate(v)}
+                    views={['year', 'month']}
+                    format="MM/YYYY"
+                    openTo="year"
+                    minDate={dayjs('1900-01-01')}
+                    maxDate={dayjs()}
+                    slotProps={{
+                      textField: {
+                        size: 'small',
+                        placeholder: 'MM/YYYY',
+                        InputLabelProps: { shrink: true },
+                      },
+                      toolbar: { hidden: true },
+                      field: { clearable: true },
+                    }}
+                  />
+                </LocalizationProvider>
+              ) : null}
             </Stack>
 
             {validationError && !isPreviewDialogOpen ? (
@@ -295,14 +380,15 @@ export default function SaleImport() {
         maxWidth="md"
         fullWidth
       >
-        <DialogTitle>Import Errors</DialogTitle>
+        <DialogTitle>Import Issues</DialogTitle>
         <DialogContent dividers>
           <Stack spacing={3}>
             <Typography variant="body2" color="text.secondary">
               Fix the issues below and try the import again.
             </Typography>
-            {renderErrorTable('CSV Parsing Errors', errorState.csvErrors)}
-            {renderErrorTable('Data Integrity Errors', errorState.savingErrors)}
+            {renderIssueTable('Parse Errors', errorState.parseErrors)}
+            {renderIssueTable('Validation Errors', errorState.validationErrors)}
+            {renderIssueTable('Warnings', errorState.warnings)}
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -322,6 +408,12 @@ export default function SaleImport() {
             <Typography variant="body2" color="text.secondary">
               Review the sales below. Confirm to import {previewSales.length} records.
             </Typography>
+            {previewWarnings.length > 0 ? (
+              <Alert severity="warning">
+                This import contains {previewWarnings.length} warning(s). Unsupported rows will be
+                ignored.
+              </Alert>
+            ) : null}
             {validationError ? <Alert severity="error">{validationError}</Alert> : null}
             <TableContainer component={Paper} variant="outlined" sx={{ maxHeight: 480 }}>
               <Table stickyHeader size="small">
