@@ -50,7 +50,7 @@ export function validateBook(book: Partial<BookResponse>): ValidationResult {
       issues = [
         ...issues,
         {
-          message: 'Distributor royalty rate must be between 0 and 1',
+          message: 'Distributor royalty rate must be between 0% and 100%',
           path: ['distributorAuthorRoyaltyRate'],
         },
       ];
@@ -63,7 +63,7 @@ export function validateBook(book: Partial<BookResponse>): ValidationResult {
       issues = [
         ...issues,
         {
-          message: 'Handsold royalty rate must be between 0 and 1',
+          message: 'Handsold royalty rate must be between 0% and 100%',
           path: ['handsoldAuthorRoyaltyRate'],
         },
       ];
