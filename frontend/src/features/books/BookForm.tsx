@@ -261,7 +261,7 @@ export default function BookForm(props: BookFormProps) {
             <TextField
               value={formValues.amazonEbookAsin ?? ''}
               onChange={handleTextFieldChange}
-              name="asin"
+              name="amazonEbookAsin"
               label="Amazon Ebook ASIN"
               error={!!formErrors.amazonEbookAsin}
               helperText={formErrors.amazonEbookAsin ?? ' '}
