@@ -22,8 +22,9 @@ describe('saleImportErrorMessages', () => {
   });
 
   it('falls back to generic numeric parse message for raw parser exceptions', () => {
-    const message = getFriendlyErrorMessage({ errorMessage: 'NumberFormatException: For input string' });
+    const message = getFriendlyErrorMessage({
+      errorMessage: 'NumberFormatException: For input string',
+    });
     expect(message).toBe('One of the numeric fields has an invalid value.');
   });
 });
-

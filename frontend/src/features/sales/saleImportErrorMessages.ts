@@ -87,4 +87,3 @@ export const getFriendlyErrorMessage = (error: ParsingError) => {
   }
   return rawMessage;
 };
-
