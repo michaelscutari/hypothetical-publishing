@@ -1,3 +1,8 @@
+import { SalesService, type ParsingError, type SaleResponse } from '@/api';
+import PageContainer from '@/components/PageContainer';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { getErrorMessage } from '@/utils/error';
+import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import Alert from '@mui/material/Alert';
@@ -27,11 +32,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SalesService, type ParsingError, type SaleResponse } from '@/api';
-import PageContainer from '@/components/PageContainer';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import { getErrorMessage } from '@/utils/error';
-import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 
 type ErrorState = {
   parseErrors: ParsingError[];
@@ -70,23 +70,80 @@ const ERROR_MESSAGE_MAP: Record<string, string> = {
   'returnedQty.mustBeZero': 'Units Refunded must be 0',
   'grossQty.mustEqual.netQty': 'Units Sold must equal Net Units Sold',
   'import.file.unsupportedType': 'Only CSV and Amazon XLSX files are supported.',
+  'import.file.readFailed': 'Unable to read the Excel file. Please re-export it and try again.',
+  'import.file.invalidXlsx':
+    'The Excel file format is invalid. Please upload an Amazon royalty .xlsx export.',
+  'import.amazon.supportedSheetMissing':
+    'No supported Amazon royalty sheet was found. Use Paperback, Hardcover, eBook, or KENP.',
+  'import.amazon.header.missing':
+    'The expected header row is missing. Please use the original Amazon template.',
+  'import.amazon.salesPeriod.missing':
+    'Sales Period is missing from the sheet. Please use a complete Amazon export.',
+  'import.amazon.salesPeriod.invalid':
+    'Sales Period format is invalid. Expected a month and year such as "January 2026".',
+  'import.amazon.value.invalidCurrency':
+    'Currency code is invalid. Please use a valid 3-letter code such as USD.',
+  'import.amazon.kenp.unsupportedAsin':
+    'KENP row skipped because ASIN does not match a known ebook ASIN in the catalog.',
+  'import.amazon.audiobook.notSupported':
+    'Audiobook data is currently not imported and was ignored.',
+  'saleMonth.isRequired': 'Sale Month is required for CSV imports.',
+  'year.isRequired': 'Sale Year is required for CSV imports.',
   'import.warnings.mustAcknowledge': 'Please review warnings before commit.',
+};
+
+const ERROR_MESSAGE_PREFIX_MAP: Record<string, string> = {
+  'import.amazon.header.missingColumn:': 'A required column is missing from the sheet header.',
+  'import.amazon.value.required:':
+    'A required value is missing in this row. Please fill in all required numeric/text fields.',
+  'import.amazon.value.invalidInteger:':
+    'A whole-number field is invalid. Use an integer without symbols or text.',
+  'import.amazon.value.invalidDecimal:':
+    'A decimal field is invalid. Use a number like 12 or 12.34 without currency symbols.',
+};
+
+const ERROR_MESSAGE_PATTERN_MAP: Array<[RegExp, string]> = [
+  [
+    /(numberformat|for input string|java\.(math\.)?bigdecimal|failed conversion|failed to convert|type mismatch|cannot deserialize)/i,
+    'One or more numeric fields are invalid. In CSV/Excel, use plain numbers (for example, 12 or 12.34) without extra text or symbols.',
+  ],
+];
+
+const resolveFriendlyMessage = (rawMessage: string) => {
+  const mapped = ERROR_MESSAGE_MAP[rawMessage];
+  if (mapped) return mapped;
+
+  const prefixEntry = Object.entries(ERROR_MESSAGE_PREFIX_MAP).find(([prefix]) =>
+    rawMessage.startsWith(prefix),
+  );
+  if (prefixEntry) {
+    return prefixEntry[1];
+  }
+
+  const patternEntry = ERROR_MESSAGE_PATTERN_MAP.find(([pattern]) => pattern.test(rawMessage));
+  if (patternEntry) {
+    return patternEntry[1];
+  }
+
+  if (rawMessage.startsWith('Failed to read file:')) {
+    return 'Unable to read the file. Please re-export it and try again.';
+  }
+
+  return rawMessage;
 };
 
 const getFriendlyErrorMessage = (error: ParsingError) => {
   const rawMessage = error.errorMessage?.trim();
   if (!rawMessage) return 'Unknown error.';
 
-  const mapped = ERROR_MESSAGE_MAP[rawMessage];
-  if (mapped) return mapped;
+  return resolveFriendlyMessage(rawMessage);
+};
 
-  if (rawMessage.startsWith('Failed to read file:')) {
-    return 'Unable to read the file. Please re-export it and try again.';
-  }
-  if (/numberformat|for input string/i.test(rawMessage)) {
-    return 'One of the numeric fields has an invalid value.';
-  }
-  return rawMessage;
+const getFriendlyRequestErrorMessage = (error: unknown) => {
+  const rawMessage = getErrorMessage(error).trim();
+  if (!rawMessage) return 'Unable to import the file. Please try again.';
+
+  return resolveFriendlyMessage(rawMessage);
 };
 
 const asResponse = (response: unknown): SalesImportResponseShape =>
@@ -218,7 +275,7 @@ export default function SaleImport() {
       const response = asResponse(await SalesService.importCsv(payload));
       handleResponse(response);
     } catch (error) {
-      setValidationError(getErrorMessage(error));
+      setValidationError(getFriendlyRequestErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
@@ -247,7 +304,7 @@ export default function SaleImport() {
       });
       navigate('/sales');
     } catch (error) {
-      setValidationError(getErrorMessage(error));
+      setValidationError(getFriendlyRequestErrorMessage(error));
     } finally {
       setIsSubmitting(false);
     }
