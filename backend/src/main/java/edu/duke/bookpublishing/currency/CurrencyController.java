@@ -35,4 +35,3 @@ public class CurrencyController {
   public record CurrencyConversionResponse(
       @Schema(description = "Converted amount", example = "12.34") BigDecimal convertedAmount) {}
 }
-

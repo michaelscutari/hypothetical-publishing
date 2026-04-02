@@ -318,7 +318,9 @@ export default function SaleCreateRow({
           }}
           onFocus={() => onActivateRow(index)}
           getOptionLabel={(option) => {
-            const meta = [option.isbn13, option.isbn10, option.amazonEbookAsin].filter(Boolean).join(' • ');
+            const meta = [option.isbn13, option.isbn10, option.amazonEbookAsin]
+              .filter(Boolean)
+              .join(' • ');
             return `${option.title} - ${option.author}${meta ? ` (${meta})` : ''}`;
           }}
           isOptionEqualToValue={(option, value) => option.id === value.id}
