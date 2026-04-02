@@ -168,6 +168,31 @@ export default function SaleList() {
   const columns = React.useMemo<GridColDef<SaleResponse>[]>(
     () => [
       {
+        field: 'id',
+        headerName: 'Detail',
+        width: 90,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: (params) => (
+          <Link
+            to={`/sales/${params.row.id}`}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = 'underline';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = 'none';
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            View
+          </Link>
+        ),
+      },
+      {
         field: 'bookTitle',
         headerName: 'Book Title',
         flex: 1.5,
