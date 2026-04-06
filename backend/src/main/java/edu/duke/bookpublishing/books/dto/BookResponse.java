@@ -29,7 +29,12 @@ public record BookResponse(
         Long totalSalesToDate,
     @Schema(description = "Whether this book has a cover image", requiredMode = REQUIRED)
         Boolean hasCover,
-    @Schema(description = "Amazon ASIN number") String amazonEbookAsin) {
+    @Schema(description = "Amazon ASIN number") String amazonEbookAsin,
+    @Schema(description = "Whether this book has been released", requiredMode = REQUIRED)
+        Boolean released,
+    @Schema(description = "Kickstarter item tag for ebook edition") String kickstarterItemTagEbook,
+    @Schema(description = "Kickstarter item tag for print edition")
+        String kickstarterItemTagPrint) {
 
   public static BookResponse from(Book book) {
     return from(book, 0L);
@@ -53,6 +58,9 @@ public record BookResponse(
         book.getPrintCost(),
         totalSaleToDate,
         book.getCoverImage() != null,
-        book.getAmazonEbookAsin());
+        book.getAmazonEbookAsin(),
+        book.getReleased(),
+        book.getKickstarterItemTagEbook(),
+        book.getKickstarterItemTagPrint());
   }
 }

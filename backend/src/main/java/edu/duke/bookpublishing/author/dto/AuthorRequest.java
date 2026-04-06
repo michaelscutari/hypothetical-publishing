@@ -17,4 +17,6 @@ public record AuthorRequest(
             requiredMode = REQUIRED)
         @NotBlank(message = "Author email is required")
         @Email(message = "Must be a valid email address")
-        String email) {}
+        String email,
+    @Schema(description = "Paypal.me account name") String paypalAccount,
+    @Schema(description = "Venmo account name") String venmoAccount) {}

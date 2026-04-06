@@ -25,6 +25,12 @@ public class Author {
   @Email
   private String email;
 
+  @Column(name = "paypal_account")
+  private String paypalAccount;
+
+  @Column(name = "venmo_account")
+  private String venmoAccount;
+
   @Formula("(SELECT COUNT(DISTINCT b.id) FROM books b WHERE b.author_id = id)")
   private Long bookCount;
 
@@ -45,5 +51,17 @@ public class Author {
   public void normalizeFields() {
     name = StringUtils.normalizeWhitespace(name);
     email = StringUtils.normalizeWhitespace(email);
+    if (paypalAccount != null) {
+      paypalAccount = paypalAccount.trim();
+      if (paypalAccount.isEmpty()) {
+        paypalAccount = null;
+      }
+    }
+    if (venmoAccount != null) {
+      venmoAccount = venmoAccount.trim();
+      if (venmoAccount.isEmpty()) {
+        venmoAccount = null;
+      }
+    }
   }
 }

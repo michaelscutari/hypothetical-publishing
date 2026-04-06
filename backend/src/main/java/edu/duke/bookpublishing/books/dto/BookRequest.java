@@ -13,7 +13,9 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 @Schema(description = "Request body for creating or updating a book")
@@ -62,7 +64,18 @@ public record BookRequest(
         @NotNull(message = "Print cost is required")
         @DecimalMin("0.00")
         BigDecimal printCost,
-    @Schema(description = "Amazon ASIN Number") @ASIN String amazonEbookAsin) {
+    @Schema(description = "Amazon ASIN Number") @ASIN String amazonEbookAsin,
+    @Schema(description = "Whether this book has been released", requiredMode = REQUIRED)
+        @NotNull(message = "Released status is required")
+        Boolean released,
+    @Schema(description = "Kickstarter item tag for ebook edition")
+        @Pattern(regexp = "\\S+", message = "Kickstarter item tag must not contain whitespace")
+        @Size(max = 128)
+        String kickstarterItemTagEbook,
+    @Schema(description = "Kickstarter item tag for print edition")
+        @Pattern(regexp = "\\S+", message = "Kickstarter item tag must not contain whitespace")
+        @Size(max = 128)
+        String kickstarterItemTagPrint) {
 
   @Schema(hidden = true)
   @AssertTrue(message = "Cover price must be greater than print cost")

@@ -108,6 +108,16 @@ public class Book {
   @Column(name = "amazon_asin", length = 10)
   private String amazonEbookAsin;
 
+  @Column(nullable = false)
+  @Builder.Default
+  private Boolean released = true;
+
+  @Column(name = "kickstarter_item_tag_ebook", length = 128)
+  private String kickstarterItemTagEbook;
+
+  @Column(name = "kickstarter_item_tag_print", length = 128)
+  private String kickstarterItemTagPrint;
+
   @Formula("(SELECT COALESCE(SUM(s.quantity_sold), 0) FROM sales s WHERE s.book_id = id)")
   private Long totalSalesToDate;
 
@@ -137,6 +147,18 @@ public class Book {
       amazonEbookAsin = amazonEbookAsin.trim().toUpperCase();
       if (amazonEbookAsin.isEmpty()) {
         amazonEbookAsin = null;
+      }
+    }
+    if (kickstarterItemTagEbook != null) {
+      kickstarterItemTagEbook = kickstarterItemTagEbook.trim();
+      if (kickstarterItemTagEbook.isEmpty()) {
+        kickstarterItemTagEbook = null;
+      }
+    }
+    if (kickstarterItemTagPrint != null) {
+      kickstarterItemTagPrint = kickstarterItemTagPrint.trim();
+      if (kickstarterItemTagPrint.isEmpty()) {
+        kickstarterItemTagPrint = null;
       }
     }
   }
