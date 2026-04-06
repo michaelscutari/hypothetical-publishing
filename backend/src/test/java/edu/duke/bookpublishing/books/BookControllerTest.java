@@ -101,6 +101,9 @@ class BookControllerTest {
         null,
         new BigDecimal("20.00"),
         new BigDecimal("5.00"),
+        null,
+        true,
+        null,
         null);
   }
 
@@ -119,6 +122,9 @@ class BookControllerTest {
         seriesPosition,
         new BigDecimal("20.00"),
         new BigDecimal("5.00"),
+        null,
+        true,
+        null,
         null);
   }
 
@@ -156,6 +162,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc.perform(
@@ -254,6 +263,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc.perform(
@@ -492,7 +504,10 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
-            "B0ABC12345");
+            "B0ABC12345",
+            true,
+            null,
+            null);
 
     mockMvc
         .perform(
@@ -543,6 +558,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -572,6 +590,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -600,6 +621,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -628,6 +652,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -657,6 +684,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -681,6 +711,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -712,6 +745,9 @@ class BookControllerTest {
                 null,
                 new BigDecimal("20.00"),
                 new BigDecimal("5.00"),
+                null,
+                true,
+                null,
                 null));
 
     mockMvc
@@ -740,6 +776,9 @@ class BookControllerTest {
                 null,
                 new BigDecimal("20.00"),
                 new BigDecimal("5.00"),
+                null,
+                true,
+                null,
                 null));
 
     mockMvc
@@ -772,6 +811,9 @@ class BookControllerTest {
                 null,
                 new BigDecimal("20.00"),
                 new BigDecimal("5.00"),
+                null,
+                true,
+                null,
                 null));
 
     BookRequest updateRequest =
@@ -820,6 +862,9 @@ class BookControllerTest {
                 null,
                 new BigDecimal("20.00"),
                 new BigDecimal("5.00"),
+                null,
+                true,
+                null,
                 null));
 
     BookRequest updateRequest =
@@ -836,7 +881,10 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
-            "B0ABC12345");
+            "B0ABC12345",
+            true,
+            null,
+            null);
 
     mockMvc
         .perform(
@@ -868,7 +916,10 @@ class BookControllerTest {
                 null,
                 new BigDecimal("20.00"),
                 new BigDecimal("5.00"),
-                "B0ABC12345"));
+                "B0ABC12345",
+                true,
+                null,
+                null));
 
     BookRequest updateRequest =
         new BookRequest(
@@ -884,6 +935,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -917,6 +971,9 @@ class BookControllerTest {
                 null,
                 new BigDecimal("20.00"),
                 new BigDecimal("5.00"),
+                null,
+                true,
+                null,
                 null));
 
     BookRequest updateRequest =
@@ -933,7 +990,10 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
-            "BAD-ASIN");
+            "BAD-ASIN",
+            true,
+            null,
+            null);
 
     mockMvc
         .perform(
@@ -963,6 +1023,9 @@ class BookControllerTest {
                 null,
                 new BigDecimal("20.00"),
                 new BigDecimal("5.00"),
+                null,
+                true,
+                null,
                 null));
 
     mockMvc
@@ -1241,6 +1304,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -1269,6 +1335,9 @@ class BookControllerTest {
             3,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
@@ -1496,6 +1565,9 @@ class BookControllerTest {
             null,
             new BigDecimal("20.00"),
             new BigDecimal("5.00"),
+            null,
+            true,
+            null,
             null);
 
     mockMvc
