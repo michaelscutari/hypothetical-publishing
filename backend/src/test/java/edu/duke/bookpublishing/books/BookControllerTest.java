@@ -520,6 +520,28 @@ class BookControllerTest {
   }
 
   @Test
+  void createBookDefaultsReleasedToTrue() throws Exception {
+    Cookie token = login();
+    // Omit "released" from JSON to test the default
+    String json =
+        String.format(
+            """
+            {"title":"Default Released","authorId":%d,"isbn13":"9780743273565",\
+            "publicationYear":2020,"publicationMonth":1,\
+            "coverPrice":20.00,"printCost":5.00}""",
+            defaultAuthor.getId());
+
+    mockMvc
+        .perform(
+            post("/api/books")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json))
+        .andExpect(status().isCreated())
+        .andExpect(jsonPath("$.released").value(true));
+  }
+
+  @Test
   void createBookNormalizesAuthorWhitespace() throws Exception {
     Author authorWithSpaces = createAuthor("  Author   with   spaces  ");
     BookRequest request =
