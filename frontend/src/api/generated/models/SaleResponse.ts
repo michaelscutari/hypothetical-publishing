@@ -86,6 +86,7 @@ export namespace SaleResponse {
     export enum saleSource {
         DISTRIBUTOR = 'DISTRIBUTOR',
         HAND_SOLD = 'HAND_SOLD',
+        KICKSTARTER = 'KICKSTARTER',
     }
     /**
      * Distributor of the sale

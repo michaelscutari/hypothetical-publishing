@@ -14,5 +14,13 @@ export type AuthorRequest = {
      * Author email
      */
     email: string;
+    /**
+     * Paypal.me account name
+     */
+    paypalAccount?: string;
+    /**
+     * Venmo account name
+     */
+    venmoAccount?: string;
 };
 

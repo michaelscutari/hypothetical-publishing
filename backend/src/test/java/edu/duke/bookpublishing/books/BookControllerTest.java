@@ -533,10 +533,7 @@ class BookControllerTest {
 
     mockMvc
         .perform(
-            post("/api/books")
-                .cookie(token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json))
+            post("/api/books").cookie(token).contentType(MediaType.APPLICATION_JSON).content(json))
         .andExpect(status().isCreated())
         .andExpect(jsonPath("$.released").value(true));
   }
