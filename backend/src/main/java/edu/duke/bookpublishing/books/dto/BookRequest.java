@@ -65,9 +65,7 @@ public record BookRequest(
         @DecimalMin("0.00")
         BigDecimal printCost,
     @Schema(description = "Amazon ASIN Number") @ASIN String amazonEbookAsin,
-    @Schema(description = "Whether this book has been released", requiredMode = REQUIRED)
-        @NotNull(message = "Released status is required")
-        Boolean released,
+    @Schema(description = "Whether this book has been released") Boolean released,
     @Schema(description = "Kickstarter item tag for ebook edition")
         @Pattern(regexp = "\\S+", message = "Kickstarter item tag must not contain whitespace")
         @Size(max = 128)
@@ -76,6 +74,10 @@ public record BookRequest(
         @Pattern(regexp = "\\S+", message = "Kickstarter item tag must not contain whitespace")
         @Size(max = 128)
         String kickstarterItemTagPrint) {
+
+  public BookRequest {
+    if (released == null) released = true;
+  }
 
   @Schema(hidden = true)
   @AssertTrue(message = "Cover price must be greater than print cost")
