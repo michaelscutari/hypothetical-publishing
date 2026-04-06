@@ -46,7 +46,7 @@ public record BookRequest(
         @DecimalMin("0.0")
         @DecimalMax("1.0")
         BigDecimal distributorAuthorRoyaltyRate,
-    @Schema(description = "Handsold author royalty rate (0.0 to 1.0)", example = "0.20")
+    @Schema(description = "Handsold/Kickstarter author royalty rate (0.0 to 1.0)", example = "0.20")
         @DecimalMin("0.0")
         @DecimalMax("1.0")
         BigDecimal handsoldAuthorRoyaltyRate,

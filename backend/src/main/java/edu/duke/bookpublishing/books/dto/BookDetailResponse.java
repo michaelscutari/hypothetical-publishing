@@ -20,7 +20,7 @@ public record BookDetailResponse(
         Integer publicationMonth,
     @Schema(description = "Distributor author royalty rate", requiredMode = REQUIRED)
         BigDecimal distributorAuthorRoyaltyRate,
-    @Schema(description = "Handsold author royalty rate", requiredMode = REQUIRED)
+    @Schema(description = "Handsold/Kickstarter author royalty rate", requiredMode = REQUIRED)
         BigDecimal handsoldAuthorRoyaltyRate,
     @Schema(description = "Series name") String seriesName,
     @Schema(description = "Series position") Integer seriesPosition,

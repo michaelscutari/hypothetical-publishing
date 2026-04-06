@@ -31,7 +31,7 @@ public record SaleRequest(
         @NotNull(message = "Book is required")
         Long bookId,
     @Schema(
-            description = "Sale source (distributor or handsold)",
+            description = "Sale source (distributor, handsold, or kickstarter)",
             example = "distributor",
             requiredMode = REQUIRED)
         @NotNull(message = "Sale source is required")
@@ -105,16 +105,19 @@ public record SaleRequest(
   @Schema(hidden = true)
   public boolean isValidForSource() {
     if (saleSource == null) return true;
-    if (saleSource == SaleSource.HAND_SOLD) {
-      return distributor == null
-          && (format == null || format == SaleFormat.PRINT)
-          && publisherRevenue == null
-          && (saleCurrency == null || saleCurrency == Currency.USD);
+    if (saleSource.requiresDistributor()) {
+      return distributor != null
+          && publisherRevenue != null
+          && (format == null || distributor.allowsFormat(format));
     }
-    // DISTRIBUTOR
-    return distributor != null
-        && publisherRevenue != null
-        && (format == null || distributor.allowsFormat(format));
+    // HAND_SOLD / KICKSTARTER: no distributor, no revenue input, USD only
+    if (distributor != null || publisherRevenue != null) return false;
+    if (saleCurrency != null && saleCurrency != Currency.USD) return false;
+    if (format == null) return true;
+    if (saleSource == SaleSource.HAND_SOLD) return format == SaleFormat.PRINT;
+    if (saleSource == SaleSource.KICKSTARTER)
+      return format == SaleFormat.PRINT || format == SaleFormat.EBOOK;
+    return false;
   }
 
   @AssertTrue(

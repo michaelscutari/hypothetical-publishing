@@ -172,20 +172,18 @@ public class DataSeeder implements CommandLineRunner {
         int year = Integer.parseInt(dateParts[0]);
         int month = Integer.parseInt(dateParts[1]);
 
-        boolean isHandsold = saleSource == SaleSource.HAND_SOLD;
         boolean isKU = format == SaleFormat.KINDLE_UNLIMITED;
 
         BigDecimal originalRevenue;
-        if (isHandsold) {
+        if (saleSource.isRevenueComputed()) {
           int qty = qtySold != null ? qtySold : 0;
-          originalRevenue =
-              book.getCoverPrice().subtract(book.getPrintCost()).multiply(BigDecimal.valueOf(qty));
+          originalRevenue = saleSource.computeRevenue(book, qty);
         } else {
           originalRevenue = revenueStr != null ? new BigDecimal(revenueStr) : BigDecimal.ZERO;
         }
 
         BigDecimal publisherRevenueUsd;
-        if (currency == Currency.USD || isHandsold) {
+        if (currency == Currency.USD || saleSource.isRevenueComputed()) {
           publisherRevenueUsd = originalRevenue;
         } else {
           try {
@@ -199,10 +197,7 @@ public class DataSeeder implements CommandLineRunner {
           }
         }
 
-        BigDecimal authorRate =
-            isHandsold
-                ? book.getHandsoldAuthorRoyaltyRate()
-                : book.getDistributorAuthorRoyaltyRate();
+        BigDecimal authorRate = saleSource.getRoyaltyRate(book);
         BigDecimal authorRoyalty =
             publisherRevenueUsd.multiply(authorRate).setScale(2, RoundingMode.HALF_UP);
 
@@ -210,7 +205,7 @@ public class DataSeeder implements CommandLineRunner {
             Sale.builder()
                 .book(book)
                 .saleSource(saleSource)
-                .distributor(isHandsold ? null : distributor)
+                .distributor(saleSource.requiresDistributor() ? distributor : null)
                 .format(format)
                 .saleMonth(month)
                 .saleYear(year)
@@ -254,6 +249,9 @@ public class DataSeeder implements CommandLineRunner {
     if (value == null) return null;
     if ("handsold".equalsIgnoreCase(value) || "hand_sold".equalsIgnoreCase(value)) {
       return SaleSource.HAND_SOLD;
+    }
+    if ("kickstarter".equalsIgnoreCase(value)) {
+      return SaleSource.KICKSTARTER;
     }
     return SaleSource.DISTRIBUTOR;
   }
