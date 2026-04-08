@@ -137,13 +137,10 @@ export default function SaleShow() {
         );
 
         setSale(updatedSale);
-        notifications.show(
-          nextPaidState ? 'Sale marked as paid.' : 'Sale marked as unpaid.',
-          {
-            severity: 'success',
-            autoHideDuration: 3000,
-          },
-        );
+        notifications.show(nextPaidState ? 'Sale marked as paid.' : 'Sale marked as unpaid.', {
+          severity: 'success',
+          autoHideDuration: 3000,
+        });
       } catch (updateError) {
         notifications.show(
           `Failed to update payment status. Reason: ${getErrorMessage(updateError)}`,
@@ -325,7 +322,10 @@ export default function SaleShow() {
               >
                 Publisher Revenue {isDistributor && isNonUSD ? '(USD)' : ''}
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 500, color: 'primary.main', lineHeight: 1.15 }}>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 500, color: 'primary.main', lineHeight: 1.15 }}
+              >
                 {formatCurrency(Number(sale.publisherRevenue))}
               </Typography>
               {isDistributor && isNonUSD && (
@@ -345,7 +345,10 @@ export default function SaleShow() {
               >
                 Author Royalty
               </Typography>
-              <Typography variant="h3" sx={{ fontWeight: 500, color: 'secondary.main', lineHeight: 1.15 }}>
+              <Typography
+                variant="h3"
+                sx={{ fontWeight: 500, color: 'secondary.main', lineHeight: 1.15 }}
+              >
                 {formatCurrency(Number(sale.authorRoyalty))}
               </Typography>
             </Paper>
@@ -356,33 +359,39 @@ export default function SaleShow() {
 
         <Typography
           variant="overline"
-          sx={{ display: 'block', mb: 1.5, fontWeight: 700, color: 'text.secondary', letterSpacing: 1 }}
+          sx={{
+            display: 'block',
+            mb: 1.5,
+            fontWeight: 700,
+            color: 'text.secondary',
+            letterSpacing: 1,
+          }}
         >
           Additional Details
         </Typography>
 
         <Stack direction="row" spacing={1} sx={{ mb: 2, flexWrap: 'wrap', rowGap: 1 }}>
+          <Chip
+            size="small"
+            variant="outlined"
+            label={saleSourceLabel}
+            sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
+          />
+          <Chip
+            size="small"
+            variant="outlined"
+            label={formatLabel}
+            sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
+          />
+          {isDistributor && (
             <Chip
               size="small"
               variant="outlined"
-              label={saleSourceLabel}
+              label={distributorLabel}
               sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
             />
-            <Chip
-              size="small"
-              variant="outlined"
-              label={formatLabel}
-              sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
-            />
-            {isDistributor && (
-              <Chip
-                size="small"
-                variant="outlined"
-                label={distributorLabel}
-                sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
-              />
-            )}
-          </Stack>
+          )}
+        </Stack>
 
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -391,7 +400,12 @@ export default function SaleShow() {
                 Sale Breakdown
               </Typography>
               <Stack divider={<Divider flexItem />}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ py: 1 }}
+                >
                   <Typography variant="body2" color="text.secondary">
                     Sale Period
                   </Typography>
@@ -399,7 +413,12 @@ export default function SaleShow() {
                     {formatMonthYear(sale.saleMonth, sale.saleYear)}
                   </Typography>
                 </Stack>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ py: 1 }}
+                >
                   <Typography variant="body2" color="text.secondary">
                     Quantity
                   </Typography>
@@ -407,7 +426,12 @@ export default function SaleShow() {
                     {isKindleUnlimited ? '—' : (sale.quantitySold ?? '—')}
                   </Typography>
                 </Stack>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ py: 1 }}
+                >
                   <Typography variant="body2" color="text.secondary">
                     KENP
                   </Typography>
@@ -425,7 +449,12 @@ export default function SaleShow() {
                 Settlement Details
               </Typography>
               <Stack divider={<Divider flexItem />}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ py: 1 }}
+                >
                   <Typography variant="body2" color="text.secondary">
                     Payout Currency
                   </Typography>
@@ -434,7 +463,12 @@ export default function SaleShow() {
                   </Typography>
                 </Stack>
                 {isDistributor && (
-                  <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ py: 1 }}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    sx={{ py: 1 }}
+                  >
                     <Typography variant="body2" color="text.secondary">
                       Distributor
                     </Typography>
@@ -443,7 +477,12 @@ export default function SaleShow() {
                     </Typography>
                   </Stack>
                 )}
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" sx={{ py: 1 }}>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="flex-start"
+                  sx={{ py: 1 }}
+                >
                   <Typography variant="body2" color="text.secondary">
                     Comment
                   </Typography>
