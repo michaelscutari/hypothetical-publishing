@@ -7,12 +7,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
-import Table from '@mui/material/Table';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableHead from '@mui/material/TableHead';
-import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
@@ -88,6 +82,7 @@ export default function SaleCreate() {
           createEmptyRecord(
             {
               saleDate: next[index].saleDate,
+              book: next[index].book,
               saleSource: next[index].saleSource,
               distributor: next[index].distributor,
               format: next[index].format,
@@ -138,8 +133,16 @@ export default function SaleCreate() {
       const saleSourceChanged = updates.saleSource !== undefined;
       const quantityChanged = updates.quantitySold !== undefined;
       const formatChanged = updates.format !== undefined;
+      const currencyChanged = updates.saleCurrency !== undefined;
 
-      if (revenueChanged || bookChanged || saleSourceChanged || quantityChanged || formatChanged) {
+      if (
+        revenueChanged ||
+        bookChanged ||
+        saleSourceChanged ||
+        quantityChanged ||
+        formatChanged ||
+        currencyChanged
+      ) {
         const isNextDistributor = next.saleSource === SaleRequest.saleSource.DISTRIBUTOR;
 
         let computedRevenue: number | null;
@@ -158,9 +161,13 @@ export default function SaleCreate() {
         }
 
         next.publisherRevenue = computedRevenue;
+        const royaltyRevenue =
+          isNextDistributor && next.saleCurrency !== SaleRequest.saleCurrency.USD
+            ? null
+            : computedRevenue;
         next.authorRoyalty = next.book
           ? computeSaleRoyalty(
-              computedRevenue,
+              royaltyRevenue,
               next.saleSource,
               next.book.handsoldAuthorRoyaltyRate,
               next.book.distributorAuthorRoyaltyRate,
@@ -177,6 +184,7 @@ export default function SaleCreate() {
             createEmptyRecord(
               {
                 saleDate: next.saleDate,
+                book: next.book,
                 saleSource: next.saleSource,
                 distributor: next.distributor,
                 format: next.format,
@@ -314,49 +322,31 @@ export default function SaleCreate() {
     <PageContainer title="New Sales Records" breadcrumbs={breadcrumbs} maxWidth={false}>
       <Stack spacing={3} sx={{ width: '100%' }}>
         <Typography variant="body2" color="text.secondary">
-          Use Tab to navigate between fields.
+          Add one or more records below. Each new record starts by inheriting key values from the
+          previous record to speed up data entry.
         </Typography>
 
-        <TableContainer component={Paper}>
-          <Table size="small" sx={{ tableLayout: 'fixed' }}>
-            <TableHead>
-              <TableRow sx={{ '& th': { whiteSpace: 'nowrap', fontSize: '0.8rem' } }}>
-                <TableCell>Book</TableCell>
-                <TableCell>Date</TableCell>
-                <TableCell>Source</TableCell>
-                <TableCell>Distributor</TableCell>
-                <TableCell>Format</TableCell>
-                <TableCell>Currency</TableCell>
-                <TableCell>Qty / KENP</TableCell>
-                <TableCell>Revenue</TableCell>
-                <TableCell>Royalty</TableCell>
-                <TableCell>Comment</TableCell>
-                <TableCell>Paid</TableCell>
-                <TableCell></TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {records.map((record, index) => (
-                <SaleCreateRow
-                  key={record.id}
-                  record={record}
-                  index={index}
-                  books={books}
-                  isLoadingBooks={isLoadingBooks}
-                  bookSearchInput={bookSearchInput}
-                  totalRecords={records.length}
-                  onActivateRow={activateRow}
-                  onUpdateRecord={updateRecord}
-                  onBookSearchInputChange={setBookSearchInput}
-                  onLoadBooks={loadBooks}
-                  onOpenCommentDialog={handleOpenCommentDialog}
-                  onDeleteRecord={handleDeleteRecord}
-                />
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+        <Paper sx={{ p: { xs: 2, md: 3 } }}>
+          <Stack spacing={2.5}>
+            {records.map((record, index) => (
+              <SaleCreateRow
+                key={record.id}
+                record={record}
+                index={index}
+                books={books}
+                isLoadingBooks={isLoadingBooks}
+                bookSearchInput={bookSearchInput}
+                totalRecords={records.length}
+                onActivateRow={activateRow}
+                onUpdateRecord={updateRecord}
+                onBookSearchInputChange={setBookSearchInput}
+                onLoadBooks={loadBooks}
+                onOpenCommentDialog={handleOpenCommentDialog}
+                onDeleteRecord={handleDeleteRecord}
+              />
+            ))}
+          </Stack>
+        </Paper>
 
         {validationError && (
           <Alert severity="error" onClose={() => setValidationError(null)}>
