@@ -12,13 +12,14 @@ import EditIcon from '@mui/icons-material/Edit';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import Chip from '@mui/material/Chip';
 import Divider from '@mui/material/Divider';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 export default function SaleShow() {
   const { saleId } = useParams();
@@ -116,7 +117,7 @@ export default function SaleShow() {
     return fmt;
   };
 
-  const pageTitle = `Sale Record ${saleId}`;
+  const pageTitle = 'Sale Details';
 
   if (isLoading) return <FullPageLoader />;
 
@@ -142,6 +143,9 @@ export default function SaleShow() {
   const isDistributor = sale.saleSource === 'DISTRIBUTOR';
   const isKindleUnlimited = sale.format === 'KINDLE_UNLIMITED';
   const isNonUSD = sale.saleCurrency && sale.saleCurrency !== 'USD';
+  const saleSourceLabel = formatSaleSource(sale.saleSource);
+  const formatLabel = formatFormat(sale.format);
+  const distributorLabel = formatDistributor(sale.distributor);
 
   return (
     <PageContainer
@@ -154,171 +158,261 @@ export default function SaleShow() {
         { title: pageTitle },
       ]}
     >
-      <Stack direction="row" spacing={2} justifyContent="space-between">
-        <Button variant="contained" startIcon={<ArrowBackIcon />} onClick={handleBack}>
+      <Stack direction="row" spacing={2} justifyContent="space-between" sx={{ mb: 3 }}>
+        <Button
+          variant="text"
+          startIcon={<ArrowBackIcon />}
+          onClick={handleBack}
+          sx={{ color: 'text.secondary', fontWeight: 500, '&:hover': { color: 'primary.main' } }}
+        >
           Back
         </Button>
-        <Stack direction="row" spacing={2}>
-          <Button variant="contained" startIcon={<EditIcon />} onClick={handleSaleEdit}>
+        <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<EditIcon />} onClick={handleSaleEdit} size="small">
             Edit
           </Button>
           <Button
-            variant="contained"
+            variant="outlined"
             color="error"
             startIcon={<DeleteIcon />}
             onClick={handleSaleDelete}
+            size="small"
           >
             Delete
           </Button>
         </Stack>
       </Stack>
-      <Divider sx={{ my: 3 }} />
-      <Grid container spacing={2} sx={{ width: '100%' }}>
-        {/* Book */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Book</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              <Box
-                component="a"
-                href={`/books/${sale.bookId}`}
-                onClick={(e: React.MouseEvent) => {
-                  e.preventDefault();
-                  navigate(`/books/${sale.bookId}`);
-                }}
-                sx={{
-                  color: 'inherit',
-                  textDecoration: 'none',
-                  cursor: 'pointer',
-                  '&:hover': { textDecoration: 'underline', color: 'primary.main' },
-                }}
-              >
-                {sale.bookTitle}
+      <Grid container spacing={4} sx={{ mb: 3 }}>
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2, position: 'sticky', top: 24 }}>
+            <Typography
+              variant="overline"
+              sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: 1 }}
+            >
+              Sale Details
+            </Typography>
+            <Divider sx={{ my: 1.5 }} />
+
+            <Stack spacing={1.5}>
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Sale Period
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {formatMonthYear(sale.saleMonth, sale.saleYear)}
+                </Typography>
               </Box>
-            </Typography>
-            <Typography variant="caption" color="text.secondary">
-              by {sale.bookAuthor}
-            </Typography>
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Source
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {saleSourceLabel}
+                </Typography>
+              </Box>
+              <Box>
+                <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 600 }}>
+                  Format
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  {formatLabel}
+                </Typography>
+              </Box>
+            </Stack>
           </Paper>
         </Grid>
 
-        {/* Sale Period */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Sale Period</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatMonthYear(sale.saleMonth, sale.saleYear)}
-            </Typography>
-          </Paper>
-        </Grid>
+        <Grid size={{ xs: 12, md: 6 }}>
+          <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap', rowGap: 1 }}>
+            <Chip
+              size="small"
+              variant="outlined"
+              label={saleSourceLabel}
+              sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
+            />
+            <Chip
+              size="small"
+              variant="outlined"
+              label={formatLabel}
+              sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
+            />
+            {isDistributor && (
+              <Chip
+                size="small"
+                variant="outlined"
+                label={distributorLabel}
+                sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
+              />
+            )}
+          </Stack>
 
-        {/* Sale Source */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Sale Source</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatSaleSource(sale.saleSource)}
-            </Typography>
-          </Paper>
-        </Grid>
+          <Typography
+            component={RouterLink}
+            to={`/books/${sale.bookId}`}
+            variant="h4"
+            sx={{
+              display: 'inline-block',
+              fontWeight: 700,
+              lineHeight: 1.2,
+              mb: 1,
+              color: 'text.primary',
+              textDecoration: 'none',
+              '&:hover': { textDecoration: 'underline' },
+            }}
+          >
+            {sale.bookTitle}
+          </Typography>
 
-        {/* Distributor — only for distributor sales */}
-        {isDistributor && (
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Distributor</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {formatDistributor(sale.distributor)}
+          <Typography
+            component={RouterLink}
+            to={`/authors/${sale.authorId}`}
+            variant="h6"
+            sx={{
+              display: 'block',
+              fontWeight: 400,
+              mb: 2.5,
+              color: 'text.secondary',
+              textDecoration: 'none',
+              '&:hover': { textDecoration: 'underline', color: 'primary.main' },
+            }}
+          >
+            by {sale.bookAuthor}
+          </Typography>
+
+          <Divider sx={{ mb: 2.5 }} />
+
+          <Stack spacing={1} sx={{ mb: 3 }}>
+            <Stack direction="row" spacing={1} alignItems="baseline">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
+                Quantity
               </Typography>
-            </Paper>
-          </Grid>
-        )}
-
-        {/* Format */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Format</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatFormat(sale.format)}
-            </Typography>
-          </Paper>
-        </Grid>
-
-        {/* Quantity Sold — only for non-Kindle Unlimited */}
-        {!isKindleUnlimited && (
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Quantity Sold</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {sale.quantitySold ?? '—'}
+              <Typography variant="body1">
+                {isKindleUnlimited ? '—' : (sale.quantitySold ?? '—')}
               </Typography>
-            </Paper>
-          </Grid>
-        )}
-
-        {/* KENP — only for Kindle Unlimited */}
-        {isKindleUnlimited && (
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">KENP</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {sale.kenp ?? '—'}
+            </Stack>
+            <Stack direction="row" spacing={1} alignItems="baseline">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
+                KENP
               </Typography>
-            </Paper>
-          </Grid>
-        )}
-
-        {/* Publisher Revenue (original currency) — only shown if non-USD */}
-        {isDistributor && isNonUSD && (
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <Paper sx={{ px: 2, py: 1 }}>
-              <Typography variant="overline">Publisher Revenue ({sale.saleCurrency})</Typography>
-              <Typography variant="body1" sx={{ mb: 1 }}>
-                {Number(sale.originalPublisherRevenue).toFixed(2)} {sale.saleCurrency}
+              <Typography variant="body1">
+                {isKindleUnlimited ? (sale.kenp ?? '—') : '—'}
               </Typography>
-            </Paper>
-          </Grid>
-        )}
+            </Stack>
+            {isDistributor && (
+              <Stack direction="row" spacing={1} alignItems="baseline">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ minWidth: 160, fontWeight: 600 }}
+                >
+                  Distributor
+                </Typography>
+                <Typography variant="body1">{distributorLabel}</Typography>
+              </Stack>
+            )}
+          </Stack>
 
-        {/* Publisher Revenue (USD) */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">
-              Publisher Revenue {isDistributor && isNonUSD ? '(USD)' : ''}
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatCurrency(Number(sale.publisherRevenue))}
-            </Typography>
-          </Paper>
+          <Divider sx={{ mb: 2.5 }} />
+
+          <Stack spacing={1}>
+            <Stack direction="row" spacing={1} alignItems="baseline">
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ minWidth: 160, fontWeight: 600 }}
+              >
+                Comment
+              </Typography>
+              <Typography variant="body1" color={sale.comment ? 'text.primary' : 'text.secondary'}>
+                {sale.comment ?? '—'}
+              </Typography>
+            </Stack>
+          </Stack>
         </Grid>
 
-        {/* Author Royalty */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Author Royalty</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {formatCurrency(Number(sale.authorRoyalty))}
+        <Grid size={{ xs: 12, md: 3 }}>
+          <Paper variant="outlined" sx={{ p: 2.5, borderRadius: 2 }}>
+            <Typography
+              variant="overline"
+              sx={{ fontWeight: 700, color: 'text.secondary', letterSpacing: 1 }}
+            >
+              Payout Snapshot
             </Typography>
-          </Paper>
-        </Grid>
+            <Divider sx={{ my: 1.5 }} />
 
-        {/* Comment */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Comment</Typography>
-            <Typography variant="body1" sx={{ mb: 1 }}>
-              {sale.comment ?? '—'}
-            </Typography>
-          </Paper>
-        </Grid>
+            <Stack spacing={2}>
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  Payout Currency
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                  USD
+                  {isDistributor && isNonUSD ? ` · Original: ${sale.saleCurrency}` : ''}
+                </Typography>
+              </Box>
 
-        {/* Payment Status */}
-        <Grid size={{ xs: 12, sm: 6 }}>
-          <Paper sx={{ px: 2, py: 1 }}>
-            <Typography variant="overline">Payment Status</Typography>
-            <Box sx={{ mb: 1 }}>
-              <PaidStatusChip paid={sale.hasAuthorBeenPaid} />
-            </Box>
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  Publisher Revenue {isDistributor && isNonUSD ? '(USD)' : ''}
+                </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, color: 'primary.main', lineHeight: 1.2 }}
+                >
+                  {formatCurrency(Number(sale.publisherRevenue))}
+                </Typography>
+                {isDistributor && isNonUSD && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    {Number(sale.originalPublisherRevenue).toFixed(2)} {sale.saleCurrency}
+                  </Typography>
+                )}
+              </Box>
+
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  Author Royalty
+                </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{ fontWeight: 700, color: 'secondary.main', lineHeight: 1.2 }}
+                >
+                  {formatCurrency(Number(sale.authorRoyalty))}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  Payment Status
+                </Typography>
+                <Box sx={{ mt: 0.75 }}>
+                  <PaidStatusChip paid={sale.hasAuthorBeenPaid} />
+                </Box>
+              </Box>
+            </Stack>
           </Paper>
         </Grid>
       </Grid>
