@@ -32,6 +32,7 @@ import PageContainer from '@/components/PageContainer';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
+import { getFriendlyErrorMessage } from './saleImportErrorMessages';
 
 type ErrorState = {
   parseErrors: ParsingError[];
@@ -48,45 +49,6 @@ type SalesImportResponseShape = {
   warnings?: ParsingError[];
   csvErrors?: ParsingError[];
   savingErrors?: ParsingError[];
-};
-
-const ERROR_MESSAGE_MAP: Record<string, string> = {
-  'sale.mappingFailed':
-    'This row could not be converted to a sale. Check ISBN/ASIN and numeric values.',
-  'book.notFound': 'Book does not exist on the website catalog',
-  'book.asin.multipleMatches':
-    'Multiple books share this ASIN. Update catalog so each ASIN maps to one book.',
-  'isbn.isRequired': 'ISBN is required',
-  'asin.isRequired': 'ASIN is required',
-  'title.isRequired': 'Title is required',
-  'author.invalidFormat': 'Author must be in "Last, First" format',
-  'format.isRequired': 'Format is required',
-  'grossQty.isRequired': 'Gross Qty is required',
-  'returnedQty.isRequired': 'Returned Qty is required',
-  'netQty.isRequired': 'Net Qty is required',
-  'netCompensation.mustBeGreaterThanZero': 'Net Compensation must be greater than 0',
-  'netCompensation.isRequired': 'Net Compensation is required',
-  'salesMarket.isRequired': 'Sales Market is required',
-  'returnedQty.mustBeZero': 'Units Refunded must be 0',
-  'grossQty.mustEqual.netQty': 'Units Sold must equal Net Units Sold',
-  'import.file.unsupportedType': 'Only CSV and Amazon XLSX files are supported.',
-  'import.warnings.mustAcknowledge': 'Please review warnings before commit.',
-};
-
-const getFriendlyErrorMessage = (error: ParsingError) => {
-  const rawMessage = error.errorMessage?.trim();
-  if (!rawMessage) return 'Unknown error.';
-
-  const mapped = ERROR_MESSAGE_MAP[rawMessage];
-  if (mapped) return mapped;
-
-  if (rawMessage.startsWith('Failed to read file:')) {
-    return 'Unable to read the file. Please re-export it and try again.';
-  }
-  if (/numberformat|for input string/i.test(rawMessage)) {
-    return 'One of the numeric fields has an invalid value.';
-  }
-  return rawMessage;
 };
 
 const asResponse = (response: unknown): SalesImportResponseShape =>
@@ -422,7 +384,8 @@ export default function SaleImport() {
                     <TableCell>Book</TableCell>
                     <TableCell>Author</TableCell>
                     <TableCell>Month/Year</TableCell>
-                    <TableCell align="right">Quantity</TableCell>
+                    <TableCell>Metric</TableCell>
+                    <TableCell align="right">Quantity / KENP</TableCell>
                     <TableCell align="right">Publisher Revenue</TableCell>
                     <TableCell align="right">Author Royalty</TableCell>
                     <TableCell>Comment</TableCell>
@@ -438,7 +401,20 @@ export default function SaleImport() {
                           ? formatMonthYear(sale.saleMonth, sale.saleYear)
                           : '—'}
                       </TableCell>
-                      <TableCell align="right">{sale.quantitySold ?? 0}</TableCell>
+                      <TableCell>
+                        {sale.quantitySold && sale.quantitySold !== 0
+                          ? 'Quantity'
+                          : sale.kenp && sale.kenp !== 0
+                            ? 'KENP'
+                            : '—'}
+                      </TableCell>
+                      <TableCell align="right">
+                        {sale.quantitySold && sale.quantitySold !== 0
+                          ? sale.quantitySold
+                          : sale.kenp && sale.kenp !== 0
+                            ? sale.kenp
+                            : 0}
+                      </TableCell>
                       <TableCell align="right">
                         {sale.publisherRevenue != null
                           ? formatCurrency(Number(sale.publisherRevenue))
