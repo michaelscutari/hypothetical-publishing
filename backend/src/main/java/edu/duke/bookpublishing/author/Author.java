@@ -25,10 +25,10 @@ public class Author {
   @Email
   private String email;
 
-  @Column(name = "paypal_account")
+  @Column(name = "paypal_account", length = 128)
   private String paypalAccount;
 
-  @Column(name = "venmo_account")
+  @Column(name = "venmo_account", length = 128)
   private String venmoAccount;
 
   @Formula("(SELECT COUNT(DISTINCT b.id) FROM books b WHERE b.author_id = id)")
