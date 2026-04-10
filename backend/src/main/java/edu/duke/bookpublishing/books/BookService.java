@@ -1,6 +1,7 @@
 package edu.duke.bookpublishing.books;
 
 import edu.duke.bookpublishing.common.StringUtils;
+import edu.duke.bookpublishing.exception.custom.AmbiguousLookupException;
 import edu.duke.bookpublishing.exception.custom.FieldValidationException;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import java.util.List;
@@ -203,5 +204,20 @@ public class BookService {
       return byIsbn13;
     }
     return bookRepository.findByIsbn10(normalized);
+  }
+
+  public Optional<Book> findBookByAmazonEbookAsin(String asin) {
+    if (asin == null || asin.isBlank()) {
+      return Optional.empty();
+    }
+
+    List<Book> matches = bookRepository.findAllByAmazonEbookAsinIgnoreCase(asin.trim());
+    if (matches.isEmpty()) {
+      return Optional.empty();
+    }
+    if (matches.size() > 1) {
+      throw new AmbiguousLookupException("Multiple books found for ASIN " + asin.trim());
+    }
+    return Optional.of(matches.get(0));
   }
 }

@@ -6,7 +6,11 @@ export interface SaleRecordInput {
   saleDate: Dayjs | null;
   book: BookResponse | null;
   saleSource: SaleRequest.saleSource;
+  distributor: SaleRequest.distributor | null;
+  format: SaleRequest.format;
+  saleCurrency: SaleRequest.saleCurrency;
   quantitySold: number | null;
+  kenp: number | null;
   publisherRevenue: number | null;
   publisherRevenueInput: string;
   authorRoyalty: number | null;
@@ -17,7 +21,10 @@ export interface SaleRecordInput {
     saleDate?: string;
     book?: string;
     saleSource?: string;
+    distributor?: string;
+    format?: string;
     quantitySold?: string;
+    kenp?: string;
     publisherRevenue?: string;
     authorRoyalty?: string;
     comment?: string;
@@ -34,7 +41,11 @@ export function createEmptyRecord(
     saleDate: defaults?.saleDate ?? null,
     book: defaults?.book ?? null,
     saleSource: defaults?.saleSource ?? SaleRequest.saleSource.DISTRIBUTOR,
+    distributor: defaults?.distributor ?? SaleRequest.distributor.OTHER,
+    format: defaults?.format ?? SaleRequest.format.PRINT,
+    saleCurrency: defaults?.saleCurrency ?? SaleRequest.saleCurrency.USD,
     quantitySold: null,
+    kenp: null,
     publisherRevenue: null,
     publisherRevenueInput: '',
     authorRoyalty: null,
@@ -76,15 +87,30 @@ export function validateRecord(record: SaleRecordInput): boolean {
     isValid = false;
   }
 
-  if (record.quantitySold == null) {
-    errors.quantitySold = 'Quantity is required';
-    isValid = false;
-  } else if (record.quantitySold <= 0) {
-    errors.quantitySold = 'Quantity must be a positive number';
+  const isKU = record.format === SaleRequest.format.KINDLE_UNLIMITED;
+  const isDistributor = record.saleSource === SaleRequest.saleSource.DISTRIBUTOR;
+
+  if (isDistributor && !record.distributor) {
+    errors.distributor = 'Distributor is required';
     isValid = false;
   }
 
-  if (record.saleSource === SaleRequest.saleSource.DISTRIBUTOR) {
+  if (isKU) {
+    if (record.kenp == null || record.kenp <= 0) {
+      errors.kenp = 'KENP is required for Kindle Unlimited';
+      isValid = false;
+    }
+  } else {
+    if (record.quantitySold == null) {
+      errors.quantitySold = 'Quantity is required';
+      isValid = false;
+    } else if (record.quantitySold <= 0) {
+      errors.quantitySold = 'Quantity must be a positive number';
+      isValid = false;
+    }
+  }
+
+  if (isDistributor) {
     if (record.publisherRevenue == null) {
       errors.publisherRevenue = 'Revenue is required for distributor sales';
       isValid = false;
@@ -92,9 +118,6 @@ export function validateRecord(record: SaleRecordInput): boolean {
       errors.publisherRevenue = 'Revenue must be non-negative';
       isValid = false;
     }
-  } else if (record.publisherRevenue != null && record.publisherRevenue < 0) {
-    errors.publisherRevenue = 'Revenue must be non-negative';
-    isValid = false;
   }
 
   record.errors = errors;

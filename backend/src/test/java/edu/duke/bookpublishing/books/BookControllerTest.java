@@ -501,7 +501,7 @@ class BookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
         .andExpect(status().isCreated())
-        .andExpect(jsonPath("$.asin").value("B0ABC12345"));
+        .andExpect(jsonPath("$.amazonEbookAsin").value("B0ABC12345"));
   }
 
   @Test
@@ -845,7 +845,7 @@ class BookControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.asin").value("B0ABC12345"));
+        .andExpect(jsonPath("$.amazonEbookAsin").value("B0ABC12345"));
   }
 
   @Test
@@ -894,7 +894,7 @@ class BookControllerTest {
                 .content(objectMapper.writeValueAsString(updateRequest)))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.title").value("Book With Asin Updated"))
-        .andExpect(jsonPath("$.asin").value(nullValue()));
+        .andExpect(jsonPath("$.amazonEbookAsin").value(nullValue()));
   }
 
   @Test

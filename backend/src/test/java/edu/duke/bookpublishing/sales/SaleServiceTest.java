@@ -17,13 +17,15 @@ import edu.duke.bookpublishing.books.Book;
 import edu.duke.bookpublishing.books.BookRepository;
 import edu.duke.bookpublishing.books.BookService;
 import edu.duke.bookpublishing.currency.CurrencyService;
+import edu.duke.bookpublishing.exception.custom.AmbiguousLookupException;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
-import edu.duke.bookpublishing.sales.dto.IngramImportRequest;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
+import edu.duke.bookpublishing.sales.dto.SalesImportRequest;
 import edu.duke.bookpublishing.sales.enums.Currency;
 import edu.duke.bookpublishing.sales.enums.SaleDistributor;
 import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
+import edu.duke.bookpublishing.sales.parser.AmazonXlsxEntry;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
@@ -63,6 +65,8 @@ class SaleServiceTest {
 
   @Mock private ImportParser<IngramCsvEntry> ingramCsvParser;
 
+  @Mock private ImportParser<AmazonXlsxEntry> amazonXlsxParser;
+
   @Mock private AuthorRepository authorRepository;
 
   @Mock private CurrencyService currencyService;
@@ -80,6 +84,8 @@ class SaleServiceTest {
     lenient()
         .when(currencyService.convert(eq("USD"), eq("USD"), any(BigDecimal.class)))
         .thenAnswer(invocation -> invocation.getArgument(2));
+    lenient().when(ingramCsvParser.supports(anyString(), anyString())).thenReturn(true);
+    lenient().when(amazonXlsxParser.supports(anyString(), anyString())).thenReturn(false);
 
     saleService =
         new SaleService(
@@ -87,6 +93,7 @@ class SaleServiceTest {
             bookRepository,
             saleRepository,
             ingramCsvParser,
+            amazonXlsxParser,
             authorRepository,
             currencyService);
     author = Author.builder().id(1L).name("Test Author").email("test@example.com").build();
@@ -134,7 +141,7 @@ class SaleServiceTest {
   @Test
   void getAllSalesWithoutFiltersUsesSpecification() {
     Sort sort = Sort.by("saleYear").descending();
-    saleService.getAllSales(null, null, null, null, null, null, sort);
+    saleService.getAllSales(null, null, null, null, null, null, null, null, sort);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Sort.class));
   }
@@ -144,7 +151,7 @@ class SaleServiceTest {
     LocalDate startDate = LocalDate.of(2024, 1, 1);
     LocalDate endDate = LocalDate.of(2024, 12, 31);
     Sort sort = Sort.by("saleYear").descending();
-    saleService.getAllSales(startDate, endDate, null, null, null, null, sort);
+    saleService.getAllSales(startDate, endDate, null, null, null, null, null, null, sort);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Sort.class));
   }
@@ -152,7 +159,7 @@ class SaleServiceTest {
   @Test
   void getAllSalesWithQueryUsesSpecification() {
     Sort sort = Sort.by("saleYear").descending();
-    saleService.getAllSales(null, null, null, null, null, "test query", sort);
+    saleService.getAllSales(null, null, null, null, null, null, null, "test query", sort);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Sort.class));
   }
@@ -160,7 +167,7 @@ class SaleServiceTest {
   @Test
   void getPagedSalesWithoutFiltersUsesSpecification() {
     Pageable pageable = mock(Pageable.class);
-    saleService.getPagedSales(null, null, null, null, null, null, pageable);
+    saleService.getPagedSales(null, null, null, null, null, null, null, null, pageable);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Pageable.class));
   }
@@ -170,7 +177,7 @@ class SaleServiceTest {
     Pageable pageable = mock(Pageable.class);
     LocalDate startDate = LocalDate.of(2024, 1, 1);
     LocalDate endDate = LocalDate.of(2024, 12, 31);
-    saleService.getPagedSales(startDate, endDate, null, null, null, null, pageable);
+    saleService.getPagedSales(startDate, endDate, null, null, null, null, null, null, pageable);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Pageable.class));
   }
@@ -178,7 +185,7 @@ class SaleServiceTest {
   @Test
   void getPagedSalesWithQueryUsesSpecification() {
     Pageable pageable = mock(Pageable.class);
-    saleService.getPagedSales(null, null, null, null, null, "test query", pageable);
+    saleService.getPagedSales(null, null, null, null, null, null, null, "test query", pageable);
     verify(saleRepository, times(1))
         .findAll(org.mockito.ArgumentMatchers.<Specification<Sale>>any(), any(Pageable.class));
   }
@@ -461,12 +468,12 @@ class SaleServiceTest {
 
     when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
 
-    IngramImportRequest request = new IngramImportRequest(1, 2024, file, true);
-    var result = saleService.importSalesFromCsv(request);
+    SalesImportRequest request = new SalesImportRequest(1, 2024, file, true, false);
+    var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).isEmpty();
-    assertThat(result.csvErrors()).isEqualTo(csvErrors);
-    assertThat(result.savingErrors()).isEmpty();
+    assertThat(result.parseErrors()).isEqualTo(csvErrors);
+    assertThat(result.validationErrors()).isEmpty();
     verify(saleRepository, times(0)).save(any(Sale.class));
   }
 
@@ -497,12 +504,12 @@ class SaleServiceTest {
     when(saleRepository.saveAll(any()))
         .thenAnswer(invocation -> invocation.getArgument(0, List.class));
 
-    IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
-    var result = saleService.importSalesFromCsv(request);
+    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).hasSize(2);
-    assertThat(result.csvErrors()).isEmpty();
-    assertThat(result.savingErrors()).isEmpty();
+    assertThat(result.parseErrors()).isEmpty();
+    assertThat(result.validationErrors()).isEmpty();
 
     @SuppressWarnings("unchecked")
     ArgumentCaptor<List<Sale>> salesCaptor = ArgumentCaptor.forClass(List.class);
@@ -520,7 +527,8 @@ class SaleServiceTest {
     assertThat(firstSaved.getAuthorRoyalty()).isEqualByComparingTo("5.10");
     assertThat(firstSaved.getHasAuthorBeenPaid()).isFalse();
     assertThat(firstSaved.getComment())
-        .contains("Ingram: Format='Hardcover' Market='US' File='ingram.csv' (" + timestamp);
+        .isEqualTo(
+            "Ingram: Format='Hardcover' Market='US' File='ingram.csv' (2024-01-02 03:04:00)");
 
     Sale secondSaved = saved.get(1);
     assertThat(secondSaved.getDistributor()).isEqualTo(SaleDistributor.INGRAM_SPARK);
@@ -552,8 +560,8 @@ class SaleServiceTest {
     when(saleRepository.saveAll(any()))
         .thenAnswer(invocation -> invocation.getArgument(0, List.class));
 
-    IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
-    var result = saleService.importSalesFromCsv(request);
+    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).hasSize(1);
     @SuppressWarnings("unchecked")
@@ -561,6 +569,45 @@ class SaleServiceTest {
     verify(saleRepository).saveAll(salesCaptor.capture());
     Sale saved = salesCaptor.getValue().get(0);
     assertThat(saved.getSaleCurrency()).isEqualTo(Currency.USD);
+  }
+
+  @Test
+  void importFromCsvTruncatesCommentFieldsAndCapsCommentLength() {
+    String longFileName = "f".repeat(140) + ".csv";
+    MultipartFile file = new MockMultipartFile("file", longFileName, "text/csv", "data".getBytes());
+    LocalDateTime timestamp = LocalDateTime.of(2024, 1, 2, 15, 6, 7);
+
+    IngramCsvEntry entry = new IngramCsvEntry();
+    entry.setIsbn("9780743273565");
+    entry.setNetQty(1L);
+    entry.setNetCompensation(new BigDecimal("5.00"));
+    entry.setFormat("Hardcover-" + "X".repeat(80));
+    entry.setSalesMarket("United Kingdom Marketplace-" + "Y".repeat(120));
+
+    ParsedBatch<IngramCsvEntry> parsedBatch =
+        new ParsedBatch<>(timestamp, List.of(entry), List.of());
+
+    when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
+    when(saleRepository.saveAll(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0, List.class));
+
+    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    var result = saleService.importSales(request);
+
+    assertThat(result.savedSales()).hasSize(1);
+
+    @SuppressWarnings("unchecked")
+    ArgumentCaptor<List<Sale>> salesCaptor = ArgumentCaptor.forClass(List.class);
+    verify(saleRepository).saveAll(salesCaptor.capture());
+    Sale saved = salesCaptor.getValue().get(0);
+
+    assertThat(saved.getComment()).hasSizeLessThanOrEqualTo(256);
+    assertThat(saved.getComment()).contains("(2024-01-02 15:06:07)");
+
+    String actualFileInComment =
+        saved.getComment().replaceFirst(".*File='", "").replaceFirst("'.*", "");
+    assertThat(actualFileInComment).hasSizeLessThanOrEqualTo(ImportParser.MAX_FILENAME_LENGTH);
   }
 
   @Test
@@ -588,14 +635,155 @@ class SaleServiceTest {
     when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
     when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
 
-    IngramImportRequest request = new IngramImportRequest(1, 2024, file, false);
-    var result = saleService.importSalesFromCsv(request);
+    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).hasSize(0);
-    assertThat(result.csvErrors()).isEmpty();
-    assertThat(result.savingErrors()).hasSize(1);
-    assertThat(result.savingErrors().get(0).rowNumber()).isEqualTo(1);
-    assertThat(result.savingErrors().get(0).errorMessage()).isEqualTo("sale.mappingFailed");
+    assertThat(result.parseErrors()).isEmpty();
+    assertThat(result.validationErrors()).hasSize(1);
+    assertThat(result.validationErrors().get(0).rowNumber()).isEqualTo(1);
+    assertThat(result.validationErrors().get(0).errorMessage()).isEqualTo("sale.mappingFailed");
+  }
+
+  @Test
+  void importAmazonPreviewReturnsWarningsAndMappedSales() {
+    MultipartFile file =
+        new MockMultipartFile(
+            "file",
+            "amazon.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "xlsx".getBytes());
+    LocalDateTime timestamp = LocalDateTime.of(2024, 1, 2, 3, 4);
+
+    AmazonXlsxEntry row =
+        AmazonXlsxEntry.builder()
+            .sheetName("eBook Royalty")
+            .sourceRowNumber(3)
+            .saleMonth(1)
+            .saleYear(2024)
+            .format(SaleFormat.EBOOK)
+            .asin("B012345678")
+            .marketplace("Amazon.com")
+            .quantitySold(4)
+            .currency(Currency.GBP)
+            .royalty(new BigDecimal("10.00"))
+            .build();
+
+    ParsedBatch<AmazonXlsxEntry> parsedBatch =
+        new ParsedBatch<>(
+            timestamp,
+            List.of(row),
+            List.of(),
+            List.of(
+                new ParsingError(
+                    8, null, "import.amazon.audiobook.notSupported", "Audiobook Royalty")));
+
+    when(ingramCsvParser.supports(anyString(), anyString())).thenReturn(false);
+    when(amazonXlsxParser.supports(anyString(), anyString())).thenReturn(true);
+    when(amazonXlsxParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookService.findBookByAmazonEbookAsin("B012345678")).thenReturn(Optional.of(book));
+    when(currencyService.convert("GBP", "USD", new BigDecimal("10.00")))
+        .thenReturn(new BigDecimal("13.00"));
+
+    SalesImportRequest request = new SalesImportRequest(null, null, file, true, false);
+    var result = saleService.importSales(request);
+
+    assertThat(result.parseErrors()).isEmpty();
+    assertThat(result.validationErrors()).isEmpty();
+    assertThat(result.savedSales()).hasSize(1);
+    assertThat(result.warnings()).hasSize(1);
+    verify(saleRepository, times(0)).saveAll(any());
+  }
+
+  @Test
+  void importAmazonCommitRequiresWarningAcknowledgement() {
+    MultipartFile file =
+        new MockMultipartFile(
+            "file",
+            "amazon.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "xlsx".getBytes());
+
+    AmazonXlsxEntry row =
+        AmazonXlsxEntry.builder()
+            .sheetName("KENP")
+            .sourceRowNumber(4)
+            .saleMonth(1)
+            .saleYear(2024)
+            .format(SaleFormat.KINDLE_UNLIMITED)
+            .asin("B012345678")
+            .marketplace("Amazon.com")
+            .kenp(100)
+            .currency(Currency.USD)
+            .royalty(new BigDecimal("2.00"))
+            .build();
+
+    ParsedBatch<AmazonXlsxEntry> parsedBatch =
+        new ParsedBatch<>(
+            LocalDateTime.of(2024, 1, 2, 3, 4),
+            List.of(row),
+            List.of(),
+            List.of(new ParsingError(5, null, "import.amazon.kenp.unsupportedAsin", "KENP")));
+
+    when(ingramCsvParser.supports(anyString(), anyString())).thenReturn(false);
+    when(amazonXlsxParser.supports(anyString(), anyString())).thenReturn(true);
+    when(amazonXlsxParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookService.findBookByAmazonEbookAsin("B012345678")).thenReturn(Optional.of(book));
+
+    SalesImportRequest request = new SalesImportRequest(null, null, file, false, false);
+    var result = saleService.importSales(request);
+
+    assertThat(result.savedSales()).isEmpty();
+    assertThat(result.parseErrors()).isEmpty();
+    assertThat(result.validationErrors()).hasSize(1);
+    assertThat(result.validationErrors().get(0).errorMessage())
+        .isEqualTo("import.warnings.mustAcknowledge");
+    assertThat(result.warnings()).hasSize(1);
+    verify(saleRepository, times(0)).saveAll(any());
+  }
+
+  @Test
+  void importAmazonReturnsSpecificErrorForAmbiguousAsin() {
+    MultipartFile file =
+        new MockMultipartFile(
+            "file",
+            "amazon.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "xlsx".getBytes());
+
+    AmazonXlsxEntry row =
+        AmazonXlsxEntry.builder()
+            .sheetName("eBook Royalty")
+            .sourceRowNumber(3)
+            .saleMonth(1)
+            .saleYear(2024)
+            .format(SaleFormat.EBOOK)
+            .asin("B012345678")
+            .marketplace("Amazon.com")
+            .quantitySold(2)
+            .currency(Currency.USD)
+            .royalty(new BigDecimal("5.00"))
+            .build();
+
+    ParsedBatch<AmazonXlsxEntry> parsedBatch =
+        new ParsedBatch<>(LocalDateTime.of(2024, 1, 2, 3, 4), List.of(row), List.of(), List.of());
+
+    when(ingramCsvParser.supports(anyString(), anyString())).thenReturn(false);
+    when(amazonXlsxParser.supports(anyString(), anyString())).thenReturn(true);
+    when(amazonXlsxParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookService.findBookByAmazonEbookAsin("B012345678"))
+        .thenThrow(new AmbiguousLookupException("Multiple books found"));
+
+    SalesImportRequest request = new SalesImportRequest(null, null, file, true, false);
+    var result = saleService.importSales(request);
+
+    assertThat(result.savedSales()).isEmpty();
+    assertThat(result.parseErrors()).isEmpty();
+    assertThat(result.validationErrors()).hasSize(1);
+    assertThat(result.validationErrors().get(0).rowNumber()).isEqualTo(3);
+    assertThat(result.validationErrors().get(0).errorMessage())
+        .isEqualTo("book.asin.multipleMatches");
+    assertThat(result.validationErrors().get(0).sheetName()).isEqualTo("eBook Royalty");
   }
 
   @Test
@@ -640,7 +828,7 @@ class SaleServiceTest {
             false,
             null);
 
-    Sale result = saleService.createSale(request);
+    saleService.createSale(request);
 
     verify(saleRepository).save(saleCaptor.capture());
     Sale saved = saleCaptor.getValue();

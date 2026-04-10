@@ -1,3 +1,9 @@
+import { SalesService, type SaleResponse } from '@/api';
+import PaidStatusChip from '@/components/PaidStatusChip';
+import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { getErrorMessage } from '@/utils/error';
+import { formatCurrency, formatMonthYear } from '@/utils/formatting';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import Alert from '@mui/material/Alert';
@@ -22,12 +28,6 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { SalesService, type SaleResponse } from '@/api';
-import { getErrorMessage } from '@/utils/error';
-import { formatCurrency, formatMonthYear } from '@/utils/formatting';
-import { useDialogs } from '@/hooks/useDialogs/useDialogs';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PaidStatusChip from '@/components/PaidStatusChip';
 
 type BookSalesTableProps = {
   bookId?: number;
@@ -83,6 +83,8 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
         directions,
         startDateParam,
         endDateParam,
+        undefined,
+        undefined,
         undefined,
         undefined,
         undefined,
