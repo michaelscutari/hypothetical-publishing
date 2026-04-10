@@ -18,9 +18,6 @@ public record AuthorRequest(
         @NotBlank(message = "Author email is required")
         @Email(message = "Must be a valid email address")
         String email,
-
-@Schema(description = "Author's paypal.me username", example = "fitzscott")
-    String paypalAccount,
-
-@Schema(description = "Author's Venmo username", example = "fitzscott")
-    String venmoAccount) {}
+    @Schema(description = "Author's paypal.me username", example = "fitzscott")
+        String paypalAccount,
+    @Schema(description = "Author's Venmo username", example = "fitzscott") String venmoAccount) {}

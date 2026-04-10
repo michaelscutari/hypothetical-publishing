@@ -24,6 +24,7 @@ public class Author {
   @Column(nullable = false)
   @Email
   private String email;
+
   private String paypalAccount;
   private String venmoAccount;
 

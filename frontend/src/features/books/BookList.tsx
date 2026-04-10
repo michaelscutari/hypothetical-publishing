@@ -130,109 +130,109 @@ export default function BookList() {
   );
 
   const columns = React.useMemo<GridColDef[]>(
-  () => [
-    {
-      field: 'cover',
-      headerName: '',
-      width: 52,
-      sortable: false,
-      filterable: false,
-      disableColumnMenu: true,
-      renderCell: ({ row }) =>
-        row.hasCover ? (
-          <Box
-            sx={{
-              width: '100%',
-              height: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              py: 0.75,
-            }}
-          >
+    () => [
+      {
+        field: 'cover',
+        headerName: '',
+        width: 52,
+        sortable: false,
+        filterable: false,
+        disableColumnMenu: true,
+        renderCell: ({ row }) =>
+          row.hasCover ? (
             <Box
-              component="img"
-              src={`/api/books/${row.id}/cover/thumbnail`}
-              alt=""
               sx={{
+                width: '100%',
                 height: '100%',
-                width: 'auto',
-                maxWidth: 36,
-                objectFit: 'contain',
-                borderRadius: 0.5,
-                border: '1px solid',
-                borderColor: 'divider',
-                display: 'block',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                py: 0.75,
               }}
-            />
-          </Box>
-        ) : null,
-    },
-    { field: 'title', headerName: 'Title', width: 200 },
-    { field: 'author', headerName: 'Author', width: 180 },
-    { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
-    { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
-    { field: 'asin', headerName: 'Amazon ASIN', width: 130 },
-    {
-      field: 'seriesPosition',
-      headerName: 'Series',
-      width: 180,
-      valueGetter: (_value, row) => {
-        if (row.seriesName) {
-          return `${row.seriesName} (#${row.seriesPosition})`;
-        }
-        return '';
+            >
+              <Box
+                component="img"
+                src={`/api/books/${row.id}/cover/thumbnail`}
+                alt=""
+                sx={{
+                  height: '100%',
+                  width: 'auto',
+                  maxWidth: 36,
+                  objectFit: 'contain',
+                  borderRadius: 0.5,
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  display: 'block',
+                }}
+              />
+            </Box>
+          ) : null,
       },
-    },
-    {
-      field: 'publicationDate',
-      headerName: 'Publication',
-      width: 120,
-      valueGetter: (_value, row) => {
-        const year = row.publicationYear;
-        const month = row.publicationMonth;
-        if (year && month) {
-          return formatMonthYear(month, year);
-        }
-        return '';
+      { field: 'title', headerName: 'Title', width: 200 },
+      { field: 'author', headerName: 'Author', width: 180 },
+      { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
+      { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
+      { field: 'asin', headerName: 'Amazon ASIN', width: 130 },
+      {
+        field: 'seriesPosition',
+        headerName: 'Series',
+        width: 180,
+        valueGetter: (_value, row) => {
+          if (row.seriesName) {
+            return `${row.seriesName} (#${row.seriesPosition})`;
+          }
+          return '';
+        },
       },
-      sortComparator: (v1, v2, param1, param2) => {
-        const row1 = param1.api.getRow(param1.id);
-        const row2 = param2.api.getRow(param2.id);
-        const date1 = (row1?.publicationYear ?? 0) * 12 + (row1?.publicationMonth ?? 0);
-        const date2 = (row2?.publicationYear ?? 0) * 12 + (row2?.publicationMonth ?? 0);
-        return date1 - date2;
+      {
+        field: 'publicationDate',
+        headerName: 'Publication',
+        width: 120,
+        valueGetter: (_value, row) => {
+          const year = row.publicationYear;
+          const month = row.publicationMonth;
+          if (year && month) {
+            return formatMonthYear(month, year);
+          }
+          return '';
+        },
+        sortComparator: (v1, v2, param1, param2) => {
+          const row1 = param1.api.getRow(param1.id);
+          const row2 = param2.api.getRow(param2.id);
+          const date1 = (row1?.publicationYear ?? 0) * 12 + (row1?.publicationMonth ?? 0);
+          const date2 = (row2?.publicationYear ?? 0) * 12 + (row2?.publicationMonth ?? 0);
+          return date1 - date2;
+        },
       },
-    },
-    {
-      field: 'totalSalesToDate',
-      headerName: 'Total Sales',
-      type: 'number',
-      width: 100,
-    },
-    {
-      field: 'actions',
-      type: 'actions',
-      flex: 1,
-      align: 'right',
-      getActions: ({ row }) => [
-        <GridActionsCellItem
-          key="edit-item"
-          icon={<EditIcon />}
-          label="Edit"
-          onClick={handleRowEdit(row)}
-        />,
-        <GridActionsCellItem
-          key="delete-item"
-          icon={<DeleteIcon />}
-          label="Delete"
-          onClick={handleRowDelete(row)}
-        />,
-      ],
-    },
-  ],
-  [handleRowEdit, handleRowDelete],
-);
+      {
+        field: 'totalSalesToDate',
+        headerName: 'Total Sales',
+        type: 'number',
+        width: 100,
+      },
+      {
+        field: 'actions',
+        type: 'actions',
+        flex: 1,
+        align: 'right',
+        getActions: ({ row }) => [
+          <GridActionsCellItem
+            key="edit-item"
+            icon={<EditIcon />}
+            label="Edit"
+            onClick={handleRowEdit(row)}
+          />,
+          <GridActionsCellItem
+            key="delete-item"
+            icon={<DeleteIcon />}
+            label="Delete"
+            onClick={handleRowDelete(row)}
+          />,
+        ],
+      },
+    ],
+    [handleRowEdit, handleRowDelete],
+  );
 
   const pageTitle = 'Books';
 
