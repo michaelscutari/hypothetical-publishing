@@ -11,6 +11,8 @@ public record AuthorResponse(
     @Schema(description = "Author id", requiredMode = REQUIRED) Long id,
     @Schema(description = "Author name", requiredMode = REQUIRED) String name,
     @Schema(description = "Author email") String email,
+    @Schema(description = "Author's paypal.me username") String paypalAccount,
+    @Schema(description = "Author's Venmo username") String venmoAccount,
     @Schema(description = "Number of books written by the author", requiredMode = REQUIRED)
         Long bookCount,
     @Schema(
@@ -27,6 +29,8 @@ public record AuthorResponse(
         author.getId(),
         author.getName(),
         author.getEmail(),
+        author.getPaypalAccount(),
+        author.getVenmoAccount(),
         author.getBookCount(),
         author.getTotalRoyalty(),
         author.getPaidRoyalty(),

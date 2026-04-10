@@ -1,3 +1,13 @@
+import { BooksService, type BookResponse } from '@/api';
+import PageContainer from '@/components/PageContainer';
+import SortDialog, { type SortOption } from '@/components/SortDialog';
+import StandardDataGrid from '@/components/StandardDataGrid';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { useServerDataGrid } from '@/hooks/useServerDataGrid';
+import { getErrorMessage } from '@/utils/error';
+import { formatMonthYear } from '@/utils/formatting';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -19,16 +29,6 @@ import {
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getErrorMessage } from '@/utils/error';
-import { formatMonthYear } from '@/utils/formatting';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useServerDataGrid } from '@/hooks/useServerDataGrid';
-import { BooksService, type BookResponse } from '@/api';
-import { useDialogs } from '@/hooks/useDialogs/useDialogs';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PageContainer from '@/components/PageContainer';
-import SortDialog, { type SortOption } from '@/components/SortDialog';
-import StandardDataGrid from '@/components/StandardDataGrid';
 
 const BOOK_SORT_OPTIONS: SortOption[] = [
   { field: 'author', label: 'Author' },
@@ -36,8 +36,6 @@ const BOOK_SORT_OPTIONS: SortOption[] = [
   { field: 'publicationDate', label: 'Publication Date' },
   { field: 'seriesName', label: 'Series Name' },
   { field: 'seriesPosition', label: 'Series Position' },
-  { field: 'distributorAuthorRoyaltyRate', label: 'Distributor Royalty' },
-  { field: 'handsoldAuthorRoyaltyRate', label: 'Handsold Royalty' },
 ];
 
 const BOOK_DEFAULT_SORT: GridSortModel = [
@@ -132,107 +130,109 @@ export default function BookList() {
   );
 
   const columns = React.useMemo<GridColDef[]>(
-    () => [
-      {
-        field: 'cover',
-        headerName: '',
-        width: 52,
-        sortable: false,
-        filterable: false,
-        disableColumnMenu: true,
-        renderCell: ({ row }) =>
-          row.hasCover ? (
+  () => [
+    {
+      field: 'cover',
+      headerName: '',
+      width: 52,
+      sortable: false,
+      filterable: false,
+      disableColumnMenu: true,
+      renderCell: ({ row }) =>
+        row.hasCover ? (
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: 0.75,
+            }}
+          >
             <Box
+              component="img"
+              src={`/api/books/${row.id}/cover/thumbnail`}
+              alt=""
               sx={{
-                width: '100%',
                 height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                py: 0.75,
+                width: 'auto',
+                maxWidth: 36,
+                objectFit: 'contain',
+                borderRadius: 0.5,
+                border: '1px solid',
+                borderColor: 'divider',
+                display: 'block',
               }}
-            >
-              <Box
-                component="img"
-                src={`/api/books/${row.id}/cover/thumbnail`}
-                alt=""
-                sx={{
-                  height: '100%',
-                  width: 'auto',
-                  maxWidth: 36,
-                  objectFit: 'contain',
-                  borderRadius: 0.5,
-                  border: '1px solid',
-                  borderColor: 'divider',
-                  display: 'block',
-                }}
-              />
-            </Box>
-          ) : null,
+            />
+          </Box>
+        ) : null,
+    },
+    { field: 'title', headerName: 'Title', width: 200 },
+    { field: 'author', headerName: 'Author', width: 180 },
+    { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
+    { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
+    { field: 'asin', headerName: 'Amazon ASIN', width: 130 },
+    {
+      field: 'seriesPosition',
+      headerName: 'Series',
+      width: 180,
+      valueGetter: (_value, row) => {
+        if (row.seriesName) {
+          return `${row.seriesName} (#${row.seriesPosition})`;
+        }
+        return '';
       },
-      { field: 'title', headerName: 'Title', width: 200 },
-      { field: 'author', headerName: 'Author', width: 180 },
-      { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
-      {
-        field: 'seriesPosition',
-        headerName: 'Series',
-        width: 180,
-        valueGetter: (_value, row) => {
-          if (row.seriesName) {
-            return `${row.seriesName} (#${row.seriesPosition})`;
-          }
-          return '';
-        },
+    },
+    {
+      field: 'publicationDate',
+      headerName: 'Publication',
+      width: 120,
+      valueGetter: (_value, row) => {
+        const year = row.publicationYear;
+        const month = row.publicationMonth;
+        if (year && month) {
+          return formatMonthYear(month, year);
+        }
+        return '';
       },
-      {
-        field: 'publicationDate',
-        headerName: 'Publication',
-        width: 120,
-        valueGetter: (_value, row) => {
-          const year = row.publicationYear;
-          const month = row.publicationMonth;
-          if (year && month) {
-            return formatMonthYear(month, year);
-          }
-          return '';
-        },
-        sortComparator: (v1, v2, param1, param2) => {
-          const row1 = param1.api.getRow(param1.id);
-          const row2 = param2.api.getRow(param2.id);
-          const date1 = (row1?.publicationYear ?? 0) * 12 + (row1?.publicationMonth ?? 0);
-          const date2 = (row2?.publicationYear ?? 0) * 12 + (row2?.publicationMonth ?? 0);
-          return date1 - date2;
-        },
+      sortComparator: (v1, v2, param1, param2) => {
+        const row1 = param1.api.getRow(param1.id);
+        const row2 = param2.api.getRow(param2.id);
+        const date1 = (row1?.publicationYear ?? 0) * 12 + (row1?.publicationMonth ?? 0);
+        const date2 = (row2?.publicationYear ?? 0) * 12 + (row2?.publicationMonth ?? 0);
+        return date1 - date2;
       },
-      {
-        field: 'totalSalesToDate',
-        headerName: 'Total Sales',
-        type: 'number',
-        width: 100,
-      },
-      {
-        field: 'actions',
-        type: 'actions',
-        flex: 1,
-        align: 'right',
-        getActions: ({ row }) => [
-          <GridActionsCellItem
-            key="edit-item"
-            icon={<EditIcon />}
-            label="Edit"
-            onClick={handleRowEdit(row)}
-          />,
-          <GridActionsCellItem
-            key="delete-item"
-            icon={<DeleteIcon />}
-            label="Delete"
-            onClick={handleRowDelete(row)}
-          />,
-        ],
-      },
-    ],
-    [handleRowEdit, handleRowDelete],
-  );
+    },
+    {
+      field: 'totalSalesToDate',
+      headerName: 'Total Sales',
+      type: 'number',
+      width: 100,
+    },
+    {
+      field: 'actions',
+      type: 'actions',
+      flex: 1,
+      align: 'right',
+      getActions: ({ row }) => [
+        <GridActionsCellItem
+          key="edit-item"
+          icon={<EditIcon />}
+          label="Edit"
+          onClick={handleRowEdit(row)}
+        />,
+        <GridActionsCellItem
+          key="delete-item"
+          icon={<DeleteIcon />}
+          label="Delete"
+          onClick={handleRowDelete(row)}
+        />,
+      ],
+    },
+  ],
+  [handleRowEdit, handleRowDelete],
+);
 
   const pageTitle = 'Books';
 

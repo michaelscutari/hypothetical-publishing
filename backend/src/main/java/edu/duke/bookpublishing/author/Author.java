@@ -24,6 +24,8 @@ public class Author {
   @Column(nullable = false)
   @Email
   private String email;
+  private String paypalAccount;
+  private String venmoAccount;
 
   @Formula("(SELECT COUNT(DISTINCT b.id) FROM books b WHERE b.author_id = id)")
   private Long bookCount;
@@ -45,5 +47,7 @@ public class Author {
   public void normalizeFields() {
     name = StringUtils.normalizeWhitespace(name);
     email = StringUtils.normalizeWhitespace(email);
+    paypalAccount = StringUtils.normalizeWhitespace(paypalAccount);
+    venmoAccount = StringUtils.normalizeWhitespace(venmoAccount);
   }
 }
