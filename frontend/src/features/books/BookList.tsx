@@ -33,9 +33,13 @@ import { useNavigate } from 'react-router-dom';
 const BOOK_SORT_OPTIONS: SortOption[] = [
   { field: 'author', label: 'Author' },
   { field: 'title', label: 'Title' },
+  { field: 'isbn13', label: 'ISBN-13' },
+  { field: 'isbn10', label: 'ISBN-10' },
+  { field: 'amazonEbookAsin', label: 'Amazon ASIN' },
   { field: 'publicationDate', label: 'Publication Date' },
   { field: 'seriesName', label: 'Series Name' },
   { field: 'seriesPosition', label: 'Series Position' },
+  { field: 'totalSalesToDate', label: 'Total Sales' },
 ];
 
 const BOOK_DEFAULT_SORT: GridSortModel = [
@@ -172,7 +176,11 @@ export default function BookList() {
       { field: 'author', headerName: 'Author', width: 180 },
       { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
       { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
-      { field: 'asin', headerName: 'Amazon ASIN', width: 130 },
+      {
+        field: 'amazonEbookAsin',
+        headerName: 'Amazon ASIN',
+        width: 130,
+      },
       {
         field: 'seriesPosition',
         headerName: 'Series',
