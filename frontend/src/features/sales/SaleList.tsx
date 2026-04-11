@@ -5,6 +5,7 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
+import ButtonGroup from '@mui/material/ButtonGroup';
 import FormControl from '@mui/material/FormControl';
 import IconButton from '@mui/material/IconButton';
 import InputLabel from '@mui/material/InputLabel';
@@ -51,6 +52,7 @@ export default function SaleList() {
   const [selectedAuthor, setSelectedAuthor] = React.useState<AuthorResponse | null>(null);
   const [saleSource, setSaleSource] = React.useState<string>('all');
   const [format, setFormat] = React.useState<string>('all');
+  const [distributor, setDistributor] = React.useState<string>('all');
   const [authors, setAuthors] = React.useState<AuthorResponse[]>([]);
 
   const fetchFn = React.useCallback(
@@ -65,6 +67,7 @@ export default function SaleList() {
 
       const authorIdParam = selectedAuthor?.id;
       const saleSourceParam = saleSource === 'all' ? undefined : saleSource.toUpperCase();
+      const distributorParam = distributor === 'all' ? undefined : distributor.toUpperCase();
       const formatParam = format === 'all' ? undefined : format.toUpperCase();
 
       return SalesService.getSales(
@@ -77,11 +80,11 @@ export default function SaleList() {
         endDateParam,
         authorIdParam,
         saleSourceParam,
-        undefined,
+        distributorParam,
         formatParam,
       );
     },
-    [sortModel, startDate, endDate, selectedAuthor, saleSource, format],
+    [sortModel, startDate, endDate, selectedAuthor, saleSource, distributor, format],
   );
 
   const {
@@ -125,9 +128,10 @@ export default function SaleList() {
     if (endDate) params.set('endDate', endDate.endOf('month').format('YYYY-MM-DD'));
     if (selectedAuthor?.id) params.set('authorId', String(selectedAuthor.id));
     if (saleSource !== 'all') params.set('saleSource', saleSource.toUpperCase());
+    if (distributor !== 'all') params.set('distributor', distributor.toUpperCase());
     if (format !== 'all') params.set('format', format.toUpperCase());
     window.open(`/api/sales/export?${params.toString()}`, '_blank');
-  }, [startDate, endDate, selectedAuthor, saleSource, format]);
+  }, [startDate, endDate, selectedAuthor, saleSource, distributor, format]);
 
   const handleRowDelete = React.useCallback(
     (sale: SaleResponse) => async () => {
@@ -373,110 +377,132 @@ export default function SaleList() {
       title={pageTitle}
       breadcrumbs={[{ title: pageTitle }]}
       actions={
-        <Stack direction="row" alignItems="center" spacing={0.5} flexWrap="wrap" useFlexGap>
-          <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
-            <div>
-              <IconButton size="small" aria-label="refresh" onClick={refresh}>
-                <RefreshIcon />
-              </IconButton>
-            </div>
-          </Tooltip>
+        <Stack spacing={1.25} sx={{ width: '100%' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <ButtonGroup variant="outlined" size="small" aria-label="sales actions">
+              <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
+                New Sale
+              </Button>
+              <Button onClick={handleImportClick}>Import</Button>
+              <Button onClick={handleExportClick}>Export</Button>
+            </ButtonGroup>
+          </Box>
 
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker
-              label="Start"
-              value={startDate}
-              onChange={(v) => setStartDate(v)}
-              views={['year', 'month']}
-              format="MM/YYYY"
-              openTo="year"
-              minDate={dayjs('1900-01-01')}
-              maxDate={dayjs()}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  placeholder: 'MM/YYYY',
-                  InputLabelProps: { shrink: true },
-                },
-                toolbar: { hidden: true },
-                field: {
-                  clearable: true,
-                },
-              }}
-              sx={{ width: 120 }}
+          <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap" useFlexGap>
+            <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
+              <div>
+                <IconButton size="small" aria-label="refresh" onClick={refresh}>
+                  <RefreshIcon />
+                </IconButton>
+              </div>
+            </Tooltip>
+
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label="Start"
+                value={startDate}
+                onChange={(v) => setStartDate(v)}
+                views={['year', 'month']}
+                format="MM/YYYY"
+                openTo="year"
+                minDate={dayjs('1900-01-01')}
+                maxDate={dayjs()}
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    placeholder: 'MM/YYYY',
+                    InputLabelProps: { shrink: true },
+                  },
+                  toolbar: { hidden: true },
+                  field: {
+                    clearable: true,
+                  },
+                }}
+                sx={{ width: 150 }}
+              />
+              <DatePicker
+                label="End"
+                value={endDate}
+                onChange={(v) => setEndDate(v)}
+                views={['year', 'month']}
+                format="MM/YYYY"
+                openTo="year"
+                minDate={dayjs('1900-01-01')}
+                maxDate={dayjs()}
+                slotProps={{
+                  textField: {
+                    size: 'small',
+                    placeholder: 'MM/YYYY',
+                    InputLabelProps: { shrink: true },
+                  },
+                  toolbar: { hidden: true },
+                  field: {
+                    clearable: true,
+                  },
+                }}
+                sx={{ width: 150 }}
+              />
+            </LocalizationProvider>
+
+            <Autocomplete
+              options={authors}
+              getOptionLabel={(author) => author.name}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Author"
+                  size="small"
+                  placeholder="All Authors"
+                  InputLabelProps={{ shrink: true }}
+                />
+              )}
+              value={selectedAuthor}
+              onChange={(_, newValue) => setSelectedAuthor(newValue)}
+              sx={{ minWidth: 150 }}
             />
-            <DatePicker
-              label="End"
-              value={endDate}
-              onChange={(v) => setEndDate(v)}
-              views={['year', 'month']}
-              format="MM/YYYY"
-              openTo="year"
-              minDate={dayjs('1900-01-01')}
-              maxDate={dayjs()}
-              slotProps={{
-                textField: {
-                  size: 'small',
-                  placeholder: 'MM/YYYY',
-                  InputLabelProps: { shrink: true },
-                },
-                toolbar: { hidden: true },
-                field: {
-                  clearable: true,
-                },
-              }}
-              sx={{ width: 120 }}
-            />
-          </LocalizationProvider>
 
-          <Autocomplete
-            options={authors}
-            getOptionLabel={(author) => author.name}
-            renderInput={(params) => (
-              <TextField {...params} label="Author" size="small" placeholder="All Authors" />
-            )}
-            value={selectedAuthor}
-            onChange={(_, newValue) => setSelectedAuthor(newValue)}
-            sx={{ minWidth: 150 }}
-          />
+            <FormControl size="small" sx={{ minWidth: 110 }}>
+              <InputLabel>Sale Source</InputLabel>
+              <Select
+                value={saleSource}
+                label="Sale Source"
+                onChange={(e: SelectChangeEvent) => setSaleSource(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="distributor">Distributor</MenuItem>
+                <MenuItem value="hand_sold">Hand Sold</MenuItem>
+              </Select>
+            </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 110 }}>
-            <InputLabel>Sale Source</InputLabel>
-            <Select
-              value={saleSource}
-              label="Sale Source"
-              onChange={(e: SelectChangeEvent) => setSaleSource(e.target.value)}
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="distributor">Distributor</MenuItem>
-              <MenuItem value="hand_sold">Hand Sold</MenuItem>
-            </Select>
-          </FormControl>
+            <FormControl size="small" sx={{ width: 110 }}>
+              <InputLabel shrink>Format</InputLabel>
+              <Select
+                value={format}
+                label="Format"
+                onChange={(e: SelectChangeEvent) => setFormat(e.target.value)}
+                notched
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="print">Print</MenuItem>
+                <MenuItem value="ebook">Ebook</MenuItem>
+                <MenuItem value="kindle_unlimited">Kindle Unlimited</MenuItem>
+              </Select>
+            </FormControl>
 
-          <FormControl size="small" sx={{ width: 110 }}>
-            <InputLabel shrink>Format</InputLabel>
-            <Select
-              value={format}
-              label="Format"
-              onChange={(e: SelectChangeEvent) => setFormat(e.target.value)}
-              notched
-            >
-              <MenuItem value="all">All</MenuItem>
-              <MenuItem value="print">Print</MenuItem>
-              <MenuItem value="ebook">Ebook</MenuItem>
-              <MenuItem value="kindle_unlimited">Kindle Unlimited</MenuItem>
-            </Select>
-          </FormControl>
-
-          <Button variant="contained" onClick={handleCreateClick} startIcon={<AddIcon />}>
-            New Sale
-          </Button>
-          <Button variant="outlined" onClick={handleImportClick}>
-            Import
-          </Button>
-          <Button variant="outlined" onClick={handleExportClick}>
-            Export
-          </Button>
+            <FormControl size="small" sx={{ minWidth: 155 }}>
+              <InputLabel>Distributor</InputLabel>
+              <Select
+                value={distributor}
+                label="Distributor"
+                onChange={(e: SelectChangeEvent) => setDistributor(e.target.value)}
+              >
+                <MenuItem value="all">All</MenuItem>
+                <MenuItem value="amazon">Amazon</MenuItem>
+                <MenuItem value="ingram_spark">Ingram Spark</MenuItem>
+                <MenuItem value="other">Other</MenuItem>
+              </Select>
+            </FormControl>
+          </Stack>
         </Stack>
       }
     >
