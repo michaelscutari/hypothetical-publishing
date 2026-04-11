@@ -1,3 +1,5 @@
+import PageContainer from '@/components/PageContainer';
+import PaidStatusChip from '@/components/PaidStatusChip';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -30,23 +32,21 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import PaidStatusChip from '@/components/PaidStatusChip';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageContainer from '@/components/PageContainer';
 
 import {
   BooksService,
   SalesService,
   type AuthorPaymentGroupResponse,
-  type MarkAllPaidRequest,
   type AuthorResponse,
+  type MarkAllPaidRequest,
 } from '@/api';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 const INITIAL_PAGE_SIZE = 10;
 const SHOW_ALL_SIZE = -1;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -326,6 +326,50 @@ export default function AuthorPayments() {
                             </Button>
                           </div>
                         </Tooltip>
+                        {group.paypalAccount && unpaidTotal > 0 && (
+                          <Tooltip
+                            title={`Pay via PayPal: $${unpaidTotal.toFixed(2)}`}
+                            placement="bottom"
+                          >
+                            <IconButton
+                              size="small"
+                              component="a"
+                              href={`https://paypal.me/${group.paypalAccount}/${unpaidTotal.toFixed(2)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Box
+                                component="img"
+                                src="https://www.paypalobjects.com/webstatic/icon/pp258.png"
+                                alt="PayPal"
+                                sx={{ width: 24, height: 24, borderRadius: 1 }}
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {group.venmoAccount && unpaidTotal > 0 && (
+                          <Tooltip
+                            title={`Pay via Venmo: $${unpaidTotal.toFixed(2)}`}
+                            placement="bottom"
+                          >
+                            <IconButton
+                              size="small"
+                              component="a"
+                              href={`https://venmo.com/${group.venmoAccount}?amount=${unpaidTotal.toFixed(2)}&note=Author+royalty`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Box
+                                component="img"
+                                src="https://venmo.com/favicon.ico"
+                                alt="Venmo"
+                                sx={{ width: 24, height: 24, borderRadius: 1 }}
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Stack>
                     </Stack>
                   </AccordionSummary>
