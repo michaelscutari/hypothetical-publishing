@@ -5,24 +5,20 @@
 import type { ParsingError } from './ParsingError';
 import type { SaleResponse } from './SaleResponse';
 /**
- * Response after importing sales for either preview or saving.
+ * Response after uploading an ingram CSV for either preview or saving.
  */
-export type SalesImportResponse = {
+export type IngramImportResponse = {
     /**
      * List of sales that are going to be or were saved
      */
     savedSales: Array<SaleResponse>;
     /**
-     * List of file parsing errors
+     * List of errors in the csv file
      */
-    parseErrors: Array<ParsingError>;
+    csvErrors: Array<ParsingError>;
     /**
-     * List of validation errors when mapping rows to Sale objects
+     * List of errors when mapping rows to Sale objects
      */
-    validationErrors: Array<ParsingError>;
-    /**
-     * List of non-blocking warnings
-     */
-    warnings: Array<ParsingError>;
+    savingErrors: Array<ParsingError>;
 };
 

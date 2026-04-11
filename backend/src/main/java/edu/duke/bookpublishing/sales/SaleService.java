@@ -185,17 +185,26 @@ public class SaleService {
       List<AuthorPaymentSaleResponse> saleRows = new ArrayList<>();
       String authorName = null;
 
+      Author groupAuthor = null;
       for (Sale sale : entry.getValue()) {
         saleRows.add(AuthorPaymentSaleResponse.from(sale));
-        if (authorName == null) {
-          authorName = sale.getBook().getAuthor().getName();
+        if (groupAuthor == null) {
+          groupAuthor = sale.getBook().getAuthor();
+          authorName = groupAuthor.getName();
         }
         if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
           unpaidTotal = unpaidTotal.add(sale.getAuthorRoyalty());
         }
       }
 
-      groups.add(new AuthorPaymentGroupResponse(entry.getKey(), authorName, unpaidTotal, saleRows));
+      groups.add(
+          new AuthorPaymentGroupResponse(
+              entry.getKey(),
+              authorName,
+              groupAuthor != null ? groupAuthor.getPaypalAccount() : null,
+              groupAuthor != null ? groupAuthor.getVenmoAccount() : null,
+              unpaidTotal,
+              saleRows));
     }
 
     return groups;

@@ -2,6 +2,8 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
+import type { IngramImportRequest } from '../models/IngramImportRequest';
+import type { IngramImportResponse } from '../models/IngramImportResponse';
 import type { MarkAllPaidRequest } from '../models/MarkAllPaidRequest';
 import type { MarkAllPaidResponse } from '../models/MarkAllPaidResponse';
 import type { PagedResponseAuthorPaymentGroupResponse } from '../models/PagedResponseAuthorPaymentGroupResponse';
@@ -9,8 +11,6 @@ import type { PagedResponseSaleResponse } from '../models/PagedResponseSaleRespo
 import type { RoyaltyReportResponse } from '../models/RoyaltyReportResponse';
 import type { SaleRequest } from '../models/SaleRequest';
 import type { SaleResponse } from '../models/SaleResponse';
-import type { SalesImportRequest } from '../models/SalesImportRequest';
-import type { SalesImportResponse } from '../models/SalesImportResponse';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
 import { request as __request } from '../core/request';
@@ -97,8 +97,6 @@ export class SalesService {
      * @param endDate
      * @param authorId
      * @param saleSource
-     * @param distributor
-     * @param format
      * @param query
      * @param bookId
      * @returns PagedResponseSaleResponse OK
@@ -113,9 +111,7 @@ export class SalesService {
         startDate?: string,
         endDate?: string,
         authorId?: number,
-        saleSource?: 'DISTRIBUTOR' | 'HAND_SOLD',
-        distributor?: 'INGRAM_SPARK' | 'AMAZON' | 'OTHER',
-        format?: 'PRINT' | 'EBOOK' | 'KINDLE_UNLIMITED',
+        saleSource?: string,
         query?: string,
         bookId?: number,
     ): CancelablePromise<PagedResponseSaleResponse> {
@@ -132,8 +128,6 @@ export class SalesService {
                 'endDate': endDate,
                 'authorId': authorId,
                 'saleSource': saleSource,
-                'distributor': distributor,
-                'format': format,
                 'query': query,
                 'bookId': bookId,
             },
@@ -158,12 +152,12 @@ export class SalesService {
     /**
      * Imports or previews a CSV file
      * @param formData
-     * @returns SalesImportResponse OK
+     * @returns IngramImportResponse OK
      * @throws ApiError
      */
     public static importCsv(
-        formData?: SalesImportRequest,
-    ): CancelablePromise<SalesImportResponse> {
+        formData?: IngramImportRequest,
+    ): CancelablePromise<IngramImportResponse> {
         return __request(OpenAPI, {
             method: 'POST',
             url: '/api/sales/import',
@@ -200,44 +194,6 @@ export class SalesService {
                 'endQuarter': endQuarter,
                 'endYear': endYear,
                 'includeEmptyQuarters': includeEmptyQuarters,
-            },
-        });
-    }
-    /**
-     * Exports filtered sales as CSV
-     * @param startDate
-     * @param endDate
-     * @param authorId
-     * @param saleSource
-     * @param distributor
-     * @param format
-     * @param query
-     * @param bookId
-     * @returns any OK
-     * @throws ApiError
-     */
-    public static exportSalesCsv(
-        startDate?: string,
-        endDate?: string,
-        authorId?: number,
-        saleSource?: 'DISTRIBUTOR' | 'HAND_SOLD',
-        distributor?: 'INGRAM_SPARK' | 'AMAZON' | 'OTHER',
-        format?: 'PRINT' | 'EBOOK' | 'KINDLE_UNLIMITED',
-        query?: string,
-        bookId?: number,
-    ): CancelablePromise<any> {
-        return __request(OpenAPI, {
-            method: 'GET',
-            url: '/api/sales/export',
-            query: {
-                'startDate': startDate,
-                'endDate': endDate,
-                'authorId': authorId,
-                'saleSource': saleSource,
-                'distributor': distributor,
-                'format': format,
-                'query': query,
-                'bookId': bookId,
             },
         });
     }

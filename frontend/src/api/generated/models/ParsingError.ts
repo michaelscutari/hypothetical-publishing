@@ -3,12 +3,11 @@
 /* tslint:disable */
 /* eslint-disable */
 /**
- * List of non-blocking warnings
+ * List of errors when mapping rows to Sale objects
  */
 export type ParsingError = {
     rowNumber: number;
     rawLine: Array<string>;
     errorMessage: string;
-    sheetName?: string;
 };
 

@@ -63,10 +63,6 @@ export type BookDetailResponse = {
      */
     printCost: number;
     /**
-     * Amazon Ebook ASIN
-     */
-    amazonEbookAsin?: string;
-    /**
      * Total sales quantity to date
      */
     totalSalesToDate: number;

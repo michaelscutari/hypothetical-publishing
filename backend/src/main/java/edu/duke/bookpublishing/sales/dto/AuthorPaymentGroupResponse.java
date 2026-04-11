@@ -11,6 +11,8 @@ import java.util.List;
 public record AuthorPaymentGroupResponse(
     @Schema(description = "Author ID", requiredMode = REQUIRED) Long authorId,
     @Schema(description = "Author name", requiredMode = REQUIRED) String author,
+    @Schema(description = "Author's paypal.me username") String paypalAccount,
+    @Schema(description = "Author's Venmo username") String venmoAccount,
     @Schema(description = "Total unpaid author royalty for this author", requiredMode = REQUIRED)
         BigDecimal unpaidTotal,
     @Schema(description = "Sales rows for this author", requiredMode = REQUIRED)
