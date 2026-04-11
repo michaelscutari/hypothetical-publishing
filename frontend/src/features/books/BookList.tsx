@@ -21,6 +21,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import {
   GridActionsCellItem,
   type GridColDef,
@@ -34,9 +35,6 @@ const BOOK_SORT_OPTIONS: SortOption[] = [
   { field: 'author', label: 'Author' },
   { field: 'title', label: 'Title' },
   { field: 'isbn13', label: 'ISBN-13' },
-  { field: 'isbn10', label: 'ISBN-10' },
-  { field: 'amazonEbookAsin', label: 'Amazon ASIN' },
-  { field: 'publicationDate', label: 'Publication Date' },
   { field: 'seriesName', label: 'Series Name' },
   { field: 'seriesPosition', label: 'Series Position' },
   { field: 'totalSalesToDate', label: 'Total Sales' },
@@ -142,26 +140,25 @@ export default function BookList() {
         sortable: false,
         filterable: false,
         disableColumnMenu: true,
-        renderCell: ({ row }) =>
-          row.hasCover ? (
-            <Box
-              sx={{
-                width: '100%',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                py: 0.75,
-              }}
-            >
+        renderCell: ({ row }) => (
+          <Box
+            sx={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              py: 0.75,
+            }}
+          >
+            {row.hasCover ? (
               <Box
                 component="img"
                 src={`/api/books/${row.id}/cover/thumbnail`}
                 alt=""
                 sx={{
-                  height: '100%',
-                  width: 'auto',
-                  maxWidth: 36,
+                  height: 48,
+                  width: 36,
                   objectFit: 'contain',
                   borderRadius: 0.5,
                   border: '1px solid',
@@ -169,33 +166,52 @@ export default function BookList() {
                   display: 'block',
                 }}
               />
-            </Box>
-          ) : null,
+            ) : (
+              <Box
+                sx={{
+                  height: 48,
+                  width: 36,
+                  borderRadius: 0.5,
+                  border: '1px dashed',
+                  borderColor: 'divider',
+                  bgcolor: 'grey.100',
+                }}
+              />
+            )}
+          </Box>
+        ),
       },
-      { field: 'title', headerName: 'Title', width: 200 },
-      { field: 'author', headerName: 'Author', width: 180 },
-      { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
-      { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
       {
-        field: 'amazonEbookAsin',
-        headerName: 'Amazon ASIN',
-        width: 130,
+        field: 'title',
+        headerName: 'Title',
+        flex: 2,
+        minWidth: 150,
+        renderCell: ({ row }) => (
+          <Box
+            sx={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              py: 1,
+              height: '100%',
+            }}
+          >
+            <Typography variant="body2">{row.title}</Typography>
+            {row.seriesName && (
+              <Typography variant="caption" color="text.secondary">
+                {row.seriesName} #{row.seriesPosition}
+              </Typography>
+            )}
+          </Box>
+        ),
       },
-      {
-        field: 'seriesPosition',
-        headerName: 'Series',
-        width: 180,
-        valueGetter: (_value, row) => {
-          if (row.seriesName) {
-            return `${row.seriesName} (#${row.seriesPosition})`;
-          }
-          return '';
-        },
-      },
+      { field: 'author', headerName: 'Author', flex: 1.5, minWidth: 130 },
+      { field: 'isbn13', headerName: 'ISBN-13', flex: 1, minWidth: 130 },
       {
         field: 'publicationDate',
         headerName: 'Publication',
-        width: 120,
+        flex: 0.9,
+        minWidth: 110,
         valueGetter: (_value, row) => {
           const year = row.publicationYear;
           const month = row.publicationMonth;
@@ -216,7 +232,8 @@ export default function BookList() {
         field: 'totalSalesToDate',
         headerName: 'Total Sales',
         type: 'number',
-        width: 100,
+        flex: 0.8,
+        minWidth: 90,
       },
       {
         field: 'actions',
@@ -303,10 +320,16 @@ export default function BookList() {
           error={error}
           disableColumnSorting
           onRowClick={handleRowClick}
-          rowHeight={60}
+          getRowHeight={() => 'auto'}
           loading={isLoading}
           paginationModel={paginationModel}
           onPaginationModelChange={onPaginationModelChange}
+          sx={{
+            '& .MuiDataGrid-cell': {
+              display: 'flex',
+              alignItems: 'center',
+            },
+          }}
         />
       </Box>
       <SortDialog
