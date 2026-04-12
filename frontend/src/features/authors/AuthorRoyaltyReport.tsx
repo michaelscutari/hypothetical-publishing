@@ -1,9 +1,13 @@
+import { AuthorsService, type AuthorResponse } from '@/api';
+import PageContainer from '@/components/PageContainer';
+import Alert from '@mui/material/Alert';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
 import CircularProgress from '@mui/material/CircularProgress';
+import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
@@ -13,8 +17,6 @@ import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AuthorsService, type AuthorResponse } from '@/api';
-import PageContainer from '@/components/PageContainer';
 
 export default function AuthorRoyaltyReport() {
   const [searchParams] = useSearchParams();
@@ -38,10 +40,17 @@ export default function AuthorRoyaltyReport() {
   };
 
   const defaultStart = getDefaultStartQuarter();
-  const [startQuarter, setStartQuarter] = React.useState(defaultStart.quarter);
-  const [startYear, setStartYear] = React.useState(defaultStart.year);
-  const [endQuarter, setEndQuarter] = React.useState(currentQuarter);
-  const [endYear, setEndYear] = React.useState(currentYear);
+  const [authorStartQuarter, setAuthorStartQuarter] = React.useState(defaultStart.quarter);
+  const [authorStartYear, setAuthorStartYear] = React.useState(defaultStart.year);
+  const [authorEndQuarter, setAuthorEndQuarter] = React.useState(currentQuarter);
+  const [authorEndYear, setAuthorEndYear] = React.useState(currentYear);
+
+  const [financialStartQuarter, setFinancialStartQuarter] = React.useState(defaultStart.quarter);
+  const [financialStartYear, setFinancialStartYear] = React.useState(defaultStart.year);
+  const [financialEndQuarter, setFinancialEndQuarter] = React.useState(currentQuarter);
+  const [financialEndYear, setFinancialEndYear] = React.useState(currentYear);
+  const [validationError, setValidationError] = React.useState<string | null>(null);
+  const [isDownloadingReport, setIsDownloadingReport] = React.useState(false);
 
   React.useEffect(() => {
     loadAuthors();
@@ -72,26 +81,132 @@ export default function AuthorRoyaltyReport() {
 
   const handleGenerateReport = () => {
     if (!selectedAuthor || !selectedAuthor.id) return;
+    if (
+      !isValidQuarterRange(authorStartQuarter, authorStartYear, authorEndQuarter, authorEndYear)
+    ) {
+      setValidationError(
+        'Author report range is invalid. End quarter must be after start quarter.',
+      );
+      return;
+    }
+    setValidationError(null);
 
     const params = new URLSearchParams({
       authorId: selectedAuthor.id.toString(),
-      startQuarter: startQuarter.toString(),
-      startYear: startYear.toString(),
-      endQuarter: endQuarter.toString(),
-      endYear: endYear.toString(),
+      startQuarter: authorStartQuarter.toString(),
+      startYear: authorStartYear.toString(),
+      endQuarter: authorEndQuarter.toString(),
+      endYear: authorEndYear.toString(),
     });
 
     window.open(`/author-royalty-report?${params.toString()}`, '_blank');
   };
 
+  const handleAllAuthorsRoyaltyExport = async () => {
+    if (
+      !isValidQuarterRange(
+        financialStartQuarter,
+        financialStartYear,
+        financialEndQuarter,
+        financialEndYear,
+      )
+    ) {
+      setValidationError(
+        'Financial report range is invalid. End quarter must be after start quarter.',
+      );
+      return;
+    }
+    setValidationError(null);
+
+    const params = new URLSearchParams({
+      startQuarter: String(financialStartQuarter),
+      startYear: String(financialStartYear),
+      endQuarter: String(financialEndQuarter),
+      endYear: String(financialEndYear),
+    });
+    await downloadReportFile(`/api/sales/reports/all-authors-royalty?${params.toString()}`);
+  };
+
+  const handlePublisherProfitExport = async () => {
+    if (
+      !isValidQuarterRange(
+        financialStartQuarter,
+        financialStartYear,
+        financialEndQuarter,
+        financialEndYear,
+      )
+    ) {
+      setValidationError(
+        'Financial report range is invalid. End quarter must be after start quarter.',
+      );
+      return;
+    }
+    setValidationError(null);
+
+    const params = new URLSearchParams({
+      startQuarter: String(financialStartQuarter),
+      startYear: String(financialStartYear),
+      endQuarter: String(financialEndQuarter),
+      endYear: String(financialEndYear),
+    });
+    await downloadReportFile(`/api/sales/reports/publisher-profit?${params.toString()}`);
+  };
+
+  const handleAmazonSalesExport = async () => {
+    setValidationError(null);
+    await downloadReportFile('/api/sales/reports/amazon-sales');
+  };
+
+  const downloadReportFile = async (url: string) => {
+    setIsDownloadingReport(true);
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          setValidationError('You are not logged in. Please log in and try again.');
+          return;
+        }
+        setValidationError('Unable to download report. Please try again.');
+        return;
+      }
+
+      const blob = await response.blob();
+      const contentDisposition = response.headers.get('content-disposition');
+      const filename =
+        extractFilename(contentDisposition) ??
+        `financial-report-${new Date().toISOString().replace(/[:]/g, '-')}.xlsx`;
+
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = filename;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      URL.revokeObjectURL(objectUrl);
+    } catch {
+      setValidationError('Unable to download report. Please try again.');
+    } finally {
+      setIsDownloadingReport(false);
+    }
+  };
+
   const years = Array.from({ length: 201 }, (_, i) => 1900 + i);
 
   return (
-    <PageContainer title="Author Royalty Report">
+    <PageContainer title="Reports">
       <Card>
         <CardContent>
           <Stack spacing={3}>
-            <Typography variant="h6">Generate Author Royalty Report</Typography>
+            {validationError ? <Alert severity="error">{validationError}</Alert> : null}
+
+            <Typography variant="subtitle1" fontWeight={600}>
+              Author PDF Report
+            </Typography>
 
             <Typography variant="body2" color="text.secondary">
               Select an author and timespan to generate a detailed royalty report. The report will
@@ -112,9 +227,9 @@ export default function AuthorRoyaltyReport() {
               <FormControl fullWidth>
                 <InputLabel>Start Quarter</InputLabel>
                 <Select
-                  value={startQuarter}
+                  value={authorStartQuarter}
                   label="Start Quarter"
-                  onChange={(e) => setStartQuarter(e.target.value as number)}
+                  onChange={(e) => setAuthorStartQuarter(e.target.value as number)}
                 >
                   <MenuItem value={1}>Q1 (Jan-Mar)</MenuItem>
                   <MenuItem value={2}>Q2 (Apr-Jun)</MenuItem>
@@ -126,9 +241,9 @@ export default function AuthorRoyaltyReport() {
               <FormControl fullWidth>
                 <InputLabel>Start Year</InputLabel>
                 <Select
-                  value={startYear}
+                  value={authorStartYear}
                   label="Start Year"
-                  onChange={(e) => setStartYear(e.target.value as number)}
+                  onChange={(e) => setAuthorStartYear(e.target.value as number)}
                 >
                   {years.map((year) => (
                     <MenuItem key={year} value={year}>
@@ -143,9 +258,9 @@ export default function AuthorRoyaltyReport() {
               <FormControl fullWidth>
                 <InputLabel>End Quarter</InputLabel>
                 <Select
-                  value={endQuarter}
+                  value={authorEndQuarter}
                   label="End Quarter"
-                  onChange={(e) => setEndQuarter(e.target.value as number)}
+                  onChange={(e) => setAuthorEndQuarter(e.target.value as number)}
                 >
                   <MenuItem value={1}>Q1 (Jan-Mar)</MenuItem>
                   <MenuItem value={2}>Q2 (Apr-Jun)</MenuItem>
@@ -157,9 +272,9 @@ export default function AuthorRoyaltyReport() {
               <FormControl fullWidth>
                 <InputLabel>End Year</InputLabel>
                 <Select
-                  value={endYear}
+                  value={authorEndYear}
                   label="End Year"
-                  onChange={(e) => setEndYear(e.target.value as number)}
+                  onChange={(e) => setAuthorEndYear(e.target.value as number)}
                 >
                   {years.map((year) => (
                     <MenuItem key={year} value={year}>
@@ -181,9 +296,134 @@ export default function AuthorRoyaltyReport() {
                 {isLoadingAuthors ? <CircularProgress size={24} /> : 'Generate Report'}
               </Button>
             </Box>
+
+            <Divider />
+
+            <Typography variant="subtitle1" fontWeight={600}>
+              Financial XLSX Exports
+            </Typography>
+
+            <Typography variant="body2" color="text.secondary">
+              Configure a quarter range for trend-based financial exports. Amazon Sales export uses
+              lifetime data.
+            </Typography>
+
+            <Stack direction="row" spacing={2}>
+              <FormControl fullWidth>
+                <InputLabel>Start Quarter</InputLabel>
+                <Select
+                  value={financialStartQuarter}
+                  label="Start Quarter"
+                  onChange={(e) => setFinancialStartQuarter(e.target.value as number)}
+                >
+                  <MenuItem value={1}>Q1 (Jan-Mar)</MenuItem>
+                  <MenuItem value={2}>Q2 (Apr-Jun)</MenuItem>
+                  <MenuItem value={3}>Q3 (Jul-Sep)</MenuItem>
+                  <MenuItem value={4}>Q4 (Oct-Dec)</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth>
+                <InputLabel>Start Year</InputLabel>
+                <Select
+                  value={financialStartYear}
+                  label="Start Year"
+                  onChange={(e) => setFinancialStartYear(e.target.value as number)}
+                >
+                  {years.map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+
+            <Stack direction="row" spacing={2}>
+              <FormControl fullWidth>
+                <InputLabel>End Quarter</InputLabel>
+                <Select
+                  value={financialEndQuarter}
+                  label="End Quarter"
+                  onChange={(e) => setFinancialEndQuarter(e.target.value as number)}
+                >
+                  <MenuItem value={1}>Q1 (Jan-Mar)</MenuItem>
+                  <MenuItem value={2}>Q2 (Apr-Jun)</MenuItem>
+                  <MenuItem value={3}>Q3 (Jul-Sep)</MenuItem>
+                  <MenuItem value={4}>Q4 (Oct-Dec)</MenuItem>
+                </Select>
+              </FormControl>
+
+              <FormControl fullWidth>
+                <InputLabel>End Year</InputLabel>
+                <Select
+                  value={financialEndYear}
+                  label="End Year"
+                  onChange={(e) => setFinancialEndYear(e.target.value as number)}
+                >
+                  {years.map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Stack>
+
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={handleAllAuthorsRoyaltyExport}
+                disabled={isDownloadingReport}
+              >
+                Export All Authors Royalty (XLSX)
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={handlePublisherProfitExport}
+                disabled={isDownloadingReport}
+              >
+                Export Publisher Profit (XLSX)
+              </Button>
+              <Button
+                variant="contained"
+                onClick={handleAmazonSalesExport}
+                disabled={isDownloadingReport}
+              >
+                Export Amazon Sales (XLSX)
+              </Button>
+            </Stack>
           </Stack>
         </CardContent>
       </Card>
     </PageContainer>
   );
+}
+
+function isValidQuarterRange(
+  startQuarter: number,
+  startYear: number,
+  endQuarter: number,
+  endYear: number,
+) {
+  if (startQuarter < 1 || startQuarter > 4 || endQuarter < 1 || endQuarter > 4) {
+    return false;
+  }
+  if (endYear < startYear) {
+    return false;
+  }
+  return endYear !== startYear || endQuarter >= startQuarter;
+}
+
+function extractFilename(contentDisposition: string | null): string | null {
+  if (!contentDisposition) {
+    return null;
+  }
+
+  const match = contentDisposition.match(/filename="?([^";]+)"?/i);
+  if (!match || !match[1]) {
+    return null;
+  }
+
+  return match[1].trim();
 }

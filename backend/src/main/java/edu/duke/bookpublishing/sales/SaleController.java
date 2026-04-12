@@ -3,6 +3,7 @@ package edu.duke.bookpublishing.sales;
 import edu.duke.bookpublishing.common.SortUtils;
 import edu.duke.bookpublishing.common.dto.PagedResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
+import edu.duke.bookpublishing.sales.dto.FinancialReportFile;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidRequest;
 import edu.duke.bookpublishing.sales.dto.MarkAllPaidResponse;
 import edu.duke.bookpublishing.sales.dto.RoyaltyReportResponse;
@@ -170,6 +171,47 @@ public class SaleController {
         authorId, startQuarter, startYear, endQuarter, endYear, includeEmptyQuarters);
   }
 
+  @Operation(
+      operationId = "exportAllAuthorsRoyaltyReport",
+      summary = "Exports all authors royalty totals by quarter range as XLSX")
+  @GetMapping("/reports/all-authors-royalty")
+  public void exportAllAuthorsRoyaltyReport(
+      @RequestParam int startQuarter,
+      @RequestParam int startYear,
+      @RequestParam int endQuarter,
+      @RequestParam int endYear,
+      HttpServletResponse response)
+      throws IOException {
+    FinancialReportFile reportFile =
+        saleService.exportAllAuthorsRoyaltyReport(startQuarter, startYear, endQuarter, endYear);
+    writeFileResponse(response, reportFile);
+  }
+
+  @Operation(
+      operationId = "exportPublisherProfitReport",
+      summary = "Exports publisher profit totals by quarter range as XLSX")
+  @GetMapping("/reports/publisher-profit")
+  public void exportPublisherProfitReport(
+      @RequestParam int startQuarter,
+      @RequestParam int startYear,
+      @RequestParam int endQuarter,
+      @RequestParam int endYear,
+      HttpServletResponse response)
+      throws IOException {
+    FinancialReportFile reportFile =
+        saleService.exportPublisherProfitReport(startQuarter, startYear, endQuarter, endYear);
+    writeFileResponse(response, reportFile);
+  }
+
+  @Operation(
+      operationId = "exportAmazonSalesReport",
+      summary = "Exports Amazon lifetime sales data as XLSX")
+  @GetMapping("/reports/amazon-sales")
+  public void exportAmazonSalesReport(HttpServletResponse response) throws IOException {
+    FinancialReportFile reportFile = saleService.exportAmazonSalesReport();
+    writeFileResponse(response, reportFile);
+  }
+
   @Operation(operationId = "getSaleById", summary = "Gets a sale by its ID")
   @GetMapping("/{id}")
   public SaleResponse getSale(@PathVariable Long id) {
@@ -217,5 +259,14 @@ public class SaleController {
   @ResponseStatus(HttpStatus.NO_CONTENT)
   public void deleteSale(@PathVariable Long id) {
     saleService.deleteById(id);
+  }
+
+  private void writeFileResponse(HttpServletResponse response, FinancialReportFile reportFile)
+      throws IOException {
+    response.setContentType(reportFile.contentType());
+    response.setHeader(
+        "Content-Disposition", "attachment; filename=\"" + reportFile.filename() + "\"");
+    response.getOutputStream().write(reportFile.content());
+    response.flushBuffer();
   }
 }
