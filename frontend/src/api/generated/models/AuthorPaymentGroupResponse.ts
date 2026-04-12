@@ -16,14 +16,6 @@ export type AuthorPaymentGroupResponse = {
      */
     author: string;
     /**
-     * Author's paypal.me username
-     */
-    paypalAccount?: string;
-    /**
-     * Author's Venmo username
-     */
-    venmoAccount?: string;
-    /**
      * Total unpaid author royalty for this author
      */
     unpaidTotal: number;

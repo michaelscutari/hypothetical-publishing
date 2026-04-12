@@ -19,14 +19,6 @@ export type AuthorResponse = {
      */
     email?: string;
     /**
-     * Author's paypal.me username
-     */
-    paypalAccount?: string;
-    /**
-     * Author's Venmo username
-     */
-    venmoAccount?: string;
-    /**
      * Number of books written by the author
      */
     bookCount: number;
