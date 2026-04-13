@@ -197,6 +197,9 @@ public class BookController {
             .coverPrice(request.coverPrice())
             .printCost(request.printCost())
             .amazonEbookAsin(request.amazonEbookAsin())
+            .released(request.released())
+            .kickstarterItemTagEbook(request.kickstarterItemTagEbook())
+            .kickstarterItemTagPrint(request.kickstarterItemTagPrint())
             .build();
 
     return BookResponse.from(bookService.createBook(book));
@@ -239,6 +242,9 @@ public class BookController {
     book.setCoverPrice(request.coverPrice());
     book.setPrintCost(request.printCost());
     book.setAmazonEbookAsin(request.amazonEbookAsin());
+    book.setReleased(request.released());
+    book.setKickstarterItemTagEbook(request.kickstarterItemTagEbook());
+    book.setKickstarterItemTagPrint(request.kickstarterItemTagPrint());
 
     return BookResponse.from(bookService.updateBook(book, oldSeriesName, oldSeriesPosition));
   }

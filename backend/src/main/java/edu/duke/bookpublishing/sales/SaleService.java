@@ -1052,17 +1052,15 @@ public class SaleService {
   }
 
   private BigDecimal resolvePublisherRevenue(SaleRequest request, Book book) {
-    if (request.saleSource() == SaleSource.DISTRIBUTOR) {
-      if (request.publisherRevenue() == null) {
-        throw new DataIntegrityViolationException(
-            "publisherRevenue is required for distributor sales");
-      }
-      return request.publisherRevenue();
+    SaleSource source = request.saleSource();
+    if (source.isRevenueComputed()) {
+      return source.computeRevenue(book, request.quantitySold());
     }
-
-    return book.getCoverPrice()
-        .subtract(book.getPrintCost())
-        .multiply(BigDecimal.valueOf(request.quantitySold()));
+    if (request.publisherRevenue() == null) {
+      throw new DataIntegrityViolationException(
+          "publisherRevenue is required for distributor sales");
+    }
+    return request.publisherRevenue();
   }
 
   private BigDecimal resolveAuthorRoyaltyRate(SaleRequest request, Book book) {

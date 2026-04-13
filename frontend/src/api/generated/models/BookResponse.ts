@@ -43,7 +43,7 @@ export type BookResponse = {
      */
     distributorAuthorRoyaltyRate: number;
     /**
-     * Handsold author royalty rate
+     * Handsold/Kickstarter author royalty rate
      */
     handsoldAuthorRoyaltyRate: number;
     /**
@@ -74,5 +74,17 @@ export type BookResponse = {
      * Amazon ASIN number
      */
     amazonEbookAsin?: string;
+    /**
+     * Whether this book has been released
+     */
+    released: boolean;
+    /**
+     * Kickstarter item tag for ebook edition
+     */
+    kickstarterItemTagEbook?: string;
+    /**
+     * Kickstarter item tag for print edition
+     */
+    kickstarterItemTagPrint?: string;
 };
 

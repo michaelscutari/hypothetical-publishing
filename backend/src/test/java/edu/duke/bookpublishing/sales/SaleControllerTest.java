@@ -603,6 +603,102 @@ class SaleControllerTest {
   }
 
   @Test
+  void createKickstarterSaleSucceeds() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.KICKSTARTER,
+            null,
+            SaleFormat.EBOOK,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            null,
+            null,
+            false,
+            "Kickstarter sale");
+
+    // coverPrice=20.00, printCost ignored (effectively 0 for KS)
+    // revenue = 20.00 * 10 = 200.00, royalty = 200.00 * 0.10 = 20.00
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.saleSource").value("KICKSTARTER"))
+        .andExpect(jsonPath("$.distributor", nullValue()))
+        .andExpect(jsonPath("$.publisherRevenue").value(200.00))
+        .andExpect(jsonPath("$.authorRoyalty").value(20.00));
+  }
+
+  @Test
+  void createKickstarterSaleRejectsDistributor() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.KICKSTARTER,
+            SaleDistributor.AMAZON,
+            SaleFormat.PRINT,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            null,
+            null,
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createKickstarterSaleRejectsKindleUnlimited() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.KICKSTARTER,
+            null,
+            SaleFormat.KINDLE_UNLIMITED,
+            2,
+            2024,
+            null,
+            500,
+            Currency.USD,
+            null,
+            null,
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void getSaleByIdReturnsSale() throws Exception {
     Cookie token = login();
     Book book = createBook();

@@ -17,7 +17,13 @@ public class AuthorService {
   private final AuthorRepository authorRepository;
 
   public Author createAuthor(AuthorRequest request) {
-    Author author = Author.builder().name(request.name()).email(request.email()).build();
+    Author author =
+        Author.builder()
+            .name(request.name())
+            .email(request.email())
+            .paypalAccount(request.paypalAccount())
+            .venmoAccount(request.venmoAccount())
+            .build();
     return authorRepository.save(author);
   }
 
@@ -27,6 +33,8 @@ public class AuthorService {
 
     author.setName(request.name());
     author.setEmail(request.email());
+    author.setPaypalAccount(request.paypalAccount());
+    author.setVenmoAccount(request.venmoAccount());
 
     return authorRepository.save(author);
   }

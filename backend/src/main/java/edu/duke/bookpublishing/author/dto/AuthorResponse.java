@@ -20,7 +20,9 @@ public record AuthorResponse(
     @Schema(description = "Total royalty paid to the author", requiredMode = REQUIRED)
         BigDecimal paidRoyalty,
     @Schema(description = "Total royalty unpaid to the author", requiredMode = REQUIRED)
-        BigDecimal unpaidRoyalty) {
+        BigDecimal unpaidRoyalty,
+    @Schema(description = "Paypal.me account name") String paypalAccount,
+    @Schema(description = "Venmo account name") String venmoAccount) {
 
   public static AuthorResponse from(Author author) {
     return new AuthorResponse(
@@ -30,6 +32,8 @@ public record AuthorResponse(
         author.getBookCount(),
         author.getTotalRoyalty(),
         author.getPaidRoyalty(),
-        author.getUnpaidRoyalty());
+        author.getUnpaidRoyalty(),
+        author.getPaypalAccount(),
+        author.getVenmoAccount());
   }
 }

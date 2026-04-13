@@ -22,7 +22,9 @@ public record SaleResponse(
         Long bookId,
     @Schema(description = "Title of the sold book", requiredMode = REQUIRED) String bookTitle,
     @Schema(description = "Author of the sold book", requiredMode = REQUIRED) String bookAuthor,
-    @Schema(description = "Sale source (distributor or handsold)", requiredMode = REQUIRED)
+    @Schema(
+            description = "Sale source (distributor, handsold, or kickstarter)",
+            requiredMode = REQUIRED)
         SaleSource saleSource,
     @Schema(description = "Distributor of the sale", example = "AMAZON", requiredMode = REQUIRED)
         SaleDistributor distributor,
