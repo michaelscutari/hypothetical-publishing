@@ -1,13 +1,13 @@
-import * as React from 'react';
-import { styled } from '@mui/material/styles';
+import NavigateNextRoundedIcon from '@mui/icons-material/NavigateNextRounded';
+import type { ContainerProps } from '@mui/material';
 import Box from '@mui/material/Box';
 import Breadcrumbs, { breadcrumbsClasses } from '@mui/material/Breadcrumbs';
 import Container from '@mui/material/Container';
-import type { ContainerProps } from '@mui/material';
 import MuiLink from '@mui/material/Link';
 import Stack from '@mui/material/Stack';
+import { styled } from '@mui/material/styles';
 import Typography from '@mui/material/Typography';
-import NavigateNextRoundedIcon from '@mui/icons-material/NavigateNextRounded';
+import * as React from 'react';
 import { Link } from 'react-router-dom';
 
 const PageContentHeader = styled('div')(({ theme }) => ({
@@ -48,12 +48,25 @@ export interface PageContainerProps extends ContainerProps {
 }
 
 export default function PageContainer(props: PageContainerProps) {
-  const { children, breadcrumbs, title, actions = null } = props;
+  const { children, breadcrumbs, title, actions = null, sx, maxWidth, ...containerProps } = props;
 
   const isSubPage = breadcrumbs && breadcrumbs.length > 1;
 
   return (
-    <Container sx={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+    <Container
+      maxWidth={maxWidth ?? false}
+      sx={[
+        {
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
+          width: 'min(1920px, calc(100vw - clamp(24px, 4vw, 80px)))',
+          px: { xs: 2, sm: 3, md: 4 },
+        },
+        ...(Array.isArray(sx) ? sx : sx ? [sx] : []),
+      ]}
+      {...containerProps}
+    >
       <Stack sx={{ flex: 1, my: 2 }} spacing={2}>
         <Stack>
           {isSubPage ? (

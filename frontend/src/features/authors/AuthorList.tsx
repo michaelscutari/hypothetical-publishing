@@ -1,3 +1,13 @@
+import { AuthorsService, type AuthorResponse } from '@/api';
+import PageContainer from '@/components/PageContainer';
+import SortDialog, { type SortOption } from '@/components/SortDialog';
+import StandardDataGrid from '@/components/StandardDataGrid';
+import { useDebounce } from '@/hooks/useDebounce';
+import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { useServerDataGrid } from '@/hooks/useServerDataGrid';
+import { getErrorMessage } from '@/utils/error';
+import { formatCurrency } from '@/utils/formatting';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -19,16 +29,6 @@ import {
 } from '@mui/x-data-grid';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AuthorsService, type AuthorResponse } from '@/api';
-import { getErrorMessage } from '@/utils/error';
-import { formatCurrency } from '@/utils/formatting';
-import { useDebounce } from '@/hooks/useDebounce';
-import { useServerDataGrid } from '@/hooks/useServerDataGrid';
-import { useDialogs } from '@/hooks/useDialogs/useDialogs';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PageContainer from '@/components/PageContainer';
-import SortDialog, { type SortOption } from '@/components/SortDialog';
-import StandardDataGrid from '@/components/StandardDataGrid';
 
 const AUTHOR_SORT_OPTIONS: SortOption[] = [
   { field: 'name', label: 'Name' },
@@ -123,39 +123,43 @@ export default function AuthorList() {
 
   const columns = React.useMemo<GridColDef[]>(
     () => [
-      { field: 'name', headerName: 'Name', width: 200 },
-      { field: 'email', headerName: 'Email', width: 220 },
+      { field: 'name', headerName: 'Name', flex: 1.4, minWidth: 180 },
+      { field: 'email', headerName: 'Email', flex: 1.6, minWidth: 220 },
       {
         field: 'bookCount',
         headerName: 'Books',
         type: 'number',
-        width: 90,
+        flex: 0.7,
+        minWidth: 90,
       },
       {
         field: 'totalRoyalty',
         headerName: 'Total Royalty',
         type: 'number',
-        width: 140,
+        flex: 1,
+        minWidth: 140,
         valueFormatter: (value) => formatCurrency(Number(value)),
       },
       {
         field: 'paidRoyalty',
         headerName: 'Paid Royalty',
         type: 'number',
-        width: 130,
+        flex: 1,
+        minWidth: 130,
         valueFormatter: (value) => formatCurrency(Number(value)),
       },
       {
         field: 'unpaidRoyalty',
         headerName: 'Unpaid Royalty',
         type: 'number',
-        width: 130,
+        flex: 1,
+        minWidth: 130,
         valueFormatter: (value) => formatCurrency(Number(value)),
       },
       {
         field: 'actions',
         type: 'actions',
-        flex: 1,
+        width: 90,
         align: 'right',
         getActions: ({ row }) => [
           <GridActionsCellItem
