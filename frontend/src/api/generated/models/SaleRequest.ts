@@ -11,7 +11,7 @@ export type SaleRequest = {
      */
     bookId: number;
     /**
-     * Sale source (distributor or handsold)
+     * Sale source (distributor, handsold, or kickstarter)
      */
     saleSource: SaleRequest.saleSource;
     /**
@@ -61,11 +61,12 @@ export type SaleRequest = {
 };
 export namespace SaleRequest {
     /**
-     * Sale source (distributor or handsold)
+     * Sale source (distributor, handsold, or kickstarter)
      */
     export enum saleSource {
         DISTRIBUTOR = 'DISTRIBUTOR',
         HAND_SOLD = 'HAND_SOLD',
+        KICKSTARTER = 'KICKSTARTER',
     }
     /**
      * The distributor through which the sale was made
