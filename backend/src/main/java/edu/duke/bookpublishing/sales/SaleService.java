@@ -1365,6 +1365,7 @@ public class SaleService {
       int saleYear, int saleMonth, Long bookId, SaleFormat format) {}
 
   private record KickstarterBookMatch(Book book, SaleFormat format) {}
+
   private record QuarterKey(int year, int quarter) {}
 
   private static final class AmazonSalesAccumulator {
