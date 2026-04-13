@@ -89,7 +89,18 @@ export default function BookList() {
   } = useServerDataGrid<BookResponse>({ fetchFn });
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
-    ({ row }) => navigate(`/books/${row.id}`),
+    ({ row }, event) => {
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/books/${row.id}`, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      if (event.button !== 0) {
+        return;
+      }
+
+      navigate(`/books/${row.id}`);
+    },
     [navigate],
   );
 
@@ -175,7 +186,8 @@ export default function BookList() {
       {
         field: 'title',
         headerName: 'Title',
-        width: 200,
+        flex: 1.6,
+        minWidth: 180,
         renderCell: ({ row, value }) => (
           <Link
             to={`/books/${row.id}`}
@@ -194,18 +206,20 @@ export default function BookList() {
           </Link>
         ),
       },
-      { field: 'author', headerName: 'Author', width: 180 },
-      { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
-      { field: 'isbn10', headerName: 'ISBN-10', width: 120 },
+      { field: 'author', headerName: 'Author', flex: 1.3, minWidth: 160 },
+      { field: 'isbn13', headerName: 'ISBN-13', flex: 1, minWidth: 130 },
+      { field: 'isbn10', headerName: 'ISBN-10', flex: 1, minWidth: 120 },
       {
         field: 'amazonEbookAsin',
         headerName: 'Amazon ASIN',
-        width: 130,
+        flex: 1,
+        minWidth: 130,
       },
       {
         field: 'seriesPosition',
         headerName: 'Series',
-        width: 180,
+        flex: 1.2,
+        minWidth: 160,
         valueGetter: (_value, row) => {
           if (row.seriesName) {
             return `${row.seriesName} (#${row.seriesPosition})`;
@@ -216,7 +230,8 @@ export default function BookList() {
       {
         field: 'publicationDate',
         headerName: 'Publication',
-        width: 120,
+        flex: 0.9,
+        minWidth: 120,
         valueGetter: (_value, row) => {
           const year = row.publicationYear;
           const month = row.publicationMonth;
@@ -225,7 +240,7 @@ export default function BookList() {
           }
           return '';
         },
-        sortComparator: (v1, v2, param1, param2) => {
+        sortComparator: (_v1, _v2, param1, param2) => {
           const row1 = param1.api.getRow(param1.id);
           const row2 = param2.api.getRow(param2.id);
           const date1 = (row1?.publicationYear ?? 0) * 12 + (row1?.publicationMonth ?? 0);
@@ -237,12 +252,13 @@ export default function BookList() {
         field: 'totalSalesToDate',
         headerName: 'Total Sales',
         type: 'number',
-        width: 100,
+        flex: 0.8,
+        minWidth: 100,
       },
       {
         field: 'actions',
         type: 'actions',
-        flex: 1,
+        width: 90,
         align: 'right',
         getActions: ({ row }) => [
           <GridActionsCellItem

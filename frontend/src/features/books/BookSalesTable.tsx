@@ -114,6 +114,24 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
     [navigate],
   );
 
+  const handleSaleRowClick = React.useCallback(
+    (saleId: number | undefined, event: React.MouseEvent) => {
+      if (!saleId) {
+        return;
+      }
+
+      if (event.button === 0 && !event.metaKey && !event.ctrlKey) {
+        navigate(`/sales/${saleId}`);
+        return;
+      }
+
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/sales/${saleId}`, '_blank', 'noopener,noreferrer');
+      }
+    },
+    [navigate],
+  );
+
   const handleSaleDelete = React.useCallback(
     async (saleId?: number) => {
       if (!saleId) return;
@@ -297,7 +315,8 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
                     key={sale.id}
                     hover
                     sx={{ cursor: 'pointer' }}
-                    onClick={() => handleViewSale(sale.id)}
+                    onClick={(event) => handleSaleRowClick(sale.id, event)}
+                    onAuxClick={(event) => handleSaleRowClick(sale.id, event)}
                     tabIndex={0}
                   >
                     <TableCell>

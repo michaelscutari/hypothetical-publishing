@@ -66,9 +66,18 @@ export default function SaleList() {
       const endDateParam = endDate ? endDate.endOf('month').format('YYYY-MM-DD') : undefined;
 
       const authorIdParam = selectedAuthor?.id;
-      const saleSourceParam = saleSource === 'all' ? undefined : saleSource.toUpperCase();
-      const distributorParam = distributor === 'all' ? undefined : distributor.toUpperCase();
-      const formatParam = format === 'all' ? undefined : format.toUpperCase();
+      const saleSourceParam =
+        saleSource === 'all'
+          ? undefined
+          : (saleSource.toUpperCase() as 'DISTRIBUTOR' | 'HAND_SOLD' | 'KICKSTARTER');
+      const distributorParam =
+        distributor === 'all'
+          ? undefined
+          : (distributor.toUpperCase() as 'INGRAM_SPARK' | 'AMAZON' | 'OTHER');
+      const formatParam =
+        format === 'all'
+          ? undefined
+          : (format.toUpperCase() as 'PRINT' | 'EBOOK' | 'KINDLE_UNLIMITED');
 
       return SalesService.getSales(
         params.page,
@@ -113,7 +122,18 @@ export default function SaleList() {
 
   // Requirement 3.1.3 - Navigate to detail/modify view
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
-    ({ row }) => navigate(`/sales/${row.id}`),
+    ({ row }, event) => {
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/sales/${row.id}`, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      if (event.button !== 0) {
+        return;
+      }
+
+      navigate(`/sales/${row.id}`);
+    },
     [navigate],
   );
 
@@ -171,31 +191,6 @@ export default function SaleList() {
 
   const columns = React.useMemo<GridColDef<SaleResponse>[]>(
     () => [
-      {
-        field: 'id',
-        headerName: 'Detail',
-        width: 90,
-        sortable: false,
-        filterable: false,
-        disableColumnMenu: true,
-        renderCell: (params) => (
-          <Link
-            to={`/sales/${params.row.id}`}
-            style={{ color: 'inherit', textDecoration: 'none' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.textDecoration = 'underline';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.textDecoration = 'none';
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            View
-          </Link>
-        ),
-      },
       {
         field: 'bookTitle',
         headerName: 'Book Title',
@@ -373,7 +368,6 @@ export default function SaleList() {
 
   return (
     <PageContainer
-      maxWidth="xl"
       title={pageTitle}
       breadcrumbs={[{ title: pageTitle }]}
       actions={

@@ -1,3 +1,5 @@
+import { getErrorMessage } from '@/utils/error';
+import { formatCurrency, formatMonthYear, formatPercent, truncate } from '@/utils/formatting';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import DeleteIcon from '@mui/icons-material/Delete';
 import DescriptionIcon from '@mui/icons-material/Description';
@@ -17,15 +19,13 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { getErrorMessage } from '@/utils/error';
-import { formatCurrency, formatMonthYear, formatPercent, truncate } from '@/utils/formatting';
 
-import { useNavigate, useParams } from 'react-router-dom';
 import { AuthorsService, BooksService, type AuthorResponse, type BookDetailResponse } from '@/api';
 import FullPageLoader from '@/components/FullPageLoader';
+import PageContainer from '@/components/PageContainer';
 import { useDialogs } from '@/hooks/useDialogs/useDialogs';
 import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PageContainer from '@/components/PageContainer';
+import { useNavigate, useParams } from 'react-router-dom';
 export default function AuthorShow() {
   const { authorId } = useParams<{ authorId?: string }>();
   const navigate = useNavigate();
@@ -104,6 +104,20 @@ export default function AuthorShow() {
       navigate(`/reports/author-royalty?authorId=${author.id}`);
     }
   }, [author?.id, navigate]);
+
+  const handleBookRowClick = React.useCallback(
+    (bookId: number, event: React.MouseEvent) => {
+      if (event.button === 0 && !event.metaKey && !event.ctrlKey) {
+        navigate(`/books/${bookId}`);
+        return;
+      }
+
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/books/${bookId}`, '_blank', 'noopener,noreferrer');
+      }
+    },
+    [navigate],
+  );
 
   if (isLoading) {
     return <FullPageLoader />;
@@ -199,7 +213,8 @@ export default function AuthorShow() {
                       key={book.id}
                       hover
                       sx={{ cursor: 'pointer' }}
-                      onClick={() => navigate(`/books/${book.id}`)}
+                      onClick={(event) => handleBookRowClick(book.id, event)}
+                      onAuxClick={(event) => handleBookRowClick(book.id, event)}
                     >
                       <TableCell>{book.title}</TableCell>
                       <TableCell>
