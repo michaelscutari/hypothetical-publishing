@@ -21,6 +21,10 @@ public interface BookRepository extends JpaRepository<Book, Long>, JpaSpecificat
 
   List<Book> findAllByAmazonEbookAsinIgnoreCase(String asin);
 
+  List<Book> findAllByKickstarterItemTagEbook(String tag);
+
+  List<Book> findAllByKickstarterItemTagPrint(String tag);
+
   List<Book> findBySeriesNameIgnoreCaseOrderBySeriesPositionAsc(String seriesName);
 
   @Query(

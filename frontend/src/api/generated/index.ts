@@ -31,7 +31,7 @@ export type { ReportBookRow } from './models/ReportBookRow';
 export type { RoyaltyReportResponse } from './models/RoyaltyReportResponse';
 export { SaleRequest } from './models/SaleRequest';
 export { SaleResponse } from './models/SaleResponse';
-export type { SalesImportRequest } from './models/SalesImportRequest';
+export { SalesImportRequest } from './models/SalesImportRequest';
 export type { SalesImportResponse } from './models/SalesImportResponse';
 export type { UserResponse } from './models/UserResponse';
 
