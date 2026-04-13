@@ -20,13 +20,17 @@ public record BookDetailResponse(
         Integer publicationMonth,
     @Schema(description = "Distributor author royalty rate", requiredMode = REQUIRED)
         BigDecimal distributorAuthorRoyaltyRate,
-    @Schema(description = "Handsold author royalty rate", requiredMode = REQUIRED)
+    @Schema(description = "Handsold/Kickstarter author royalty rate", requiredMode = REQUIRED)
         BigDecimal handsoldAuthorRoyaltyRate,
     @Schema(description = "Series name") String seriesName,
     @Schema(description = "Series position") Integer seriesPosition,
     @Schema(description = "Cover price (USD)", requiredMode = REQUIRED) BigDecimal coverPrice,
     @Schema(description = "Print cost (USD)", requiredMode = REQUIRED) BigDecimal printCost,
     @Schema(description = "Amazon Ebook ASIN") String amazonEbookAsin,
+    @Schema(description = "Whether this book has been released", requiredMode = REQUIRED)
+        Boolean released,
+    @Schema(description = "Kickstarter item tag for ebook edition") String kickstarterItemTagEbook,
+    @Schema(description = "Kickstarter item tag for print edition") String kickstarterItemTagPrint,
     @Schema(description = "Total sales quantity to date", requiredMode = REQUIRED)
         Long totalSalesToDate,
     @Schema(description = "Total publisher revenue earned from this book", requiredMode = REQUIRED)
@@ -59,6 +63,9 @@ public record BookDetailResponse(
         book.getCoverPrice(),
         book.getPrintCost(),
         book.getAmazonEbookAsin(),
+        book.getReleased(),
+        book.getKickstarterItemTagEbook(),
+        book.getKickstarterItemTagPrint(),
         financialSummary.totalUnitsSold(),
         financialSummary.revenue(),
         financialSummary.unpaidRoyalty(),

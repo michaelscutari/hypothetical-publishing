@@ -71,7 +71,7 @@ class AuthorControllerTest {
   }
 
   private AuthorResponse createAuthor(Cookie token, String name, String email) throws Exception {
-    AuthorRequest request = new AuthorRequest(name, email);
+    AuthorRequest request = new AuthorRequest(name, email, null, null);
     MvcResult result =
         mockMvc
             .perform(
@@ -89,7 +89,7 @@ class AuthorControllerTest {
   @Test
   void createAuthorReturnsCreatedAuthor() throws Exception {
     Cookie token = login();
-    AuthorRequest request = new AuthorRequest("Jane Austen", "jane@austen.com");
+    AuthorRequest request = new AuthorRequest("Jane Austen", "jane@austen.com", null, null);
 
     mockMvc
         .perform(
@@ -106,7 +106,7 @@ class AuthorControllerTest {
   @Test
   void createAuthorNormalizesWhitespace() throws Exception {
     Cookie token = login();
-    AuthorRequest request = new AuthorRequest("  Jane   Austen  ", "jane@austen.com");
+    AuthorRequest request = new AuthorRequest("  Jane   Austen  ", "jane@austen.com", null, null);
 
     mockMvc
         .perform(
@@ -120,7 +120,7 @@ class AuthorControllerTest {
 
   @Test
   void createAuthorValidationErrorMissingName() throws Exception {
-    AuthorRequest request = new AuthorRequest("", "jane@austen.com");
+    AuthorRequest request = new AuthorRequest("", "jane@austen.com", null, null);
 
     mockMvc
         .perform(
@@ -134,7 +134,7 @@ class AuthorControllerTest {
 
   @Test
   void createAuthorValidationErrorMissingEmail() throws Exception {
-    AuthorRequest request = new AuthorRequest("Jane Austen", "");
+    AuthorRequest request = new AuthorRequest("Jane Austen", "", null, null);
 
     mockMvc
         .perform(
@@ -148,7 +148,7 @@ class AuthorControllerTest {
 
   @Test
   void createAuthorValidationErrorInvalidEmail() throws Exception {
-    AuthorRequest request = new AuthorRequest("Jane Austen", "not-an-email");
+    AuthorRequest request = new AuthorRequest("Jane Austen", "not-an-email", null, null);
 
     mockMvc
         .perform(
@@ -296,7 +296,7 @@ class AuthorControllerTest {
     Cookie token = login();
     AuthorResponse created = createAuthor(token, "Old Name", "old@test.com");
 
-    AuthorRequest update = new AuthorRequest("New Name", "new@test.com");
+    AuthorRequest update = new AuthorRequest("New Name", "new@test.com", null, null);
 
     mockMvc
         .perform(
@@ -316,7 +316,7 @@ class AuthorControllerTest {
 
   @Test
   void updateAuthorReturns404WhenNotFound() throws Exception {
-    AuthorRequest update = new AuthorRequest("Name", "name@test.com");
+    AuthorRequest update = new AuthorRequest("Name", "name@test.com", null, null);
 
     mockMvc
         .perform(
@@ -332,7 +332,7 @@ class AuthorControllerTest {
     Cookie token = login();
     AuthorResponse created = createAuthor(token, "Valid Name", "valid@test.com");
 
-    AuthorRequest badUpdate = new AuthorRequest("", "not-email");
+    AuthorRequest badUpdate = new AuthorRequest("", "not-email", null, null);
 
     mockMvc
         .perform(

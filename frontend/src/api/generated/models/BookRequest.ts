@@ -35,7 +35,7 @@ export type BookRequest = {
      */
     distributorAuthorRoyaltyRate?: number;
     /**
-     * Handsold author royalty rate (0.0 to 1.0)
+     * Handsold/Kickstarter author royalty rate (0.0 to 1.0)
      */
     handsoldAuthorRoyaltyRate?: number;
     /**
@@ -58,5 +58,17 @@ export type BookRequest = {
      * Amazon ASIN Number
      */
     amazonEbookAsin?: string;
+    /**
+     * Whether this book has been released
+     */
+    released?: boolean;
+    /**
+     * Kickstarter item tag for ebook edition
+     */
+    kickstarterItemTagEbook?: string;
+    /**
+     * Kickstarter item tag for print edition
+     */
+    kickstarterItemTagPrint?: string;
 };
 

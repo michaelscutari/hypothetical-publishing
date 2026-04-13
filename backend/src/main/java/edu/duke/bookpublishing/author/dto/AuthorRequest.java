@@ -5,6 +5,7 @@ import static io.swagger.v3.oas.annotations.media.Schema.RequiredMode.REQUIRED;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Schema(description = "Request body for creating or updating an author")
 public record AuthorRequest(
@@ -17,4 +18,6 @@ public record AuthorRequest(
             requiredMode = REQUIRED)
         @NotBlank(message = "Author email is required")
         @Email(message = "Must be a valid email address")
-        String email) {}
+        String email,
+    @Schema(description = "Paypal.me account name") @Size(max = 128) String paypalAccount,
+    @Schema(description = "Venmo account name") @Size(max = 128) String venmoAccount) {}
