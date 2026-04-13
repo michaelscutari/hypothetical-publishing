@@ -204,6 +204,69 @@ export class SalesService {
         });
     }
     /**
+     * Exports publisher profit totals by quarter range as XLSX
+     * @param startQuarter
+     * @param startYear
+     * @param endQuarter
+     * @param endYear
+     * @returns any OK
+     * @throws ApiError
+     */
+    public static exportPublisherProfitReport(
+        startQuarter: number,
+        startYear: number,
+        endQuarter: number,
+        endYear: number,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sales/reports/publisher-profit',
+            query: {
+                'startQuarter': startQuarter,
+                'startYear': startYear,
+                'endQuarter': endQuarter,
+                'endYear': endYear,
+            },
+        });
+    }
+    /**
+     * Exports Amazon lifetime sales data as XLSX
+     * @returns any OK
+     * @throws ApiError
+     */
+    public static exportAmazonSalesReport(): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sales/reports/amazon-sales',
+        });
+    }
+    /**
+     * Exports all authors royalty totals by quarter range as XLSX
+     * @param startQuarter
+     * @param startYear
+     * @param endQuarter
+     * @param endYear
+     * @returns any OK
+     * @throws ApiError
+     */
+    public static exportAllAuthorsRoyaltyReport(
+        startQuarter: number,
+        startYear: number,
+        endQuarter: number,
+        endYear: number,
+    ): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'GET',
+            url: '/api/sales/reports/all-authors-royalty',
+            query: {
+                'startQuarter': startQuarter,
+                'startYear': startYear,
+                'endQuarter': endQuarter,
+                'endYear': endYear,
+            },
+        });
+    }
+    /**
      * Exports filtered sales as CSV
      * @param startDate
      * @param endDate
