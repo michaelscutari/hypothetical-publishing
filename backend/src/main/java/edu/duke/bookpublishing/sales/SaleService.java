@@ -24,6 +24,7 @@ import edu.duke.bookpublishing.sales.enums.SaleDistributor;
 import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import edu.duke.bookpublishing.sales.parser.AmazonXlsxEntry;
+import edu.duke.bookpublishing.sales.parser.BackerkitXlsxEntry;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
@@ -36,10 +37,13 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
@@ -78,6 +82,7 @@ public class SaleService {
   private final SaleRepository saleRepository;
   private final ImportParser<IngramCsvEntry> ingramCsvParser;
   private final ImportParser<AmazonXlsxEntry> amazonXlsxParser;
+  private final ImportParser<BackerkitXlsxEntry> backerkitXlsxParser;
   private final AuthorRepository authorRepository;
   private final CurrencyService currencyService;
 
@@ -948,11 +953,22 @@ public class SaleService {
     String contentType = file.getContentType() == null ? "" : file.getContentType();
     String filename = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
 
+    if (salesImportRequest.importType() != null) {
+      return switch (salesImportRequest.importType()) {
+        case INGRAM_CSV -> importIngramCsv(salesImportRequest);
+        case AMAZON_XLSX -> importAmazonXlsx(salesImportRequest);
+        case BACKERKIT_XLSX -> importBackerkitXlsx(salesImportRequest);
+      };
+    }
+
     if (ingramCsvParser.supports(contentType, filename)) {
       return importIngramCsv(salesImportRequest);
     }
     if (amazonXlsxParser.supports(contentType, filename)) {
       return importAmazonXlsx(salesImportRequest);
+    }
+    if (backerkitXlsxParser.supports(contentType, filename)) {
+      return importBackerkitXlsx(salesImportRequest);
     }
 
     return new SalesImportResponse(
@@ -1066,6 +1082,84 @@ public class SaleService {
         saleResponses, List.of(), List.of(), parsedBatch.parsingWarnings());
   }
 
+  private SalesImportResponse importBackerkitXlsx(SalesImportRequest salesImportRequest) {
+    ParsedBatch<BackerkitXlsxEntry> parsedBatch =
+        backerkitXlsxParser.parse(salesImportRequest.importFile());
+    if (!parsedBatch.parsingErrors().isEmpty()) {
+      return new SalesImportResponse(
+          List.of(), parsedBatch.parsingErrors(), List.of(), parsedBatch.parsingWarnings());
+    }
+
+    List<ParsingError> validationErrors = new ArrayList<>();
+    Set<String> unknownTags = new HashSet<>();
+    Set<Long> unsuccessfulRows = new HashSet<>();
+    Map<BackerkitAggregateKey, Integer> aggregateQuantities = new HashMap<>();
+    Map<String, KickstarterBookMatch> tagMap = buildKickstarterTagMap();
+
+    for (BackerkitXlsxEntry row : parsedBatch.records()) {
+      if (!row.successfulPledge()) {
+        unsuccessfulRows.add((long) row.sourceRowNumber());
+        continue;
+      }
+      for (BackerkitXlsxEntry.RequestedItem item : row.requestedItems()) {
+        KickstarterBookMatch match = tagMap.get(item.itemTag());
+        if (match == null) {
+          unknownTags.add(item.itemTag());
+          continue;
+        }
+        BackerkitAggregateKey key =
+            new BackerkitAggregateKey(
+                row.saleYear(), row.saleMonth(), match.book().getId(), match.format());
+        aggregateQuantities.merge(key, item.quantity(), Integer::sum);
+      }
+    }
+
+    List<Sale> sales = new ArrayList<>();
+    for (Map.Entry<BackerkitAggregateKey, Integer> entry : aggregateQuantities.entrySet()) {
+      if (entry.getValue() <= 0) {
+        continue;
+      }
+      try {
+        sales.add(
+            mapBackerkitAggregateToSale(
+                salesImportRequest.importFile(),
+                parsedBatch.timestamp(),
+                entry.getKey(),
+                entry.getValue()));
+      } catch (NotFoundException e) {
+        validationErrors.add(new ParsingError(0, null, "book.notFound"));
+      } catch (RuntimeException e) {
+        validationErrors.add(new ParsingError(0, null, "sale.mappingFailed"));
+      }
+    }
+
+    if (sales.isEmpty()) {
+      validationErrors.add(new ParsingError(0, null, "import.backerkit.noValidSales"));
+    }
+    if (!validationErrors.isEmpty()) {
+      return new SalesImportResponse(
+          List.of(),
+          List.of(),
+          validationErrors,
+          parsedBatch.parsingWarnings(),
+          unknownTags.stream().sorted().toList(),
+          unsuccessfulRows.stream().sorted().toList());
+    }
+
+    if (!salesImportRequest.isPreview()) {
+      saveSalesToRepo(sales);
+    }
+
+    List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
+    return new SalesImportResponse(
+        saleResponses,
+        List.of(),
+        List.of(),
+        parsedBatch.parsingWarnings(),
+        unknownTags.stream().sorted().toList(),
+        unsuccessfulRows.stream().sorted().toList());
+  }
+
   private Sale getOrThrowSaleFromRepoById(Long id) {
     return saleRepository.findById(id).orElseThrow(() -> new NotFoundException("Sale not found"));
   }
@@ -1164,6 +1258,57 @@ public class SaleService {
         .build();
   }
 
+  private Sale mapBackerkitAggregateToSale(
+      MultipartFile file,
+      LocalDateTime parsedTimestamp,
+      BackerkitAggregateKey aggregateKey,
+      Integer quantity) {
+    Book book =
+        bookRepository
+            .findById(aggregateKey.bookId())
+            .orElseThrow(() -> new NotFoundException("Book not found"));
+
+    BigDecimal publisherRevenue =
+        SaleSource.KICKSTARTER.computeRevenue(book, Optional.ofNullable(quantity).orElse(0));
+    BigDecimal authorRoyalty =
+        computeAuthorRoyalty(publisherRevenue, SaleSource.KICKSTARTER.getRoyaltyRate(book));
+
+    return Sale.builder()
+        .saleSource(SaleSource.KICKSTARTER)
+        .distributor(null)
+        .format(aggregateKey.format())
+        .saleMonth(aggregateKey.saleMonth())
+        .saleYear(aggregateKey.saleYear())
+        .book(book)
+        .quantitySold(quantity)
+        .saleCurrency(Currency.USD)
+        .originalPublisherRevenue(publisherRevenue)
+        .publisherRevenue(publisherRevenue)
+        .authorRoyalty(authorRoyalty)
+        .hasAuthorBeenPaid(false)
+        .comment(getCommentFromBackerkit(file, parsedTimestamp))
+        .build();
+  }
+
+  private Map<String, KickstarterBookMatch> buildKickstarterTagMap() {
+    Map<String, KickstarterBookMatch> tagMap = new HashMap<>();
+    for (Book book : bookRepository.findAll()) {
+      addKickstarterTag(tagMap, book.getKickstarterItemTagEbook(), book, SaleFormat.EBOOK);
+      addKickstarterTag(tagMap, book.getKickstarterItemTagPrint(), book, SaleFormat.PRINT);
+    }
+    return tagMap;
+  }
+
+  private void addKickstarterTag(
+      Map<String, KickstarterBookMatch> tagMap, String tag, Book book, SaleFormat format) {
+    if (tag == null || tag.isBlank()) {
+      return;
+    }
+    // Keep first seen mapping deterministically to avoid non-repeatable imports when duplicates
+    // exist.
+    tagMap.putIfAbsent(tag, new KickstarterBookMatch(book, format));
+  }
+
   private String getCommentFromCSV(
       MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
     String comment =
@@ -1191,6 +1336,16 @@ public class SaleService {
     return ImportParser.truncateComment(comment);
   }
 
+  private String getCommentFromBackerkit(MultipartFile file, LocalDateTime parsedTimestamp) {
+    String comment =
+        String.format(
+            "Kickstarter: File='%s' (%s)",
+            ImportParser.truncateField(
+                file.getOriginalFilename(), ImportParser.MAX_FILENAME_LENGTH),
+            ImportParser.formatCommentTimestamp(parsedTimestamp));
+    return ImportParser.truncateComment(comment);
+  }
+
   private void saveSalesToRepo(List<Sale> sales) {
     saleRepository.saveAll(sales);
   }
@@ -1205,6 +1360,11 @@ public class SaleService {
     }
     return SaleFormat.PRINT;
   }
+
+  private record BackerkitAggregateKey(
+      int saleYear, int saleMonth, Long bookId, SaleFormat format) {}
+
+  private record KickstarterBookMatch(Book book, SaleFormat format) {}
 
   private record QuarterKey(int year, int quarter) {}
 
