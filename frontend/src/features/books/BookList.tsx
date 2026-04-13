@@ -28,7 +28,7 @@ import {
   type GridSortModel,
 } from '@mui/x-data-grid';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const BOOK_SORT_OPTIONS: SortOption[] = [
   { field: 'author', label: 'Author' },
@@ -172,7 +172,28 @@ export default function BookList() {
             </Box>
           ) : null,
       },
-      { field: 'title', headerName: 'Title', width: 200 },
+      {
+        field: 'title',
+        headerName: 'Title',
+        width: 200,
+        renderCell: ({ row, value }) => (
+          <Link
+            to={`/books/${row.id}`}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = 'underline';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = 'none';
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
+          >
+            {String(value ?? '')}
+          </Link>
+        ),
+      },
       { field: 'author', headerName: 'Author', width: 180 },
       { field: 'isbn13', headerName: 'ISBN-13', width: 140 },
       { field: 'isbn10', headerName: 'ISBN-10', width: 120 },

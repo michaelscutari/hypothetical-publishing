@@ -27,7 +27,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 type BookSalesTableProps = {
   bookId?: number;
@@ -255,7 +255,7 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
                     direction={orderBy === 'publisherRevenue' ? order : 'desc'}
                     onClick={() => handleRequestSort('publisherRevenue')}
                   >
-                    Publisher Revenue
+                    Publisher Revenue (in USD)
                   </TableSortLabel>
                 </TableCell>
 
@@ -268,7 +268,7 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
                     direction={orderBy === 'authorRoyalty' ? order : 'desc'}
                     onClick={() => handleRequestSort('authorRoyalty')}
                   >
-                    Author Royalty
+                    Author Royalty (in USD)
                   </TableSortLabel>
                 </TableCell>
 
@@ -302,7 +302,23 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
                   >
                     <TableCell>
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="body2">{monthLabel}</Typography>
+                        <Typography variant="body2">
+                          <Link
+                            to={`/sales/${sale.id}`}
+                            style={{ color: 'inherit', textDecoration: 'none' }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.textDecoration = 'underline';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.textDecoration = 'none';
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                          >
+                            {monthLabel}
+                          </Link>
+                        </Typography>
                       </Stack>
                     </TableCell>
 
