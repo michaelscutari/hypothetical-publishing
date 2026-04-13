@@ -21,11 +21,13 @@ import edu.duke.bookpublishing.exception.custom.AmbiguousLookupException;
 import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.SaleRequest;
 import edu.duke.bookpublishing.sales.dto.SalesImportRequest;
+import edu.duke.bookpublishing.sales.dto.SalesImportType;
 import edu.duke.bookpublishing.sales.enums.Currency;
 import edu.duke.bookpublishing.sales.enums.SaleDistributor;
 import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import edu.duke.bookpublishing.sales.parser.AmazonXlsxEntry;
+import edu.duke.bookpublishing.sales.parser.BackerkitXlsxEntry;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
@@ -67,6 +69,8 @@ class SaleServiceTest {
 
   @Mock private ImportParser<AmazonXlsxEntry> amazonXlsxParser;
 
+  @Mock private ImportParser<BackerkitXlsxEntry> backerkitXlsxParser;
+
   @Mock private AuthorRepository authorRepository;
 
   @Mock private CurrencyService currencyService;
@@ -86,6 +90,7 @@ class SaleServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(2));
     lenient().when(ingramCsvParser.supports(anyString(), anyString())).thenReturn(true);
     lenient().when(amazonXlsxParser.supports(anyString(), anyString())).thenReturn(false);
+    lenient().when(backerkitXlsxParser.supports(anyString(), anyString())).thenReturn(false);
 
     saleService =
         new SaleService(
@@ -94,6 +99,7 @@ class SaleServiceTest {
             saleRepository,
             ingramCsvParser,
             amazonXlsxParser,
+            backerkitXlsxParser,
             authorRepository,
             currencyService);
     author = Author.builder().id(1L).name("Test Author").email("test@example.com").build();
@@ -468,7 +474,7 @@ class SaleServiceTest {
 
     when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
 
-    SalesImportRequest request = new SalesImportRequest(1, 2024, file, true, false);
+    SalesImportRequest request = new SalesImportRequest(null, 1, 2024, file, true, false);
     var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).isEmpty();
@@ -504,7 +510,7 @@ class SaleServiceTest {
     when(saleRepository.saveAll(any()))
         .thenAnswer(invocation -> invocation.getArgument(0, List.class));
 
-    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    SalesImportRequest request = new SalesImportRequest(null, 1, 2024, file, false, false);
     var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).hasSize(2);
@@ -560,7 +566,7 @@ class SaleServiceTest {
     when(saleRepository.saveAll(any()))
         .thenAnswer(invocation -> invocation.getArgument(0, List.class));
 
-    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    SalesImportRequest request = new SalesImportRequest(null, 1, 2024, file, false, false);
     var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).hasSize(1);
@@ -592,7 +598,7 @@ class SaleServiceTest {
     when(saleRepository.saveAll(any()))
         .thenAnswer(invocation -> invocation.getArgument(0, List.class));
 
-    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    SalesImportRequest request = new SalesImportRequest(null, 1, 2024, file, false, false);
     var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).hasSize(1);
@@ -635,7 +641,7 @@ class SaleServiceTest {
     when(ingramCsvParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
     when(bookService.findBookByIsbn(anyString())).thenReturn(Optional.of(book));
 
-    SalesImportRequest request = new SalesImportRequest(1, 2024, file, false, false);
+    SalesImportRequest request = new SalesImportRequest(null, 1, 2024, file, false, false);
     var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).hasSize(0);
@@ -685,7 +691,7 @@ class SaleServiceTest {
     when(currencyService.convert("GBP", "USD", new BigDecimal("10.00")))
         .thenReturn(new BigDecimal("13.00"));
 
-    SalesImportRequest request = new SalesImportRequest(null, null, file, true, false);
+    SalesImportRequest request = new SalesImportRequest(null, null, null, file, true, false);
     var result = saleService.importSales(request);
 
     assertThat(result.parseErrors()).isEmpty();
@@ -730,7 +736,7 @@ class SaleServiceTest {
     when(amazonXlsxParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
     when(bookService.findBookByAmazonEbookAsin("B012345678")).thenReturn(Optional.of(book));
 
-    SalesImportRequest request = new SalesImportRequest(null, null, file, false, false);
+    SalesImportRequest request = new SalesImportRequest(null, null, null, file, false, false);
     var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).isEmpty();
@@ -774,7 +780,7 @@ class SaleServiceTest {
     when(bookService.findBookByAmazonEbookAsin("B012345678"))
         .thenThrow(new AmbiguousLookupException("Multiple books found"));
 
-    SalesImportRequest request = new SalesImportRequest(null, null, file, true, false);
+    SalesImportRequest request = new SalesImportRequest(null, null, null, file, true, false);
     var result = saleService.importSales(request);
 
     assertThat(result.savedSales()).isEmpty();
@@ -784,6 +790,78 @@ class SaleServiceTest {
     assertThat(result.validationErrors().get(0).errorMessage())
         .isEqualTo("book.asin.multipleMatches");
     assertThat(result.validationErrors().get(0).sheetName()).isEqualTo("eBook Royalty");
+  }
+
+  @Test
+  void importBackerkitPreviewAggregatesRowsAndReturnsSummaries() {
+    MultipartFile file =
+        new MockMultipartFile(
+            "file",
+            "backerkit.xlsx",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "xlsx".getBytes());
+
+    BackerkitXlsxEntry row1 =
+        BackerkitXlsxEntry.builder()
+            .sheetName("Backerkit")
+            .sourceRowNumber(2)
+            .successfulPledge(true)
+            .saleMonth(12)
+            .saleYear(2025)
+            .requestedItems(
+                List.of(
+                    BackerkitXlsxEntry.RequestedItem.builder()
+                        .itemTag("ebook-the-hobbit")
+                        .quantity(1)
+                        .build(),
+                    BackerkitXlsxEntry.RequestedItem.builder()
+                        .itemTag("sticker-hp")
+                        .quantity(1)
+                        .build()))
+            .build();
+
+    BackerkitXlsxEntry row2 =
+        BackerkitXlsxEntry.builder()
+            .sheetName("Backerkit")
+            .sourceRowNumber(3)
+            .successfulPledge(false)
+            .requestedItems(List.of())
+            .build();
+
+    ParsedBatch<BackerkitXlsxEntry> parsedBatch =
+        new ParsedBatch<>(LocalDateTime.of(2025, 12, 9, 10, 11), List.of(row1, row2), List.of());
+
+    Book taggedBook =
+        Book.builder()
+            .id(1L)
+            .title("Test Book")
+            .author(author)
+            .isbn13("9780743273565")
+            .publicationYear(2020)
+            .publicationMonth(1)
+            .distributorAuthorRoyaltyRate(new BigDecimal("0.20"))
+            .handsoldAuthorRoyaltyRate(new BigDecimal("0.10"))
+            .coverPrice(new BigDecimal("20.00"))
+            .printCost(new BigDecimal("5.00"))
+            .kickstarterItemTagEbook("ebook-the-hobbit")
+            .build();
+
+    when(backerkitXlsxParser.parse(any(MultipartFile.class))).thenReturn(parsedBatch);
+    when(bookRepository.findAll()).thenReturn(List.of(taggedBook));
+    when(bookRepository.findById(1L)).thenReturn(Optional.of(taggedBook));
+
+    SalesImportRequest request =
+        new SalesImportRequest(SalesImportType.BACKERKIT_XLSX, null, null, file, true, false);
+
+    var result = saleService.importSales(request);
+
+    assertThat(result.parseErrors()).isEmpty();
+    assertThat(result.validationErrors()).isEmpty();
+    assertThat(result.savedSales()).hasSize(1);
+    assertThat(result.savedSales().get(0).quantitySold()).isEqualTo(1);
+    assertThat(result.unknownItemTags()).containsExactly("sticker-hp");
+    assertThat(result.unsuccessfulPledgeRows()).containsExactly(3L);
+    verify(saleRepository, times(0)).saveAll(any());
   }
 
   @Test

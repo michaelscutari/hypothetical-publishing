@@ -36,6 +36,13 @@ const ERROR_MESSAGE_MAP: Record<string, string> = {
     'KENP row has ASIN "N/A" and was skipped because it cannot be matched to a book.',
   'import.amazon.audiobook.notSupported':
     'Audiobook Royalty rows are not currently supported and were skipped.',
+  'import.backerkit.workbook.mustHaveSingleSheet': 'Backerkit XLSX must contain exactly one sheet.',
+  'import.backerkit.header.missing': 'Header row is missing from the Backerkit sheet.',
+  'import.backerkit.header.itemColumnsMissing':
+    'No Backerkit item columns were found. Expected headers like item1/qty1.',
+  'import.backerkit.row.noItems': 'Row has no itemN values and cannot be imported.',
+  'import.backerkit.noValidSales':
+    'No valid Kickstarter book sales were found after filtering and matching item tags.',
 };
 
 const humanizeHeader = (header: string) => {
@@ -77,6 +84,26 @@ export const getFriendlyErrorMessage = (error: ParsingError) => {
   if (rawMessage.startsWith('import.amazon.value.invalidDecimal:')) {
     const header = rawMessage.split(':', 2)[1] ?? '';
     return `${humanizeHeader(header)} must be a valid number.`;
+  }
+
+  if (rawMessage.startsWith('import.backerkit.header.missingColumn:')) {
+    const header = rawMessage.split(':', 2)[1] ?? '';
+    return `Missing required Backerkit column: ${humanizeHeader(header)}.`;
+  }
+
+  if (rawMessage.startsWith('import.backerkit.value.required:')) {
+    const header = rawMessage.split(':', 2)[1] ?? '';
+    return `${humanizeHeader(header)} is required.`;
+  }
+
+  if (rawMessage.startsWith('import.backerkit.value.invalidInteger:')) {
+    const header = rawMessage.split(':', 2)[1] ?? '';
+    return `${humanizeHeader(header)} must be a whole number.`;
+  }
+
+  if (rawMessage.startsWith('import.backerkit.value.invalidDate:')) {
+    const header = rawMessage.split(':', 2)[1] ?? '';
+    return `${humanizeHeader(header)} must use MM/DD/YY format.`;
   }
 
   if (rawMessage.startsWith('Failed to read file:')) {

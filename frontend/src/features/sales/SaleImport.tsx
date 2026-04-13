@@ -38,15 +38,19 @@ type ErrorState = {
   parseErrors: ParsingError[];
   validationErrors: ParsingError[];
   warnings: ParsingError[];
+  unknownItemTags: string[];
+  unsuccessfulPledgeRows: number[];
 };
 
-type ImportMode = 'csv' | 'xlsx';
+type ImportMode = 'csv' | 'amazon-xlsx' | 'backerkit-xlsx';
 
 type SalesImportResponseShape = {
   savedSales?: SaleResponse[];
   parseErrors?: ParsingError[];
   validationErrors?: ParsingError[];
   warnings?: ParsingError[];
+  unknownItemTags?: string[];
+  unsuccessfulPledgeRows?: number[];
   csvErrors?: ParsingError[];
   savingErrors?: ParsingError[];
 };
@@ -69,10 +73,14 @@ export default function SaleImport() {
     parseErrors: [],
     validationErrors: [],
     warnings: [],
+    unknownItemTags: [],
+    unsuccessfulPledgeRows: [],
   });
   const [isErrorDialogOpen, setIsErrorDialogOpen] = React.useState(false);
   const [previewSales, setPreviewSales] = React.useState<SaleResponse[]>([]);
   const [previewWarnings, setPreviewWarnings] = React.useState<ParsingError[]>([]);
+  const [previewUnknownItemTags, setPreviewUnknownItemTags] = React.useState<string[]>([]);
+  const [previewUnsuccessfulRows, setPreviewUnsuccessfulRows] = React.useState<number[]>([]);
   const [isPreviewDialogOpen, setIsPreviewDialogOpen] = React.useState(false);
 
   const hasErrors = errorState.parseErrors.length > 0 || errorState.validationErrors.length > 0;
@@ -90,7 +98,7 @@ export default function SaleImport() {
 
   const handleImportModeChange = React.useCallback(
     (_event: React.ChangeEvent<HTMLInputElement>, nextMode: string) => {
-      if (nextMode !== 'csv' && nextMode !== 'xlsx') {
+      if (nextMode !== 'csv' && nextMode !== 'amazon-xlsx' && nextMode !== 'backerkit-xlsx') {
         return;
       }
       setImportMode(nextMode);
@@ -109,7 +117,14 @@ export default function SaleImport() {
   const buildRequest = React.useCallback(
     (isPreview: boolean, acknowledgeWarnings = false) => {
       if (!csvFile) return null;
+      const importType =
+        importMode === 'csv'
+          ? 'INGRAM_CSV'
+          : importMode === 'amazon-xlsx'
+            ? 'AMAZON_XLSX'
+            : 'BACKERKIT_XLSX';
       return {
+        importType,
         saleMonth: saleDate ? saleDate.month() + 1 : undefined,
         saleYear: saleDate ? saleDate.year() : undefined,
         importFile: csvFile,
@@ -119,26 +134,37 @@ export default function SaleImport() {
         acknowledgeWarnings,
       };
     },
-    [csvFile, saleDate],
+    [csvFile, importMode, saleDate],
   );
 
   const normalizeErrors = React.useCallback((response: SalesImportResponseShape) => {
     const parseErrors = response.parseErrors ?? response.csvErrors ?? [];
     const validationErrors = response.validationErrors ?? response.savingErrors ?? [];
     const warnings = response.warnings ?? [];
-    return { parseErrors, validationErrors, warnings };
+    const unknownItemTags = response.unknownItemTags ?? [];
+    const unsuccessfulPledgeRows = response.unsuccessfulPledgeRows ?? [];
+    return { parseErrors, validationErrors, warnings, unknownItemTags, unsuccessfulPledgeRows };
   }, []);
 
   const handleResponse = React.useCallback(
     (response: SalesImportResponseShape) => {
-      const { parseErrors, validationErrors, warnings } = normalizeErrors(response);
+      const { parseErrors, validationErrors, warnings, unknownItemTags, unsuccessfulPledgeRows } =
+        normalizeErrors(response);
       if (parseErrors.length > 0 || validationErrors.length > 0) {
-        setErrorState({ parseErrors, validationErrors, warnings });
+        setErrorState({
+          parseErrors,
+          validationErrors,
+          warnings,
+          unknownItemTags,
+          unsuccessfulPledgeRows,
+        });
         setIsErrorDialogOpen(true);
         return false;
       }
       const sales = response.savedSales ?? [];
       setPreviewWarnings(warnings);
+      setPreviewUnknownItemTags(unknownItemTags);
+      setPreviewUnsuccessfulRows(unsuccessfulPledgeRows);
       setPreviewSales(sales);
       setIsPreviewDialogOpen(true);
       return true;
@@ -162,8 +188,8 @@ export default function SaleImport() {
       return;
     }
 
-    if (importMode === 'xlsx' && !isXlsxFile) {
-      setValidationError('Import mode is Amazon XLSX, so please upload a .xlsx file.');
+    if ((importMode === 'amazon-xlsx' || importMode === 'backerkit-xlsx') && !isXlsxFile) {
+      setValidationError('XLSX import mode selected, so please upload a .xlsx file.');
       return;
     }
 
@@ -193,11 +219,18 @@ export default function SaleImport() {
     setIsSubmitting(true);
     try {
       const response = asResponse(await SalesService.importCsv(payload));
-      const { parseErrors, validationErrors, warnings } = normalizeErrors(response);
+      const { parseErrors, validationErrors, warnings, unknownItemTags, unsuccessfulPledgeRows } =
+        normalizeErrors(response);
 
       if (parseErrors.length > 0 || validationErrors.length > 0) {
         setIsPreviewDialogOpen(false);
-        setErrorState({ parseErrors, validationErrors, warnings });
+        setErrorState({
+          parseErrors,
+          validationErrors,
+          warnings,
+          unknownItemTags,
+          unsuccessfulPledgeRows,
+        });
         setIsErrorDialogOpen(true);
         return;
       }
@@ -261,13 +294,23 @@ export default function SaleImport() {
           <Stack spacing={2}>
             <Typography variant="h5">Import Sales File</Typography>
             <Typography variant="body2" color="text.secondary">
-              Upload a sales file (CSV or Amazon XLSX) and preview before committing.
+              Upload a sales file (CSV, Amazon XLSX, or Backerkit XLSX) and preview before
+              committing.
             </Typography>
 
             <FormControl>
               <RadioGroup row value={importMode} onChange={handleImportModeChange}>
                 <FormControlLabel value="csv" control={<Radio />} label="CSV Import" />
-                <FormControlLabel value="xlsx" control={<Radio />} label="Amazon XLSX Import" />
+                <FormControlLabel
+                  value="amazon-xlsx"
+                  control={<Radio />}
+                  label="Amazon XLSX Import"
+                />
+                <FormControlLabel
+                  value="backerkit-xlsx"
+                  control={<Radio />}
+                  label="Backerkit XLSX Import"
+                />
               </RadioGroup>
             </FormControl>
 
@@ -351,6 +394,16 @@ export default function SaleImport() {
             {renderIssueTable('Parse Errors', errorState.parseErrors)}
             {renderIssueTable('Validation Errors', errorState.validationErrors)}
             {renderIssueTable('Warnings', errorState.warnings)}
+            {errorState.unknownItemTags.length > 0 ? (
+              <Alert severity="warning">
+                Unknown Kickstarter item tags: {errorState.unknownItemTags.join(', ')}
+              </Alert>
+            ) : null}
+            {errorState.unsuccessfulPledgeRows.length > 0 ? (
+              <Alert severity="info">
+                Unsuccessful pledge rows (ignored): {errorState.unsuccessfulPledgeRows.join(', ')}
+              </Alert>
+            ) : null}
           </Stack>
         </DialogContent>
         <DialogActions>
@@ -374,6 +427,16 @@ export default function SaleImport() {
               <Alert severity="warning">
                 This import contains {previewWarnings.length} warning(s). Unsupported rows will be
                 ignored.
+              </Alert>
+            ) : null}
+            {previewUnknownItemTags.length > 0 ? (
+              <Alert severity="warning">
+                Unknown Kickstarter item tags: {previewUnknownItemTags.join(', ')}
+              </Alert>
+            ) : null}
+            {previewUnsuccessfulRows.length > 0 ? (
+              <Alert severity="info">
+                Unsuccessful pledge rows (ignored): {previewUnsuccessfulRows.join(', ')}
               </Alert>
             ) : null}
             {validationError ? <Alert severity="error">{validationError}</Alert> : null}

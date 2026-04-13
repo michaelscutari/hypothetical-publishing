@@ -24,5 +24,13 @@ export type SalesImportResponse = {
      * List of non-blocking warnings
      */
     warnings: Array<ParsingError>;
+    /**
+     * Deduplicated unknown Kickstarter item tags
+     */
+    unknownItemTags: Array<string>;
+    /**
+     * Rows with unsuccessful pledge status
+     */
+    unsuccessfulPledgeRows: Array<number>;
 };
 

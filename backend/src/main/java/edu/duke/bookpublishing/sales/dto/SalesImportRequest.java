@@ -10,6 +10,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Schema(description = "Request object for sales import")
 public record SalesImportRequest(
+    @Schema(description = "Explicit import type used to disambiguate supported file formats")
+        SalesImportType importType,
     @Schema(description = "The month in which the sale was made (required for CSV)")
         @Min(1)
         @Max(12)

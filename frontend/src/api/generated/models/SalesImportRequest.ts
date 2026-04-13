@@ -7,6 +7,10 @@
  */
 export type SalesImportRequest = {
     /**
+     * Explicit import type used to disambiguate supported file formats
+     */
+    importType?: SalesImportRequest.importType;
+    /**
      * The month in which the sale was made (required for CSV)
      */
     saleMonth?: number;
@@ -24,4 +28,14 @@ export type SalesImportRequest = {
      */
     acknowledgeWarnings?: boolean;
 };
+export namespace SalesImportRequest {
+    /**
+     * Explicit import type used to disambiguate supported file formats
+     */
+    export enum importType {
+        INGRAM_CSV = 'INGRAM_CSV',
+        AMAZON_XLSX = 'AMAZON_XLSX',
+        BACKERKIT_XLSX = 'BACKERKIT_XLSX',
+    }
+}
 
