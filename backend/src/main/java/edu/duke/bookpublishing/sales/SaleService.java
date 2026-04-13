@@ -71,7 +71,7 @@ public class SaleService {
   private static final DateTimeFormatter FILE_DATE_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd");
   private static final DateTimeFormatter FILE_TIME_FORMATTER =
-      DateTimeFormatter.ofPattern("HH:mm:ss");
+      DateTimeFormatter.ofPattern("HH_mm_ss");
 
   private final BookService bookService;
   private final BookRepository bookRepository;
@@ -352,6 +352,7 @@ public class SaleService {
     List<Sale> inRangeSales =
         saleRepository.findAll().stream()
             .filter(this::isHistoricalSale)
+            .filter(sale -> !isUnreleased(sale.getBook()))
             .filter(sale -> quarterRangeContains(quarterRange, sale))
             .toList();
 
@@ -377,7 +378,7 @@ public class SaleService {
       for (QuarterKey quarterKey : quarterRange) {
         header.createCell(headerCol++).setCellValue(quarterLabel(quarterKey));
       }
-      header.createCell(headerCol).setCellValue("Total Royalties");
+      header.createCell(headerCol).setCellValue("Total");
 
       List<BigDecimal> totalsPerQuarter = quarterRange.stream().map(q -> BigDecimal.ZERO).toList();
       List<BigDecimal> mutableTotalsPerQuarter = new ArrayList<>(totalsPerQuarter);
@@ -404,7 +405,7 @@ public class SaleService {
 
       Row totalsRow = sheet.createRow(rowIndex);
       int totalCol = 0;
-      totalsRow.createCell(totalCol++).setCellValue("Total per Quarter");
+      totalsRow.createCell(totalCol++).setCellValue("Total");
       for (BigDecimal total : mutableTotalsPerQuarter) {
         createMoneyCell(totalsRow, totalCol++, total);
       }
@@ -435,6 +436,7 @@ public class SaleService {
     Map<Long, Map<QuarterKey, BigDecimal>> profitByBookAndQuarter = new LinkedHashMap<>();
     saleRepository.findAll().stream()
         .filter(this::isHistoricalSale)
+        .filter(sale -> !isUnreleased(sale.getBook()))
         .filter(sale -> quarterRangeContains(quarterRange, sale))
         .forEach(
             sale -> {
@@ -453,8 +455,7 @@ public class SaleService {
       Row header = sheet.createRow(rowIndex++);
       int headerCol = 0;
       header.createCell(headerCol++).setCellValue("Author");
-      header.createCell(headerCol++).setCellValue("Series");
-      header.createCell(headerCol++).setCellValue("Position");
+      header.createCell(headerCol++).setCellValue("Series/Position");
       header.createCell(headerCol++).setCellValue("Title");
       header.createCell(headerCol++).setCellValue("ISBN-13");
       header.createCell(headerCol++).setCellValue("ASIN");
@@ -463,7 +464,7 @@ public class SaleService {
       for (QuarterKey quarterKey : quarterRange) {
         header.createCell(headerCol++).setCellValue(quarterLabel(quarterKey));
       }
-      header.createCell(headerCol).setCellValue("Total Profit per Book");
+      header.createCell(headerCol).setCellValue("Total");
 
       List<BigDecimal> totalsPerQuarter =
           new ArrayList<>(quarterRange.stream().map(q -> BigDecimal.ZERO).toList());
@@ -473,8 +474,7 @@ public class SaleService {
         Row row = sheet.createRow(rowIndex++);
         int col = 0;
         row.createCell(col++).setCellValue(book.getAuthor().getName());
-        row.createCell(col++).setCellValue(Optional.ofNullable(book.getSeriesName()).orElse(""));
-        createIntegerCell(row, col++, book.getSeriesPosition());
+        row.createCell(col++).setCellValue(seriesPositionDisplay(book));
         row.createCell(col++).setCellValue(book.getTitle());
         row.createCell(col++).setCellValue(book.getIsbn13());
         row.createCell(col++)
@@ -499,8 +499,8 @@ public class SaleService {
 
       Row totalsRow = sheet.createRow(rowIndex);
       int totalCol = 0;
-      totalsRow.createCell(totalCol++).setCellValue("Total Profit per Quarter");
-      for (int i = 0; i < 7; i++) {
+      totalsRow.createCell(totalCol++).setCellValue("Total");
+      for (int i = 0; i < 6; i++) {
         totalsRow.createCell(totalCol++).setCellValue("");
       }
       for (BigDecimal total : totalsPerQuarter) {
@@ -522,6 +522,7 @@ public class SaleService {
 
     saleRepository.findAll().stream()
         .filter(this::isHistoricalSale)
+        .filter(sale -> !isUnreleased(sale.getBook()))
         .filter(sale -> sale.getSaleSource() == SaleSource.DISTRIBUTOR)
         .filter(sale -> sale.getDistributor() == SaleDistributor.AMAZON)
         .forEach(
@@ -557,8 +558,7 @@ public class SaleService {
       Row header = sheet.createRow(rowIndex++);
       int col = 0;
       header.createCell(col++).setCellValue("Author");
-      header.createCell(col++).setCellValue("Series");
-      header.createCell(col++).setCellValue("Position");
+      header.createCell(col++).setCellValue("Series/Position");
       header.createCell(col++).setCellValue("Title");
       header.createCell(col++).setCellValue("ISBN-13");
       header.createCell(col++).setCellValue("ASIN");
@@ -573,9 +573,7 @@ public class SaleService {
         Row row = sheet.createRow(rowIndex++);
         int rowCol = 0;
         row.createCell(rowCol++).setCellValue(acc.book.getAuthor().getName());
-        row.createCell(rowCol++)
-            .setCellValue(Optional.ofNullable(acc.book.getSeriesName()).orElse(""));
-        createIntegerCell(row, rowCol++, acc.book.getSeriesPosition());
+        row.createCell(rowCol++).setCellValue(seriesPositionDisplay(acc.book));
         row.createCell(rowCol++).setCellValue(acc.book.getTitle());
         row.createCell(rowCol++).setCellValue(acc.book.getIsbn13());
         row.createCell(rowCol++)
@@ -588,7 +586,29 @@ public class SaleService {
         createMoneyCell(row, rowCol, acc.kenpRevenue);
       }
 
-      autosizeColumns(sheet, 12);
+      Row totalsRow = sheet.createRow(rowIndex);
+      int totalsCol = 0;
+      totalsRow.createCell(totalsCol++).setCellValue("Total");
+      for (int i = 0; i < 4; i++) {
+        totalsRow.createCell(totalsCol++).setCellValue("");
+      }
+      createIntegerCell(totalsRow, totalsCol++, rows.stream().mapToInt(r -> r.printQuantity).sum());
+      createMoneyCell(
+          totalsRow,
+          totalsCol++,
+          rows.stream().map(r -> r.printRevenue).reduce(BigDecimal.ZERO, BigDecimal::add));
+      createIntegerCell(totalsRow, totalsCol++, rows.stream().mapToInt(r -> r.ebookQuantity).sum());
+      createMoneyCell(
+          totalsRow,
+          totalsCol++,
+          rows.stream().map(r -> r.ebookRevenue).reduce(BigDecimal.ZERO, BigDecimal::add));
+      createIntegerCell(totalsRow, totalsCol++, rows.stream().mapToInt(r -> r.kenp).sum());
+      createMoneyCell(
+          totalsRow,
+          totalsCol,
+          rows.stream().map(r -> r.kenpRevenue).reduce(BigDecimal.ZERO, BigDecimal::add));
+
+      autosizeColumns(sheet, 11);
       return new FinancialReportFile(
           buildFilename("Amazon_Sale_Report"), XLSX_CONTENT_TYPE, workbookToBytes(workbook));
     } catch (Exception ex) {
@@ -796,6 +816,13 @@ public class SaleService {
     String date = FILE_DATE_FORMATTER.format(now);
     String timestamp = FILE_TIME_FORMATTER.format(now);
     return prefix + "_" + date + "_" + timestamp + ".xlsx";
+  }
+
+  private String seriesPositionDisplay(Book book) {
+    if (book.getSeriesName() != null && book.getSeriesPosition() != null) {
+      return book.getSeriesName() + " (" + book.getSeriesPosition() + ")";
+    }
+    return "";
   }
 
   private void validateQuarterRange(int startQuarter, int startYear, int endQuarter, int endYear) {
