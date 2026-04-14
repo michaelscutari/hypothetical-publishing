@@ -29,7 +29,7 @@ import {
   type GridSortModel,
 } from '@mui/x-data-grid';
 import * as React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 const BOOK_SORT_OPTIONS: SortOption[] = [
   { field: 'author', label: 'Author' },
