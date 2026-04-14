@@ -3,6 +3,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@.]+$/;
 export interface AuthorFormState {
   name: string;
   email: string;
+  paypalAccount?: string;
+  venmoAccount?: string;
   errors: { name?: string; email?: string };
 }
 
