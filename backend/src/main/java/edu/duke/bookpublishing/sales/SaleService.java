@@ -94,11 +94,20 @@ public class SaleService {
       SaleSource saleSource,
       SaleDistributor distributor,
       SaleFormat format,
+      Boolean isProjected,
       String query,
       Sort sort) {
     Specification<Sale> spec =
         buildSaleSpecification(
-            startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
+            startDate,
+            endDate,
+            authorId,
+            bookId,
+            saleSource,
+            distributor,
+            format,
+            isProjected,
+            query);
     return saleRepository.findAll(spec, sort);
   }
 
@@ -110,11 +119,20 @@ public class SaleService {
       SaleSource saleSource,
       SaleDistributor distributor,
       SaleFormat format,
+      Boolean isProjected,
       String query,
       Pageable pageable) {
     Specification<Sale> spec =
         buildSaleSpecification(
-            startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
+            startDate,
+            endDate,
+            authorId,
+            bookId,
+            saleSource,
+            distributor,
+            format,
+            isProjected,
+            query);
     return saleRepository.findAll(spec, pageable);
   }
 
@@ -126,6 +144,7 @@ public class SaleService {
       SaleSource saleSource,
       SaleDistributor distributor,
       SaleFormat format,
+      Boolean isProjected,
       String query) {
     Specification<Sale> spec = Specification.where(null);
 
@@ -153,6 +172,10 @@ public class SaleService {
 
     if (format != null) {
       spec = spec.and(SaleSpecifications.byFormat(format));
+    }
+
+    if (isProjected != null) {
+      spec = spec.and(SaleSpecifications.isProjected(isProjected));
     }
 
     if (query != null && !query.isBlank()) {
@@ -201,6 +224,7 @@ public class SaleService {
     List<AuthorPaymentGroupResponse> groups = new ArrayList<>();
     for (Map.Entry<Long, List<Sale>> entry : grouped.entrySet()) {
       BigDecimal unpaidTotal = BigDecimal.ZERO;
+      BigDecimal projectedTotal = BigDecimal.ZERO;
       List<AuthorPaymentSaleResponse> saleRows = new ArrayList<>();
       String authorName = null;
 
@@ -209,12 +233,22 @@ public class SaleService {
         if (authorName == null) {
           authorName = sale.getBook().getAuthor().getName();
         }
-        if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
-          unpaidTotal = unpaidTotal.add(sale.getAuthorRoyalty());
+        // Exclude projected sales from unpaid total
+        boolean isProjected = !sale.getBook().getReleased();
+        if (isProjected) {
+          if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
+            projectedTotal = projectedTotal.add(sale.getAuthorRoyalty());
+          }
+        } else {
+          if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
+            unpaidTotal = unpaidTotal.add(sale.getAuthorRoyalty());
+          }
         }
       }
 
-      groups.add(new AuthorPaymentGroupResponse(entry.getKey(), authorName, unpaidTotal, saleRows));
+      groups.add(
+          new AuthorPaymentGroupResponse(
+              entry.getKey(), authorName, unpaidTotal, projectedTotal, saleRows));
     }
 
     return groups;

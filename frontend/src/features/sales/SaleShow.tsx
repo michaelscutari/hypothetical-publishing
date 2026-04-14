@@ -236,6 +236,15 @@ export default function SaleShow() {
               label={formatLabel}
               sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
             />
+            {sale.isProjected && (
+              <Chip
+                size="small"
+                variant="outlined"
+                label="Projected (Not Eligible)"
+                color="warning"
+                sx={{ fontWeight: 600 }}
+              />
+            )}
             {isDistributor && (
               <Chip
                 size="small"
@@ -410,6 +419,25 @@ export default function SaleShow() {
                 </Typography>
                 <Box sx={{ mt: 0.75 }}>
                   <PaidStatusChip paid={sale.hasAuthorBeenPaid} />
+                </Box>
+              </Box>
+
+              <Box>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
+                >
+                  Projected Status
+                </Typography>
+                <Box sx={{ mt: 0.75 }}>
+                  {sale.isProjected ? (
+                    <Alert severity="warning" sx={{ py: 0.5 }}>
+                      Projected sale for an unreleased book. Royalty is not eligible for payout yet.
+                    </Alert>
+                  ) : (
+                    <Chip size="small" label="Actual Sale" color="success" variant="outlined" />
+                  )}
                 </Box>
               </Box>
             </Stack>

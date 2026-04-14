@@ -24,7 +24,11 @@ public record AuthorPaymentSaleResponse(
     @Schema(
             description = "Indicates whether the author has been paid or not",
             requiredMode = REQUIRED)
-        boolean hasAuthorBeenPaid) {
+        boolean hasAuthorBeenPaid,
+    @Schema(
+            description = "Indicates whether this is a projected sale (book not yet released)",
+            requiredMode = REQUIRED)
+        boolean isProjected) {
 
   public static AuthorPaymentSaleResponse from(Sale sale) {
     return new AuthorPaymentSaleResponse(
@@ -37,6 +41,7 @@ public record AuthorPaymentSaleResponse(
         sale.getQuantitySold(),
         sale.getPublisherRevenue(),
         sale.getAuthorRoyalty(),
-        sale.getHasAuthorBeenPaid());
+        sale.getHasAuthorBeenPaid(),
+        !Boolean.TRUE.equals(sale.getBook().getReleased()));
   }
 }

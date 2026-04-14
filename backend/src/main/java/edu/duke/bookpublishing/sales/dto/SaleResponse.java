@@ -52,7 +52,12 @@ public record SaleResponse(
             description = "Indicates whether the author has been paid or not",
             requiredMode = REQUIRED)
         boolean hasAuthorBeenPaid,
-    @Schema(description = "Optional comment") String comment) {
+    @Schema(description = "Optional comment") String comment,
+    @Schema(
+            description =
+                "True if this sale is for an unreleased book (projected/not yet eligible for payment)",
+            requiredMode = REQUIRED)
+        Boolean isProjected) {
 
   public static SaleResponse from(Sale sale) {
     return new SaleResponse(
@@ -73,6 +78,7 @@ public record SaleResponse(
         sale.getPublisherRevenue(),
         sale.getAuthorRoyalty(),
         sale.getHasAuthorBeenPaid(),
-        sale.getComment());
+        sale.getComment(),
+        !sale.getBook().getReleased());
   }
 }

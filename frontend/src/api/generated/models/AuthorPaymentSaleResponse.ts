@@ -46,5 +46,9 @@ export type AuthorPaymentSaleResponse = {
      * Indicates whether the author has been paid or not
      */
     hasAuthorBeenPaid: boolean;
+    /**
+     * Indicates whether this is a projected sale (book not yet released)
+     */
+    isProjected: boolean;
 };
 

@@ -13,5 +13,10 @@ public record AuthorPaymentGroupResponse(
     @Schema(description = "Author name", requiredMode = REQUIRED) String author,
     @Schema(description = "Total unpaid author royalty for this author", requiredMode = REQUIRED)
         BigDecimal unpaidTotal,
+    @Schema(
+            description =
+                "Total unpaid projected author royalty for this author (not eligible for payment)",
+            requiredMode = REQUIRED)
+        BigDecimal projectedUnpaidTotal,
     @Schema(description = "Sales rows for this author", requiredMode = REQUIRED)
         List<AuthorPaymentSaleResponse> sales) {}

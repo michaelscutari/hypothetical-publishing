@@ -44,6 +44,14 @@ public final class SaleSpecifications {
     return (root, query, cb) -> cb.equal(root.get("format"), format);
   }
 
+  /** Filters sales by projected status (true = projected/unreleased, false = actual/released). */
+  public static Specification<Sale> isProjected(Boolean isProjected) {
+    if (isProjected == null) {
+      return (root, query, cb) -> cb.conjunction();
+    }
+    return (root, query, cb) -> cb.equal(root.get("book").get("released"), !isProjected);
+  }
+
   public static Specification<Sale> withinDateRange(LocalDate startDate, LocalDate endDate) {
     return (root, query, cb) -> {
       var predicate = cb.conjunction(); // "true" starting point

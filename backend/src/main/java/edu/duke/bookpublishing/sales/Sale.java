@@ -26,6 +26,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.Formula;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
@@ -87,16 +88,16 @@ public class Sale {
   private Currency saleCurrency;
 
   /*
-    Publisher revenue in the original currency in which the sale was made.
-  */
+   * Publisher revenue in the original currency in which the sale was made.
+   */
   @PositiveOrZero
   @Column(name = "usd_publisher_revenue", nullable = false, precision = 19, scale = 2)
   private BigDecimal originalPublisherRevenue;
 
   /*
-    USD Publisher Revenue, the source of truth for all revenue calculations.
-    If sale was made in other currency, this is the converted amount
-  */
+   * USD Publisher Revenue, the source of truth for all revenue calculations. If sale was made in
+   * other currency, this is the converted amount
+   */
   @PositiveOrZero
   @Column(name = "publisher_revenue", nullable = false, precision = 19, scale = 2)
   private BigDecimal publisherRevenue;
@@ -109,6 +110,10 @@ public class Sale {
 
   @Column(name = "comment", length = 256)
   private String comment;
+
+  @Formula(
+      "CASE WHEN (SELECT b.released FROM books b WHERE b.id = book_id) = false THEN true ELSE false END")
+  private Boolean isProjected;
 
   @AssertTrue(
       message = "KINDLE_UNLIMITED requires KENP and no quantity; print/ebook require quantity")

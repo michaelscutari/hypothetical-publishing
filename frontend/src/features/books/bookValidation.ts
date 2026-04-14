@@ -99,6 +99,46 @@ export function validateBook(book: Partial<BookResponse>): ValidationResult {
     ];
   }
 
+  if (book.kickstarterItemTagEbook) {
+    if (/\s/.test(book.kickstarterItemTagEbook)) {
+      issues = [
+        ...issues,
+        {
+          message: 'Kickstarter ebook tag must not contain whitespace',
+          path: ['kickstarterItemTagEbook'],
+        },
+      ];
+    } else if (book.kickstarterItemTagEbook.length > 128) {
+      issues = [
+        ...issues,
+        {
+          message: 'Kickstarter ebook tag must be at most 128 characters',
+          path: ['kickstarterItemTagEbook'],
+        },
+      ];
+    }
+  }
+
+  if (book.kickstarterItemTagPrint) {
+    if (/\s/.test(book.kickstarterItemTagPrint)) {
+      issues = [
+        ...issues,
+        {
+          message: 'Kickstarter print tag must not contain whitespace',
+          path: ['kickstarterItemTagPrint'],
+        },
+      ];
+    } else if (book.kickstarterItemTagPrint.length > 128) {
+      issues = [
+        ...issues,
+        {
+          message: 'Kickstarter print tag must be at most 128 characters',
+          path: ['kickstarterItemTagPrint'],
+        },
+      ];
+    }
+  }
+
   return { issues };
 }
 

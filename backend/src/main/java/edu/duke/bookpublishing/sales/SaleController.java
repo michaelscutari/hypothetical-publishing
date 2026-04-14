@@ -74,6 +74,7 @@ public class SaleController {
       @RequestParam(required = false) SaleSource saleSource,
       @RequestParam(required = false) SaleDistributor distributor,
       @RequestParam(required = false) SaleFormat format,
+      @RequestParam(required = false) Boolean isProjected,
       @RequestParam(required = false) String query,
       @RequestParam(required = false) Long bookId) {
 
@@ -82,14 +83,32 @@ public class SaleController {
     if (showAll) {
       List<Sale> sales =
           saleService.getAllSales(
-              startDate, endDate, authorId, bookId, saleSource, distributor, format, query, sort);
+              startDate,
+              endDate,
+              authorId,
+              bookId,
+              saleSource,
+              distributor,
+              format,
+              isProjected,
+              query,
+              sort);
       return PagedResponse.unpaged(sales, SaleResponse::from);
     }
 
     Pageable pageable = PageRequest.of(page, size, sort);
     Page<Sale> sales =
         saleService.getPagedSales(
-            startDate, endDate, authorId, bookId, saleSource, distributor, format, query, pageable);
+            startDate,
+            endDate,
+            authorId,
+            bookId,
+            saleSource,
+            distributor,
+            format,
+            isProjected,
+            query,
+            pageable);
     return PagedResponse.paged(sales, SaleResponse::from);
   }
 
@@ -104,6 +123,7 @@ public class SaleController {
       @RequestParam(required = false) SaleSource saleSource,
       @RequestParam(required = false) SaleDistributor distributor,
       @RequestParam(required = false) SaleFormat format,
+      @RequestParam(required = false) Boolean isProjected,
       @RequestParam(required = false) String query,
       @RequestParam(required = false) Long bookId,
       HttpServletResponse response)
@@ -118,6 +138,7 @@ public class SaleController {
             saleSource,
             distributor,
             format,
+            isProjected,
             query,
             Sort.unsorted());
 
