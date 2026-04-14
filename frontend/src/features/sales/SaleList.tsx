@@ -207,8 +207,8 @@ export default function SaleList() {
       {
         field: 'bookAuthor',
         headerName: 'Author',
-        flex: 1.2,
-        minWidth: 130,
+        flex: 1,
+        minWidth: 120,
       },
       {
         field: 'saleSource',
@@ -266,16 +266,16 @@ export default function SaleList() {
       {
         field: 'saleYear',
         headerName: 'Date',
-        flex: 0.8,
-        minWidth: 110,
+        flex: 1,
+        minWidth: 120,
         valueGetter: (_value, row) => formatMonthYear(row.saleMonth, row.saleYear),
       },
       {
         field: 'quantitySold',
         headerName: 'Qty / KENP',
         type: 'number',
-        flex: 0.7,
-        minWidth: 80,
+        flex: 0.6,
+        minWidth: 75,
         valueGetter: (_value, row) =>
           row.format === 'KINDLE_UNLIMITED' ? row.kenp : row.quantitySold,
       },
@@ -313,8 +313,8 @@ export default function SaleList() {
         field: 'authorRoyalty',
         headerName: 'Royalty',
         type: 'number',
-        flex: 0.9,
-        minWidth: 100,
+        flex: 0.8,
+        minWidth: 90,
         valueFormatter: (value) => formatCurrency(Number(value)),
       },
       {
@@ -345,8 +345,8 @@ export default function SaleList() {
         // align both header and content to center
         field: 'hasAuthorBeenPaid',
         headerName: 'Paid',
-        flex: 0.8,
-        minWidth: 100,
+        flex: 0.7,
+        minWidth: 90,
         align: 'center',
         headerAlign: 'center',
         renderCell: (params) => <PaidStatusChip paid={params.row.hasAuthorBeenPaid} />,
