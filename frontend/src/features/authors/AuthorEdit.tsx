@@ -1,3 +1,9 @@
+import { AuthorsService, type AuthorResponse } from '@/api';
+import FullPageLoader from '@/components/FullPageLoader';
+import PageContainer from '@/components/PageContainer';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { getErrorMessage } from '@/utils/error';
+import { truncate } from '@/utils/formatting';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import Alert from '@mui/material/Alert';
 import Box from '@mui/material/Box';
@@ -7,13 +13,7 @@ import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import * as React from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AuthorsService, type AuthorResponse } from '@/api';
-import FullPageLoader from '@/components/FullPageLoader';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import PageContainer from '@/components/PageContainer';
-import { getErrorMessage } from '@/utils/error';
-import { truncate } from '@/utils/formatting';
-import { type AuthorFormState, validateAuthor } from './authorValidation';
+import { validateAuthor, type AuthorFormState } from './authorValidation';
 
 export default function AuthorEdit() {
   const { authorId } = useParams();
@@ -32,7 +32,13 @@ export default function AuthorEdit() {
     try {
       const authorData = await AuthorsService.getAuthorById(Number(authorId));
       setAuthor(authorData);
-      setForm({ name: authorData.name, email: authorData.email ?? '', errors: {} });
+      setForm({
+  name: authorData.name,
+  email: authorData.email ?? '',
+  paypalAccount: authorData.paypalAccount ?? '',
+  venmoAccount: authorData.venmoAccount ?? '',
+  errors: {},
+});
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -65,9 +71,11 @@ export default function AuthorEdit() {
       setIsSubmitting(true);
       try {
         await AuthorsService.updateAuthor(Number(authorId), {
-          name: form.name.trim(),
-          email: form.email.trim(),
-        });
+  name: form.name.trim(),
+  email: form.email.trim(),
+  paypalAccount: form.paypalAccount?.trim() || undefined,
+  venmoAccount: form.venmoAccount?.trim() || undefined,
+});
         notifications.show('Author updated successfully.', {
           severity: 'success',
           autoHideDuration: 3000,
@@ -123,6 +131,26 @@ export default function AuthorEdit() {
                 fullWidth
               />
             </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+  <TextField
+    name="paypalAccount"
+    label="PayPal Account (paypal.me username)"
+    value={form.paypalAccount ?? ''}
+    onChange={handleChange}
+    helperText=" "
+    fullWidth
+  />
+</Grid>
+<Grid size={{ xs: 12, sm: 6 }}>
+  <TextField
+    name="venmoAccount"
+    label="Venmo Account"
+    value={form.venmoAccount ?? ''}
+    onChange={handleChange}
+    helperText=" "
+    fullWidth
+  />
+</Grid>
           </Grid>
 
           <Stack direction="row" spacing={2} justifyContent="space-between">

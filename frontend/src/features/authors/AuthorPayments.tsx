@@ -79,11 +79,12 @@ export default function AuthorPayments() {
     setPage(0);
   }, [debouncedQuery]);
 
+  // Load all authors once so we can look up paypalAccount/venmoAccount by authorId
   React.useEffect(() => {
     let mounted = true;
     void (async () => {
       try {
-        const response = await BooksService.searchAuthors(debouncedQuery || undefined, 0, 25, true);
+        const response = await BooksService.searchAuthors(undefined, 0, 1000, true);
         if (mounted) setAuthorOptions(response.content ?? []);
       } catch {
         if (mounted) setAuthorOptions([]);
@@ -92,7 +93,7 @@ export default function AuthorPayments() {
     return () => {
       mounted = false;
     };
-  }, [debouncedQuery]);
+  }, []);
 
   // fetch grouped author payments from backend
   const loadGroups = React.useCallback(async () => {
@@ -101,7 +102,6 @@ export default function AuthorPayments() {
 
     try {
       const sizeToUse = showAll ? 1000 : pageSize;
-      // getAuthorPayments(page, size, showAll, startDate?, endDate?, query?)
       const response = await SalesService.getAuthorPayments(
         showAll ? 0 : page,
         sizeToUse,
@@ -306,6 +306,7 @@ export default function AuthorPayments() {
           <Box>
             {groups.map((group, idx) => {
               const unpaidTotal = group.unpaidTotal ?? 0;
+              const authorInfo = authorOptions.find((a) => a.id === group.authorId);
               return (
                 <Accordion
                   key={`${group.author}-${idx}`}
@@ -358,6 +359,44 @@ export default function AuthorPayments() {
                             </Button>
                           </div>
                         </Tooltip>
+                        {authorInfo?.paypalAccount && unpaidTotal > 0 && (
+                          <Tooltip title={`Pay via PayPal: ${formatCurrency(unpaidTotal)}`} placement="bottom">
+                            <IconButton
+                              size="small"
+                              component="a"
+                              href={`https://paypal.me/${authorInfo.paypalAccount}/${unpaidTotal.toFixed(2)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Box
+                                component="img"
+                                src="https://www.paypalobjects.com/webstatic/icon/pp258.png"
+                                alt="PayPal"
+                                sx={{ width: 24, height: 24, borderRadius: 1 }}
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        {authorInfo?.venmoAccount && unpaidTotal > 0 && (
+                          <Tooltip title={`Pay via Venmo: ${formatCurrency(unpaidTotal)}`} placement="bottom">
+                            <IconButton
+                              size="small"
+                              component="a"
+                              href={`https://venmo.com/${authorInfo.venmoAccount}?amount=${unpaidTotal.toFixed(2)}&note=Author+royalty`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Box
+                                component="img"
+                                src="https://venmo.com/favicon.ico"
+                                alt="Venmo"
+                                sx={{ width: 24, height: 24, borderRadius: 1 }}
+                              />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Stack>
                     </Stack>
                   </AccordionSummary>
