@@ -1,3 +1,5 @@
+import PageContainer from '@/components/PageContainer';
+import PaidStatusChip from '@/components/PaidStatusChip';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -30,23 +32,21 @@ import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import PaidStatusChip from '@/components/PaidStatusChip';
 import * as React from 'react';
 import { useNavigate } from 'react-router-dom';
-import PageContainer from '@/components/PageContainer';
 
 import {
   BooksService,
   SalesService,
   type AuthorPaymentGroupResponse,
-  type MarkAllPaidRequest,
   type AuthorResponse,
+  type MarkAllPaidRequest,
 } from '@/api';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useDialogs } from '@/hooks/useDialogs/useDialogs';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatMonthYear } from '@/utils/formatting';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 const INITIAL_PAGE_SIZE = 10;
 const SHOW_ALL_SIZE = -1;
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -150,6 +150,38 @@ export default function AuthorPayments() {
   const handleCreateClick = React.useCallback(() => {
     navigate('/sales/new');
   }, [navigate]);
+
+  const handleSaleNavigate = React.useCallback(
+    (saleId: number, event: React.MouseEvent) => {
+      if (event.button === 0 && !event.metaKey && !event.ctrlKey) {
+        navigate(`/sales/${saleId}`, {
+          state: { from: '/author-payments' },
+        });
+        return;
+      }
+
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/sales/${saleId}`, '_blank', 'noopener,noreferrer');
+      }
+    },
+    [navigate],
+  );
+
+  const handleBookNavigate = React.useCallback(
+    (bookId: number, event: React.MouseEvent) => {
+      if (event.button === 0 && !event.metaKey && !event.ctrlKey) {
+        navigate(`/books/${bookId}`, {
+          state: { from: '/author-payments' },
+        });
+        return;
+      }
+
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/books/${bookId}`, '_blank', 'noopener,noreferrer');
+      }
+    },
+    [navigate],
+  );
 
   const handlePayAuthor = React.useCallback(
     async (group: AuthorPaymentGroupResponse) => {
@@ -349,11 +381,8 @@ export default function AuthorPayments() {
                               key={sale.id}
                               hover
                               sx={{ cursor: 'pointer' }}
-                              onClick={() =>
-                                navigate(`/sales/${sale.id}`, {
-                                  state: { from: '/author-payments' },
-                                })
-                              }
+                              onClick={(event) => handleSaleNavigate(sale.id, event)}
+                              onAuxClick={(event) => handleSaleNavigate(sale.id, event)}
                             >
                               <TableCell>
                                 <Typography
@@ -362,9 +391,11 @@ export default function AuthorPayments() {
                                   sx={{ cursor: 'pointer', textDecoration: 'underline' }}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    navigate(`/books/${sale.bookId}`, {
-                                      state: { from: '/author-payments' },
-                                    });
+                                    handleBookNavigate(sale.bookId, e);
+                                  }}
+                                  onAuxClick={(e) => {
+                                    e.stopPropagation();
+                                    handleBookNavigate(sale.bookId, e);
                                   }}
                                 >
                                   {sale.bookTitle}

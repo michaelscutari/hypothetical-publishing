@@ -23,7 +23,7 @@ export type SaleResponse = {
      */
     bookAuthor: string;
     /**
-     * Sale source (distributor or handsold)
+     * Sale source (distributor, handsold, or kickstarter)
      */
     saleSource: SaleResponse.saleSource;
     /**
@@ -81,11 +81,12 @@ export type SaleResponse = {
 };
 export namespace SaleResponse {
     /**
-     * Sale source (distributor or handsold)
+     * Sale source (distributor, handsold, or kickstarter)
      */
     export enum saleSource {
         DISTRIBUTOR = 'DISTRIBUTOR',
         HAND_SOLD = 'HAND_SOLD',
+        KICKSTARTER = 'KICKSTARTER',
     }
     /**
      * Distributor of the sale

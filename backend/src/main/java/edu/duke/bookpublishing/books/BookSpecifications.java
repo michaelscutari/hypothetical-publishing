@@ -81,6 +81,8 @@ public final class BookSpecifications {
         cb.like(cb.lower(bookPath.get("isbn13")), "%" + normalizedTerm + "%"),
         cb.like(cb.lower(bookPath.get("isbn10")), "%" + normalizedTerm + "%"),
         cb.like(cb.lower(bookPath.get("seriesName")), "%" + lowerTerm + "%"),
-        cb.like(cb.lower(bookPath.get("amazonEbookAsin")), "%" + lowerTerm + "%"));
+        cb.like(cb.lower(bookPath.get("amazonEbookAsin")), "%" + lowerTerm + "%"),
+        cb.like(cb.lower(bookPath.get("kickstarterItemTagEbook")), "%" + lowerTerm + "%"),
+        cb.like(cb.lower(bookPath.get("kickstarterItemTagPrint")), "%" + lowerTerm + "%"));
   }
 }

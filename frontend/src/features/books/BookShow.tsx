@@ -18,7 +18,7 @@ import Paper from '@mui/material/Paper';
 import Stack from '@mui/material/Stack';
 import Typography from '@mui/material/Typography';
 import * as React from 'react';
-import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import BookSalesTable from './BookSalesTable';
 import FinancialSummary from './FinancialSummary';
 
@@ -213,11 +213,11 @@ export default function BookShow() {
           <Typography variant="h6" sx={{ fontWeight: 400, mb: 2.5, color: 'text.secondary' }}>
             by{' '}
             <Box
-              component="span"
-              onClick={() => navigate(`/authors/${book.authorId}`)}
+              component={Link}
+              to={`/authors/${book.authorId}`}
               sx={{
                 color: 'primary.main',
-                cursor: 'pointer',
+                textDecoration: 'none',
                 fontWeight: 500,
                 '&:hover': { textDecoration: 'underline' },
               }}

@@ -27,7 +27,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 type BookSalesTableProps = {
   bookId?: number;
@@ -110,6 +110,24 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
     (saleId?: number) => {
       if (!saleId) return;
       navigate(`/sales/${saleId}`);
+    },
+    [navigate],
+  );
+
+  const handleSaleRowClick = React.useCallback(
+    (saleId: number | undefined, event: React.MouseEvent) => {
+      if (!saleId) {
+        return;
+      }
+
+      if (event.button === 0 && !event.metaKey && !event.ctrlKey) {
+        navigate(`/sales/${saleId}`);
+        return;
+      }
+
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/sales/${saleId}`, '_blank', 'noopener,noreferrer');
+      }
     },
     [navigate],
   );
@@ -255,7 +273,7 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
                     direction={orderBy === 'publisherRevenue' ? order : 'desc'}
                     onClick={() => handleRequestSort('publisherRevenue')}
                   >
-                    Publisher Revenue
+                    Publisher Revenue (in USD)
                   </TableSortLabel>
                 </TableCell>
 
@@ -268,7 +286,7 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
                     direction={orderBy === 'authorRoyalty' ? order : 'desc'}
                     onClick={() => handleRequestSort('authorRoyalty')}
                   >
-                    Author Royalty
+                    Author Royalty (in USD)
                   </TableSortLabel>
                 </TableCell>
 
@@ -297,12 +315,29 @@ export default function BookSalesTable({ bookId, onChange }: BookSalesTableProps
                     key={sale.id}
                     hover
                     sx={{ cursor: 'pointer' }}
-                    onClick={() => handleViewSale(sale.id)}
+                    onClick={(event) => handleSaleRowClick(sale.id, event)}
+                    onAuxClick={(event) => handleSaleRowClick(sale.id, event)}
                     tabIndex={0}
                   >
                     <TableCell>
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="body2">{monthLabel}</Typography>
+                        <Typography variant="body2">
+                          <Link
+                            to={`/sales/${sale.id}`}
+                            style={{ color: 'inherit', textDecoration: 'none' }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.textDecoration = 'underline';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.textDecoration = 'none';
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                          >
+                            {monthLabel}
+                          </Link>
+                        </Typography>
                       </Stack>
                     </TableCell>
 

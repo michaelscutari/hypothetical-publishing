@@ -19,4 +19,17 @@ public record SalesImportResponse(
             requiredMode = REQUIRED)
         List<ParsingError> validationErrors,
     @Schema(description = "List of non-blocking warnings", requiredMode = REQUIRED)
-        List<ParsingError> warnings) {}
+        List<ParsingError> warnings,
+    @Schema(description = "Deduplicated unknown Kickstarter item tags", requiredMode = REQUIRED)
+        List<String> unknownItemTags,
+    @Schema(description = "Rows with unsuccessful pledge status", requiredMode = REQUIRED)
+        List<Long> unsuccessfulPledgeRows) {
+
+  public SalesImportResponse(
+      List<SaleResponse> savedSales,
+      List<ParsingError> parseErrors,
+      List<ParsingError> validationErrors,
+      List<ParsingError> warnings) {
+    this(savedSales, parseErrors, validationErrors, warnings, List.of(), List.of());
+  }
+}

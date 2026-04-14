@@ -603,6 +603,102 @@ class SaleControllerTest {
   }
 
   @Test
+  void createKickstarterSaleSucceeds() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.KICKSTARTER,
+            null,
+            SaleFormat.EBOOK,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            null,
+            null,
+            false,
+            "Kickstarter sale");
+
+    // coverPrice=20.00, printCost ignored (effectively 0 for KS)
+    // revenue = 20.00 * 10 = 200.00, royalty = 200.00 * 0.10 = 20.00
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.saleSource").value("KICKSTARTER"))
+        .andExpect(jsonPath("$.distributor", nullValue()))
+        .andExpect(jsonPath("$.publisherRevenue").value(200.00))
+        .andExpect(jsonPath("$.authorRoyalty").value(20.00));
+  }
+
+  @Test
+  void createKickstarterSaleRejectsDistributor() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.KICKSTARTER,
+            SaleDistributor.AMAZON,
+            SaleFormat.PRINT,
+            2,
+            2024,
+            10,
+            null,
+            Currency.USD,
+            null,
+            null,
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void createKickstarterSaleRejectsKindleUnlimited() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    SaleRequest request =
+        new SaleRequest(
+            book.getId(),
+            SaleSource.KICKSTARTER,
+            null,
+            SaleFormat.KINDLE_UNLIMITED,
+            2,
+            2024,
+            null,
+            500,
+            Currency.USD,
+            null,
+            null,
+            false,
+            null);
+
+    mockMvc
+        .perform(
+            post("/api/sales")
+                .cookie(token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+        .andExpect(status().isBadRequest());
+  }
+
+  @Test
   void getSaleByIdReturnsSale() throws Exception {
     Cookie token = login();
     Book book = createBook();
@@ -1428,5 +1524,112 @@ class SaleControllerTest {
     mockMvc
         .perform(get("/api/sales/export").cookie(token).param("saleSource", "INVALID"))
         .andExpect(status().isBadRequest());
+  }
+
+  @Test
+  void exportAllAuthorsRoyaltyReportReturnsXlsx() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    createSale(
+        token,
+        saleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            1,
+            2024,
+            3,
+            new BigDecimal("120.00"),
+            false,
+            null));
+
+    MvcResult result =
+        mockMvc
+            .perform(
+                get("/api/sales/reports/all-authors-royalty")
+                    .cookie(token)
+                    .param("startQuarter", "1")
+                    .param("startYear", "2024")
+                    .param("endQuarter", "2")
+                    .param("endYear", "2024"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    assertThat(result.getResponse().getHeader("Content-Disposition"))
+        .contains("All_Authors_Royalty_Report");
+    assertThat(result.getResponse().getContentType())
+        .isEqualTo("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    assertThat(result.getResponse().getContentAsByteArray()).isNotEmpty();
+  }
+
+  @Test
+  void exportPublisherProfitReportReturnsXlsx() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    createSale(
+        token,
+        saleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            2,
+            2024,
+            5,
+            new BigDecimal("200.00"),
+            true,
+            null));
+
+    MvcResult result =
+        mockMvc
+            .perform(
+                get("/api/sales/reports/publisher-profit")
+                    .cookie(token)
+                    .param("startQuarter", "1")
+                    .param("startYear", "2024")
+                    .param("endQuarter", "3")
+                    .param("endYear", "2024"))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    assertThat(result.getResponse().getHeader("Content-Disposition"))
+        .contains("Publisher_Profit_Report");
+    assertThat(result.getResponse().getContentType())
+        .isEqualTo("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    assertThat(result.getResponse().getContentAsByteArray()).isNotEmpty();
+  }
+
+  @Test
+  void exportAmazonSalesReportReturnsXlsx() throws Exception {
+    Cookie token = login();
+    Book book = createBook();
+
+    createSale(
+        token,
+        new SaleRequest(
+            book.getId(),
+            SaleSource.DISTRIBUTOR,
+            SaleDistributor.AMAZON,
+            SaleFormat.EBOOK,
+            3,
+            2024,
+            7,
+            null,
+            Currency.USD,
+            new BigDecimal("140.00"),
+            new BigDecimal("140.00"),
+            false,
+            null));
+
+    MvcResult result =
+        mockMvc
+            .perform(get("/api/sales/reports/amazon-sales").cookie(token))
+            .andExpect(status().isOk())
+            .andReturn();
+
+    assertThat(result.getResponse().getHeader("Content-Disposition"))
+        .contains("Amazon_Sale_Report");
+    assertThat(result.getResponse().getContentType())
+        .isEqualTo("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    assertThat(result.getResponse().getContentAsByteArray()).isNotEmpty();
   }
 }

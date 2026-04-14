@@ -29,7 +29,7 @@ import {
   type GridSortModel,
 } from '@mui/x-data-grid';
 import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const BOOK_SORT_OPTIONS: SortOption[] = [
   { field: 'author', label: 'Author' },
@@ -87,7 +87,18 @@ export default function BookList() {
   } = useServerDataGrid<BookResponse>({ fetchFn });
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
-    ({ row }) => navigate(`/books/${row.id}`),
+    ({ row }, event) => {
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/books/${row.id}`, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      if (event.button !== 0) {
+        return;
+      }
+
+      navigate(`/books/${row.id}`);
+    },
     [navigate],
   );
 
@@ -220,7 +231,7 @@ export default function BookList() {
           }
           return '';
         },
-        sortComparator: (v1, v2, param1, param2) => {
+        sortComparator: (_v1, _v2, param1, param2) => {
           const row1 = param1.api.getRow(param1.id);
           const row2 = param2.api.getRow(param2.id);
           const date1 = (row1?.publicationYear ?? 0) * 12 + (row1?.publicationMonth ?? 0);
@@ -238,7 +249,7 @@ export default function BookList() {
       {
         field: 'actions',
         type: 'actions',
-        flex: 1,
+        width: 90,
         align: 'right',
         getActions: ({ row }) => [
           <GridActionsCellItem

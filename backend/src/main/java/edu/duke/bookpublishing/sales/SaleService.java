@@ -11,6 +11,7 @@ import edu.duke.bookpublishing.exception.custom.NotFoundException;
 import edu.duke.bookpublishing.sales.dto.AllTimeTotals;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentGroupResponse;
 import edu.duke.bookpublishing.sales.dto.AuthorPaymentSaleResponse;
+import edu.duke.bookpublishing.sales.dto.FinancialReportFile;
 import edu.duke.bookpublishing.sales.dto.QuarterSection;
 import edu.duke.bookpublishing.sales.dto.ReportBookRow;
 import edu.duke.bookpublishing.sales.dto.RoyaltyReportResponse;
@@ -23,6 +24,7 @@ import edu.duke.bookpublishing.sales.enums.SaleDistributor;
 import edu.duke.bookpublishing.sales.enums.SaleFormat;
 import edu.duke.bookpublishing.sales.enums.SaleSource;
 import edu.duke.bookpublishing.sales.parser.AmazonXlsxEntry;
+import edu.duke.bookpublishing.sales.parser.BackerkitXlsxEntry;
 import edu.duke.bookpublishing.sales.parser.ImportParser;
 import edu.duke.bookpublishing.sales.parser.IngramCsvEntry;
 import edu.duke.bookpublishing.sales.parser.ParsedBatch;
@@ -31,13 +33,23 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -58,12 +70,19 @@ public class SaleService {
 
   private static final LocalDate MIN_SALE_START_DATE = LocalDate.of(1900, 1, 1);
   private static final LocalDate MAX_SALE_END_DATE = LocalDate.of(2100, 1, 1);
+  private static final String XLSX_CONTENT_TYPE =
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+  private static final DateTimeFormatter FILE_DATE_FORMATTER =
+      DateTimeFormatter.ofPattern("yyyy-MM-dd");
+  private static final DateTimeFormatter FILE_TIME_FORMATTER =
+      DateTimeFormatter.ofPattern("HH_mm_ss");
 
   private final BookService bookService;
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
   private final ImportParser<IngramCsvEntry> ingramCsvParser;
   private final ImportParser<AmazonXlsxEntry> amazonXlsxParser;
+  private final ImportParser<BackerkitXlsxEntry> backerkitXlsxParser;
   private final AuthorRepository authorRepository;
   private final CurrencyService currencyService;
 
@@ -329,6 +348,279 @@ public class SaleService {
         authorName, startQuarter, startYear, endQuarter, endYear, sections, allTime);
   }
 
+  @Transactional(readOnly = true)
+  public FinancialReportFile exportAllAuthorsRoyaltyReport(
+      int startQuarter, int startYear, int endQuarter, int endYear) {
+    validateQuarterRange(startQuarter, startYear, endQuarter, endYear);
+    List<QuarterKey> quarterRange = buildQuarterRange(startQuarter, startYear, endQuarter, endYear);
+
+    List<Sale> inRangeSales =
+        saleRepository.findAll().stream()
+            .filter(this::isHistoricalSale)
+            .filter(sale -> !isUnreleased(sale.getBook()))
+            .filter(sale -> quarterRangeContains(quarterRange, sale))
+            .toList();
+
+    Map<String, Map<QuarterKey, BigDecimal>> royaltiesByAuthor = new LinkedHashMap<>();
+    for (Sale sale : inRangeSales) {
+      String authorName = sale.getBook().getAuthor().getName();
+      QuarterKey key = quarterOf(sale);
+      royaltiesByAuthor
+          .computeIfAbsent(authorName, ignored -> new LinkedHashMap<>())
+          .merge(key, nvl(sale.getAuthorRoyalty()), BigDecimal::add);
+    }
+
+    List<String> sortedAuthors =
+        royaltiesByAuthor.keySet().stream().sorted(authorFirstNameComparator()).toList();
+
+    try (Workbook workbook = new XSSFWorkbook()) {
+      Sheet sheet = workbook.createSheet("Author Royalties");
+      int rowIndex = 0;
+
+      Row header = sheet.createRow(rowIndex++);
+      int headerCol = 0;
+      header.createCell(headerCol++).setCellValue("Author");
+      for (QuarterKey quarterKey : quarterRange) {
+        header.createCell(headerCol++).setCellValue(quarterLabel(quarterKey));
+      }
+      header.createCell(headerCol).setCellValue("Total");
+
+      List<BigDecimal> totalsPerQuarter = quarterRange.stream().map(q -> BigDecimal.ZERO).toList();
+      List<BigDecimal> mutableTotalsPerQuarter = new ArrayList<>(totalsPerQuarter);
+      BigDecimal grandTotal = BigDecimal.ZERO;
+
+      for (String authorName : sortedAuthors) {
+        Row row = sheet.createRow(rowIndex++);
+        int col = 0;
+        row.createCell(col++).setCellValue(authorName);
+
+        BigDecimal authorTotal = BigDecimal.ZERO;
+        Map<QuarterKey, BigDecimal> authorValues = royaltiesByAuthor.get(authorName);
+        for (int i = 0; i < quarterRange.size(); i++) {
+          QuarterKey quarterKey = quarterRange.get(i);
+          BigDecimal value = nvl(authorValues.get(quarterKey));
+          createMoneyCell(row, col++, value);
+          authorTotal = authorTotal.add(value);
+          mutableTotalsPerQuarter.set(i, mutableTotalsPerQuarter.get(i).add(value));
+        }
+
+        createMoneyCell(row, col, authorTotal);
+        grandTotal = grandTotal.add(authorTotal);
+      }
+
+      Row totalsRow = sheet.createRow(rowIndex);
+      int totalCol = 0;
+      totalsRow.createCell(totalCol++).setCellValue("Total");
+      for (BigDecimal total : mutableTotalsPerQuarter) {
+        createMoneyCell(totalsRow, totalCol++, total);
+      }
+      createMoneyCell(totalsRow, totalCol, grandTotal);
+
+      autosizeColumns(sheet, quarterRange.size() + 2);
+      return new FinancialReportFile(
+          buildFilename("All_Authors_Royalty_Report"),
+          XLSX_CONTENT_TYPE,
+          workbookToBytes(workbook));
+    } catch (Exception ex) {
+      throw new IllegalStateException("Failed to generate all authors royalty report", ex);
+    }
+  }
+
+  @Transactional(readOnly = true)
+  public FinancialReportFile exportPublisherProfitReport(
+      int startQuarter, int startYear, int endQuarter, int endYear) {
+    validateQuarterRange(startQuarter, startYear, endQuarter, endYear);
+    List<QuarterKey> quarterRange = buildQuarterRange(startQuarter, startYear, endQuarter, endYear);
+
+    List<Book> books =
+        bookRepository.findAll().stream()
+            .filter(book -> !isUnreleased(book))
+            .sorted(bookComparator())
+            .toList();
+
+    Map<Long, Map<QuarterKey, BigDecimal>> profitByBookAndQuarter = new LinkedHashMap<>();
+    saleRepository.findAll().stream()
+        .filter(this::isHistoricalSale)
+        .filter(sale -> !isUnreleased(sale.getBook()))
+        .filter(sale -> quarterRangeContains(quarterRange, sale))
+        .forEach(
+            sale -> {
+              QuarterKey key = quarterOf(sale);
+              BigDecimal profit =
+                  nvl(sale.getPublisherRevenue()).subtract(nvl(sale.getAuthorRoyalty()));
+              profitByBookAndQuarter
+                  .computeIfAbsent(sale.getBook().getId(), ignored -> new LinkedHashMap<>())
+                  .merge(key, profit, BigDecimal::add);
+            });
+
+    try (Workbook workbook = new XSSFWorkbook()) {
+      Sheet sheet = workbook.createSheet("Publisher Profit Report");
+      int rowIndex = 0;
+
+      Row header = sheet.createRow(rowIndex++);
+      int headerCol = 0;
+      header.createCell(headerCol++).setCellValue("Author");
+      header.createCell(headerCol++).setCellValue("Series/Position");
+      header.createCell(headerCol++).setCellValue("Title");
+      header.createCell(headerCol++).setCellValue("ISBN-13");
+      header.createCell(headerCol++).setCellValue("ASIN");
+      header.createCell(headerCol++).setCellValue("Cover Price");
+      header.createCell(headerCol++).setCellValue("Print Cost");
+      for (QuarterKey quarterKey : quarterRange) {
+        header.createCell(headerCol++).setCellValue(quarterLabel(quarterKey));
+      }
+      header.createCell(headerCol).setCellValue("Total");
+
+      List<BigDecimal> totalsPerQuarter =
+          new ArrayList<>(quarterRange.stream().map(q -> BigDecimal.ZERO).toList());
+      BigDecimal grandTotal = BigDecimal.ZERO;
+
+      for (Book book : books) {
+        Row row = sheet.createRow(rowIndex++);
+        int col = 0;
+        row.createCell(col++).setCellValue(book.getAuthor().getName());
+        row.createCell(col++).setCellValue(seriesPositionDisplay(book));
+        row.createCell(col++).setCellValue(book.getTitle());
+        row.createCell(col++).setCellValue(book.getIsbn13());
+        row.createCell(col++)
+            .setCellValue(Optional.ofNullable(book.getAmazonEbookAsin()).orElse(""));
+        createMoneyCell(row, col++, nvl(book.getCoverPrice()));
+        createMoneyCell(row, col++, nvl(book.getPrintCost()));
+
+        BigDecimal rowTotal = BigDecimal.ZERO;
+        Map<QuarterKey, BigDecimal> quarterProfits =
+            profitByBookAndQuarter.getOrDefault(book.getId(), Map.of());
+        for (int i = 0; i < quarterRange.size(); i++) {
+          QuarterKey quarterKey = quarterRange.get(i);
+          BigDecimal value = nvl(quarterProfits.get(quarterKey));
+          createMoneyCell(row, col++, value);
+          rowTotal = rowTotal.add(value);
+          totalsPerQuarter.set(i, totalsPerQuarter.get(i).add(value));
+        }
+
+        createMoneyCell(row, col, rowTotal);
+        grandTotal = grandTotal.add(rowTotal);
+      }
+
+      Row totalsRow = sheet.createRow(rowIndex);
+      int totalCol = 0;
+      totalsRow.createCell(totalCol++).setCellValue("Total");
+      for (int i = 0; i < 6; i++) {
+        totalsRow.createCell(totalCol++).setCellValue("");
+      }
+      for (BigDecimal total : totalsPerQuarter) {
+        createMoneyCell(totalsRow, totalCol++, total);
+      }
+      createMoneyCell(totalsRow, totalCol, grandTotal);
+
+      autosizeColumns(sheet, 9 + quarterRange.size() + 1);
+      return new FinancialReportFile(
+          buildFilename("Publisher_Profit_Report"), XLSX_CONTENT_TYPE, workbookToBytes(workbook));
+    } catch (Exception ex) {
+      throw new IllegalStateException("Failed to generate publisher profit report", ex);
+    }
+  }
+
+  @Transactional(readOnly = true)
+  public FinancialReportFile exportAmazonSalesReport() {
+    Map<Long, AmazonSalesAccumulator> byBook = new LinkedHashMap<>();
+
+    saleRepository.findAll().stream()
+        .filter(this::isHistoricalSale)
+        .filter(sale -> !isUnreleased(sale.getBook()))
+        .filter(sale -> sale.getSaleSource() == SaleSource.DISTRIBUTOR)
+        .filter(sale -> sale.getDistributor() == SaleDistributor.AMAZON)
+        .forEach(
+            sale -> {
+              Book book = sale.getBook();
+              AmazonSalesAccumulator acc =
+                  byBook.computeIfAbsent(book.getId(), ignored -> new AmazonSalesAccumulator(book));
+              switch (sale.getFormat()) {
+                case PRINT -> {
+                  acc.printQuantity += quantityOrZero(sale);
+                  acc.printRevenue = acc.printRevenue.add(nvl(sale.getPublisherRevenue()));
+                }
+                case EBOOK -> {
+                  acc.ebookQuantity += quantityOrZero(sale);
+                  acc.ebookRevenue = acc.ebookRevenue.add(nvl(sale.getPublisherRevenue()));
+                }
+                case KINDLE_UNLIMITED -> {
+                  acc.kenp += Optional.ofNullable(sale.getKenp()).orElse(0);
+                  acc.kenpRevenue = acc.kenpRevenue.add(nvl(sale.getPublisherRevenue()));
+                }
+              }
+            });
+
+    List<AmazonSalesAccumulator> rows =
+        byBook.values().stream()
+            .sorted((a, b) -> bookComparator().compare(a.book, b.book))
+            .toList();
+
+    try (Workbook workbook = new XSSFWorkbook()) {
+      Sheet sheet = workbook.createSheet("Amazon Sales");
+      int rowIndex = 0;
+
+      Row header = sheet.createRow(rowIndex++);
+      int col = 0;
+      header.createCell(col++).setCellValue("Author");
+      header.createCell(col++).setCellValue("Series/Position");
+      header.createCell(col++).setCellValue("Title");
+      header.createCell(col++).setCellValue("ISBN-13");
+      header.createCell(col++).setCellValue("ASIN");
+      header.createCell(col++).setCellValue("Print Quantity");
+      header.createCell(col++).setCellValue("Print Revenue");
+      header.createCell(col++).setCellValue("Ebook Quantity");
+      header.createCell(col++).setCellValue("Ebook Revenue");
+      header.createCell(col++).setCellValue("KENP");
+      header.createCell(col).setCellValue("KENP Revenue");
+
+      for (AmazonSalesAccumulator acc : rows) {
+        Row row = sheet.createRow(rowIndex++);
+        int rowCol = 0;
+        row.createCell(rowCol++).setCellValue(acc.book.getAuthor().getName());
+        row.createCell(rowCol++).setCellValue(seriesPositionDisplay(acc.book));
+        row.createCell(rowCol++).setCellValue(acc.book.getTitle());
+        row.createCell(rowCol++).setCellValue(acc.book.getIsbn13());
+        row.createCell(rowCol++)
+            .setCellValue(Optional.ofNullable(acc.book.getAmazonEbookAsin()).orElse(""));
+        createIntegerCell(row, rowCol++, acc.printQuantity);
+        createMoneyCell(row, rowCol++, acc.printRevenue);
+        createIntegerCell(row, rowCol++, acc.ebookQuantity);
+        createMoneyCell(row, rowCol++, acc.ebookRevenue);
+        createIntegerCell(row, rowCol++, acc.kenp);
+        createMoneyCell(row, rowCol, acc.kenpRevenue);
+      }
+
+      Row totalsRow = sheet.createRow(rowIndex);
+      int totalsCol = 0;
+      totalsRow.createCell(totalsCol++).setCellValue("Total");
+      for (int i = 0; i < 4; i++) {
+        totalsRow.createCell(totalsCol++).setCellValue("");
+      }
+      createIntegerCell(totalsRow, totalsCol++, rows.stream().mapToInt(r -> r.printQuantity).sum());
+      createMoneyCell(
+          totalsRow,
+          totalsCol++,
+          rows.stream().map(r -> r.printRevenue).reduce(BigDecimal.ZERO, BigDecimal::add));
+      createIntegerCell(totalsRow, totalsCol++, rows.stream().mapToInt(r -> r.ebookQuantity).sum());
+      createMoneyCell(
+          totalsRow,
+          totalsCol++,
+          rows.stream().map(r -> r.ebookRevenue).reduce(BigDecimal.ZERO, BigDecimal::add));
+      createIntegerCell(totalsRow, totalsCol++, rows.stream().mapToInt(r -> r.kenp).sum());
+      createMoneyCell(
+          totalsRow,
+          totalsCol,
+          rows.stream().map(r -> r.kenpRevenue).reduce(BigDecimal.ZERO, BigDecimal::add));
+
+      autosizeColumns(sheet, 11);
+      return new FinancialReportFile(
+          buildFilename("Amazon_Sale_Report"), XLSX_CONTENT_TYPE, workbookToBytes(workbook));
+    } catch (Exception ex) {
+      throw new IllegalStateException("Failed to generate Amazon sales report", ex);
+    }
+  }
+
   private List<Sale> filterByQuarter(List<Sale> sales, int quarter, int year) {
     int startMonth = (quarter - 1) * 3 + 1;
     int endMonth = startMonth + 2;
@@ -497,6 +789,141 @@ public class SaleService {
     return Optional.ofNullable(sale.getQuantitySold()).orElse(0);
   }
 
+  private void createMoneyCell(Row row, int cellIndex, BigDecimal value) {
+    Cell cell = row.createCell(cellIndex);
+    cell.setCellValue(value.setScale(2, RoundingMode.HALF_UP).doubleValue());
+  }
+
+  private void createIntegerCell(Row row, int cellIndex, Integer value) {
+    Cell cell = row.createCell(cellIndex);
+    if (value == null) {
+      cell.setCellValue("");
+      return;
+    }
+    cell.setCellValue(value);
+  }
+
+  private void autosizeColumns(Sheet sheet, int columnCount) {
+    for (int i = 0; i < columnCount; i++) {
+      sheet.autoSizeColumn(i);
+    }
+  }
+
+  private byte[] workbookToBytes(Workbook workbook) throws java.io.IOException {
+    try (java.io.ByteArrayOutputStream outputStream = new java.io.ByteArrayOutputStream()) {
+      workbook.write(outputStream);
+      return outputStream.toByteArray();
+    }
+  }
+
+  private String buildFilename(String prefix) {
+    LocalDateTime now = LocalDateTime.now();
+    String date = FILE_DATE_FORMATTER.format(now);
+    String timestamp = FILE_TIME_FORMATTER.format(now);
+    return prefix + "_" + date + "_" + timestamp + ".xlsx";
+  }
+
+  private String seriesPositionDisplay(Book book) {
+    if (book.getSeriesName() != null && book.getSeriesPosition() != null) {
+      return book.getSeriesName() + " (" + book.getSeriesPosition() + ")";
+    }
+    return "";
+  }
+
+  private void validateQuarterRange(int startQuarter, int startYear, int endQuarter, int endYear) {
+    if (startQuarter < 1 || startQuarter > 4 || endQuarter < 1 || endQuarter > 4) {
+      throw new IllegalArgumentException("Quarter must be in range 1..4");
+    }
+    if (startYear < 1900 || endYear > 2100) {
+      throw new IllegalArgumentException("Year must be in range 1900..2100");
+    }
+    if (endYear < startYear || (endYear == startYear && endQuarter < startQuarter)) {
+      throw new IllegalArgumentException("End quarter must be on or after start quarter");
+    }
+  }
+
+  private List<QuarterKey> buildQuarterRange(
+      int startQuarter, int startYear, int endQuarter, int endYear) {
+    List<QuarterKey> quarters = new ArrayList<>();
+    int currentYear = startYear;
+    int currentQuarter = startQuarter;
+    while (currentYear < endYear || (currentYear == endYear && currentQuarter <= endQuarter)) {
+      quarters.add(new QuarterKey(currentYear, currentQuarter));
+      currentQuarter++;
+      if (currentQuarter > 4) {
+        currentQuarter = 1;
+        currentYear++;
+      }
+    }
+    return quarters;
+  }
+
+  private QuarterKey quarterOf(Sale sale) {
+    int quarter = ((sale.getSaleMonth() - 1) / 3) + 1;
+    return new QuarterKey(sale.getSaleYear(), quarter);
+  }
+
+  private boolean quarterRangeContains(List<QuarterKey> range, Sale sale) {
+    return range.contains(quarterOf(sale));
+  }
+
+  private String quarterLabel(QuarterKey quarterKey) {
+    return quarterKey.year + " Q" + quarterKey.quarter;
+  }
+
+  private Comparator<String> authorFirstNameComparator() {
+    return Comparator.comparing(this::authorFirstName, String.CASE_INSENSITIVE_ORDER)
+        .thenComparing(name -> name, String.CASE_INSENSITIVE_ORDER);
+  }
+
+  private String authorFirstName(String fullName) {
+    String normalized = fullName == null ? "" : fullName.trim();
+    if (normalized.isEmpty()) {
+      return "";
+    }
+
+    // Support both "First Last" and "Last, First" author name formats.
+    if (normalized.contains(",")) {
+      String[] commaParts = normalized.split(",", 2);
+      String firstNamePortion = commaParts.length > 1 ? commaParts[1].trim() : "";
+      if (!firstNamePortion.isEmpty()) {
+        String[] tokens = firstNamePortion.split("\\s+");
+        return tokens[0];
+      }
+    }
+
+    String[] tokens = normalized.split("\\s+");
+    return tokens[0];
+  }
+
+  private Comparator<Book> bookComparator() {
+    return Comparator.comparing(
+            (Book book) -> book.getAuthor().getName(), String.CASE_INSENSITIVE_ORDER)
+        .thenComparing(Book::getSeriesName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER))
+        .thenComparing(Book::getSeriesPosition, Comparator.nullsLast(Integer::compareTo))
+        .thenComparing(Book::getTitle, String.CASE_INSENSITIVE_ORDER);
+  }
+
+  private BigDecimal nvl(BigDecimal value) {
+    return value == null ? BigDecimal.ZERO : value;
+  }
+
+  private boolean isHistoricalSale(Sale sale) {
+    if (sale.getSaleYear() == null || sale.getSaleMonth() == null) {
+      return false;
+    }
+    YearMonth saleMonth = YearMonth.of(sale.getSaleYear(), sale.getSaleMonth());
+    return !saleMonth.isAfter(YearMonth.now());
+  }
+
+  private boolean isUnreleased(Book book) {
+    if (book.getPublicationYear() == null || book.getPublicationMonth() == null) {
+      return true;
+    }
+    YearMonth publication = YearMonth.of(book.getPublicationYear(), book.getPublicationMonth());
+    return publication.isAfter(YearMonth.now());
+  }
+
   private String bookDisplayName(Book book) {
     if (book.getSeriesName() != null && book.getSeriesPosition() != null) {
       return book.getSeriesName() + " (" + book.getSeriesPosition() + ")";
@@ -526,11 +953,22 @@ public class SaleService {
     String contentType = file.getContentType() == null ? "" : file.getContentType();
     String filename = file.getOriginalFilename() == null ? "" : file.getOriginalFilename();
 
+    if (salesImportRequest.importType() != null) {
+      return switch (salesImportRequest.importType()) {
+        case INGRAM_CSV -> importIngramCsv(salesImportRequest);
+        case AMAZON_XLSX -> importAmazonXlsx(salesImportRequest);
+        case BACKERKIT_XLSX -> importBackerkitXlsx(salesImportRequest);
+      };
+    }
+
     if (ingramCsvParser.supports(contentType, filename)) {
       return importIngramCsv(salesImportRequest);
     }
     if (amazonXlsxParser.supports(contentType, filename)) {
       return importAmazonXlsx(salesImportRequest);
+    }
+    if (backerkitXlsxParser.supports(contentType, filename)) {
+      return importBackerkitXlsx(salesImportRequest);
     }
 
     return new SalesImportResponse(
@@ -644,6 +1082,84 @@ public class SaleService {
         saleResponses, List.of(), List.of(), parsedBatch.parsingWarnings());
   }
 
+  private SalesImportResponse importBackerkitXlsx(SalesImportRequest salesImportRequest) {
+    ParsedBatch<BackerkitXlsxEntry> parsedBatch =
+        backerkitXlsxParser.parse(salesImportRequest.importFile());
+    if (!parsedBatch.parsingErrors().isEmpty()) {
+      return new SalesImportResponse(
+          List.of(), parsedBatch.parsingErrors(), List.of(), parsedBatch.parsingWarnings());
+    }
+
+    List<ParsingError> validationErrors = new ArrayList<>();
+    Set<String> unknownTags = new HashSet<>();
+    Set<Long> unsuccessfulRows = new HashSet<>();
+    Map<BackerkitAggregateKey, Integer> aggregateQuantities = new HashMap<>();
+    Map<String, KickstarterBookMatch> tagMap = buildKickstarterTagMap();
+
+    for (BackerkitXlsxEntry row : parsedBatch.records()) {
+      if (!row.successfulPledge()) {
+        unsuccessfulRows.add((long) row.sourceRowNumber());
+        continue;
+      }
+      for (BackerkitXlsxEntry.RequestedItem item : row.requestedItems()) {
+        KickstarterBookMatch match = tagMap.get(item.itemTag());
+        if (match == null) {
+          unknownTags.add(item.itemTag());
+          continue;
+        }
+        BackerkitAggregateKey key =
+            new BackerkitAggregateKey(
+                row.saleYear(), row.saleMonth(), match.book().getId(), match.format());
+        aggregateQuantities.merge(key, item.quantity(), Integer::sum);
+      }
+    }
+
+    List<Sale> sales = new ArrayList<>();
+    for (Map.Entry<BackerkitAggregateKey, Integer> entry : aggregateQuantities.entrySet()) {
+      if (entry.getValue() <= 0) {
+        continue;
+      }
+      try {
+        sales.add(
+            mapBackerkitAggregateToSale(
+                salesImportRequest.importFile(),
+                parsedBatch.timestamp(),
+                entry.getKey(),
+                entry.getValue()));
+      } catch (NotFoundException e) {
+        validationErrors.add(new ParsingError(0, null, "book.notFound"));
+      } catch (RuntimeException e) {
+        validationErrors.add(new ParsingError(0, null, "sale.mappingFailed"));
+      }
+    }
+
+    if (sales.isEmpty()) {
+      validationErrors.add(new ParsingError(0, null, "import.backerkit.noValidSales"));
+    }
+    if (!validationErrors.isEmpty()) {
+      return new SalesImportResponse(
+          List.of(),
+          List.of(),
+          validationErrors,
+          parsedBatch.parsingWarnings(),
+          unknownTags.stream().sorted().toList(),
+          unsuccessfulRows.stream().sorted().toList());
+    }
+
+    if (!salesImportRequest.isPreview()) {
+      saveSalesToRepo(sales);
+    }
+
+    List<SaleResponse> saleResponses = sales.stream().map(SaleResponse::from).toList();
+    return new SalesImportResponse(
+        saleResponses,
+        List.of(),
+        List.of(),
+        parsedBatch.parsingWarnings(),
+        unknownTags.stream().sorted().toList(),
+        unsuccessfulRows.stream().sorted().toList());
+  }
+
   private Sale getOrThrowSaleFromRepoById(Long id) {
     return saleRepository.findById(id).orElseThrow(() -> new NotFoundException("Sale not found"));
   }
@@ -657,17 +1173,15 @@ public class SaleService {
   }
 
   private BigDecimal resolvePublisherRevenue(SaleRequest request, Book book) {
-    if (request.saleSource() == SaleSource.DISTRIBUTOR) {
-      if (request.publisherRevenue() == null) {
-        throw new DataIntegrityViolationException(
-            "publisherRevenue is required for distributor sales");
-      }
-      return request.publisherRevenue();
+    SaleSource source = request.saleSource();
+    if (source.isRevenueComputed()) {
+      return source.computeRevenue(book, request.quantitySold());
     }
-
-    return book.getCoverPrice()
-        .subtract(book.getPrintCost())
-        .multiply(BigDecimal.valueOf(request.quantitySold()));
+    if (request.publisherRevenue() == null) {
+      throw new DataIntegrityViolationException(
+          "publisherRevenue is required for distributor sales");
+    }
+    return request.publisherRevenue();
   }
 
   private BigDecimal resolveAuthorRoyaltyRate(SaleRequest request, Book book) {
@@ -744,6 +1258,57 @@ public class SaleService {
         .build();
   }
 
+  private Sale mapBackerkitAggregateToSale(
+      MultipartFile file,
+      LocalDateTime parsedTimestamp,
+      BackerkitAggregateKey aggregateKey,
+      Integer quantity) {
+    Book book =
+        bookRepository
+            .findById(aggregateKey.bookId())
+            .orElseThrow(() -> new NotFoundException("Book not found"));
+
+    BigDecimal publisherRevenue =
+        SaleSource.KICKSTARTER.computeRevenue(book, Optional.ofNullable(quantity).orElse(0));
+    BigDecimal authorRoyalty =
+        computeAuthorRoyalty(publisherRevenue, SaleSource.KICKSTARTER.getRoyaltyRate(book));
+
+    return Sale.builder()
+        .saleSource(SaleSource.KICKSTARTER)
+        .distributor(null)
+        .format(aggregateKey.format())
+        .saleMonth(aggregateKey.saleMonth())
+        .saleYear(aggregateKey.saleYear())
+        .book(book)
+        .quantitySold(quantity)
+        .saleCurrency(Currency.USD)
+        .originalPublisherRevenue(publisherRevenue)
+        .publisherRevenue(publisherRevenue)
+        .authorRoyalty(authorRoyalty)
+        .hasAuthorBeenPaid(false)
+        .comment(getCommentFromBackerkit(file, parsedTimestamp))
+        .build();
+  }
+
+  private Map<String, KickstarterBookMatch> buildKickstarterTagMap() {
+    Map<String, KickstarterBookMatch> tagMap = new HashMap<>();
+    for (Book book : bookRepository.findAll()) {
+      addKickstarterTag(tagMap, book.getKickstarterItemTagEbook(), book, SaleFormat.EBOOK);
+      addKickstarterTag(tagMap, book.getKickstarterItemTagPrint(), book, SaleFormat.PRINT);
+    }
+    return tagMap;
+  }
+
+  private void addKickstarterTag(
+      Map<String, KickstarterBookMatch> tagMap, String tag, Book book, SaleFormat format) {
+    if (tag == null || tag.isBlank()) {
+      return;
+    }
+    // Keep first seen mapping deterministically to avoid non-repeatable imports when duplicates
+    // exist.
+    tagMap.putIfAbsent(tag, new KickstarterBookMatch(book, format));
+  }
+
   private String getCommentFromCSV(
       MultipartFile file, ParsedBatch<IngramCsvEntry> parsedBatch, IngramCsvEntry ingramCsvEntry) {
     String comment =
@@ -771,6 +1336,16 @@ public class SaleService {
     return ImportParser.truncateComment(comment);
   }
 
+  private String getCommentFromBackerkit(MultipartFile file, LocalDateTime parsedTimestamp) {
+    String comment =
+        String.format(
+            "Kickstarter: File='%s' (%s)",
+            ImportParser.truncateField(
+                file.getOriginalFilename(), ImportParser.MAX_FILENAME_LENGTH),
+            ImportParser.formatCommentTimestamp(parsedTimestamp));
+    return ImportParser.truncateComment(comment);
+  }
+
   private void saveSalesToRepo(List<Sale> sales) {
     saleRepository.saveAll(sales);
   }
@@ -784,5 +1359,26 @@ public class SaleService {
       return SaleFormat.EBOOK;
     }
     return SaleFormat.PRINT;
+  }
+
+  private record BackerkitAggregateKey(
+      int saleYear, int saleMonth, Long bookId, SaleFormat format) {}
+
+  private record KickstarterBookMatch(Book book, SaleFormat format) {}
+
+  private record QuarterKey(int year, int quarter) {}
+
+  private static final class AmazonSalesAccumulator {
+    private final Book book;
+    private int printQuantity;
+    private BigDecimal printRevenue = BigDecimal.ZERO;
+    private int ebookQuantity;
+    private BigDecimal ebookRevenue = BigDecimal.ZERO;
+    private int kenp;
+    private BigDecimal kenpRevenue = BigDecimal.ZERO;
+
+    private AmazonSalesAccumulator(Book book) {
+      this.book = book;
+    }
   }
 }

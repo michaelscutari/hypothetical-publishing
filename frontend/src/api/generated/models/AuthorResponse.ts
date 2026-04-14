@@ -34,5 +34,13 @@ export type AuthorResponse = {
      * Total royalty unpaid to the author
      */
     unpaidRoyalty: number;
+    /**
+     * Paypal.me account name
+     */
+    paypalAccount?: string;
+    /**
+     * Venmo account name
+     */
+    venmoAccount?: string;
 };
 

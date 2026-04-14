@@ -32,6 +32,9 @@ import org.springframework.stereotype.Component;
 @Order(2)
 public class DataSeeder implements CommandLineRunner {
 
+  private static final String SAMPLE_DATA_DIR = "ev4-sample-data/";
+  private static final String SAMPLE_IMAGE_DIR = SAMPLE_DATA_DIR + "img/";
+
   private final AuthorRepository authorRepository;
   private final BookRepository bookRepository;
   private final SaleRepository saleRepository;
@@ -45,24 +48,58 @@ public class DataSeeder implements CommandLineRunner {
       return;
     }
 
-    Map<String, Book> isbnToBook = seedBooks();
+    Map<String, Author> authorsByName = seedAuthors();
+    Map<String, Book> isbnToBook = seedBooks(authorsByName);
     int salesCount = seedSales(isbnToBook);
 
-    log.info("Seeded {} books and {} sales records", isbnToBook.size(), salesCount);
+    log.info(
+        "Seeded {} authors, {} books and {} sales records",
+        authorsByName.size(),
+        bookRepository.count(),
+        salesCount);
   }
 
-  private Map<String, Book> seedBooks() throws Exception {
-    Map<String, Book> isbnToBook = new HashMap<>();
+  private Map<String, Author> seedAuthors() throws Exception {
     Map<String, Author> authorCache = new HashMap<>();
-    ClassPathResource resource = new ClassPathResource("ev3-sample-data/books.csv");
+    ClassPathResource resource = new ClassPathResource(SAMPLE_DATA_DIR + "authors.csv");
+
+    try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
+      reader.readNext(); // skip header
+      String[] line;
+      while ((line = reader.readNext()) != null) {
+        String authorName = StringUtils.normalizeWhitespace(getValue(line, 0));
+        if (emptyToNull(authorName) == null) {
+          continue;
+        }
+
+        Author author =
+            Author.builder()
+                .name(authorName)
+                .email(emptyToNull(getValue(line, 1)))
+                .paypalAccount(emptyToNull(getValue(line, 2)))
+                .venmoAccount(emptyToNull(getValue(line, 3)))
+                .build();
+
+        author = authorRepository.save(author);
+        authorCache.put(authorName, author);
+      }
+    }
+
+    return authorCache;
+  }
+
+  private Map<String, Book> seedBooks(Map<String, Author> authorsByName) throws Exception {
+    Map<String, Book> isbnToBook = new HashMap<>();
+    ClassPathResource resource = new ClassPathResource(SAMPLE_DATA_DIR + "books.csv");
 
     try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
       reader.readNext(); // skip header
       String[] line;
       while ((line = reader.readNext()) != null) {
         if (line.length < 5 || emptyToNull(line[0]) == null) continue;
-        // Ev3 format: title,author,series_name,series_index,isbn13,isbn10,asin,
-        //   publish_date,print_cost,cover_price,royalty_percent_distribution,
+        // Ev4 format: title,author,series_name,series_index,isbn13,isbn10,asin,
+        //   kickstarter_ebook,kickstarter_paperback,publish_date,is_released,
+        //   print_cost,cover_price,royalty_percent_distribution,
         //   royalty_percent_handsold,cover_image
         String title = line[0];
         String authorName = StringUtils.normalizeWhitespace(line[1]);
@@ -71,17 +108,20 @@ public class DataSeeder implements CommandLineRunner {
         String isbn13 = line[4];
         String isbn10 = emptyToNull(getValue(line, 5));
         String asin = emptyToNull(getValue(line, 6));
-        String publicationDate = getValue(line, 7); // YYYY/MM
-        BigDecimal printCost = parseBigDecimal(getValue(line, 8), BigDecimal.ZERO);
-        BigDecimal coverPrice = parseBigDecimal(getValue(line, 9), BigDecimal.ZERO);
+        String kickstarterTagEbook = emptyToNull(getValue(line, 7));
+        String kickstarterTagPrint = emptyToNull(getValue(line, 8));
+        String publicationDate = getValue(line, 9); // YYYY/MM
+        boolean isReleased = parseYnAsBoolean(getValue(line, 10), true);
+        BigDecimal printCost = parseBigDecimal(getValue(line, 11), BigDecimal.ZERO);
+        BigDecimal coverPrice = parseBigDecimal(getValue(line, 12), BigDecimal.ZERO);
         BigDecimal distributorRoyaltyRate =
-            parseBigDecimal(getValue(line, 10), new BigDecimal("50")).divide(new BigDecimal("100"));
+            parseBigDecimal(getValue(line, 13), new BigDecimal("50")).divide(new BigDecimal("100"));
         BigDecimal handsoldRoyaltyRate =
-            parseBigDecimal(getValue(line, 11), new BigDecimal("20")).divide(new BigDecimal("100"));
-        String coverImageFilename = emptyToNull(getValue(line, 12));
+            parseBigDecimal(getValue(line, 14), new BigDecimal("20")).divide(new BigDecimal("100"));
+        String coverImageFilename = emptyToNull(getValue(line, 15));
 
         Author author =
-            authorCache.computeIfAbsent(
+            authorsByName.computeIfAbsent(
                 authorName,
                 name ->
                     authorRepository.save(
@@ -108,6 +148,9 @@ public class DataSeeder implements CommandLineRunner {
                 .handsoldAuthorRoyaltyRate(handsoldRoyaltyRate)
                 .seriesName(seriesName)
                 .seriesPosition(seriesPosition)
+                .kickstarterItemTagEbook(kickstarterTagEbook)
+                .kickstarterItemTagPrint(kickstarterTagPrint)
+                .released(isReleased)
                 .coverPrice(coverPrice)
                 .printCost(printCost)
                 .build();
@@ -142,7 +185,7 @@ public class DataSeeder implements CommandLineRunner {
 
   private int seedSales(Map<String, Book> isbnToBook) throws Exception {
     int count = 0;
-    ClassPathResource resource = new ClassPathResource("ev3-sample-data/records.csv");
+    ClassPathResource resource = new ClassPathResource(SAMPLE_DATA_DIR + "records.csv");
 
     try (CSVReader reader = new CSVReader(new InputStreamReader(resource.getInputStream()))) {
       reader.readNext(); // skip header
@@ -172,20 +215,18 @@ public class DataSeeder implements CommandLineRunner {
         int year = Integer.parseInt(dateParts[0]);
         int month = Integer.parseInt(dateParts[1]);
 
-        boolean isHandsold = saleSource == SaleSource.HAND_SOLD;
         boolean isKU = format == SaleFormat.KINDLE_UNLIMITED;
 
         BigDecimal originalRevenue;
-        if (isHandsold) {
+        if (saleSource.isRevenueComputed()) {
           int qty = qtySold != null ? qtySold : 0;
-          originalRevenue =
-              book.getCoverPrice().subtract(book.getPrintCost()).multiply(BigDecimal.valueOf(qty));
+          originalRevenue = saleSource.computeRevenue(book, qty);
         } else {
           originalRevenue = revenueStr != null ? new BigDecimal(revenueStr) : BigDecimal.ZERO;
         }
 
         BigDecimal publisherRevenueUsd;
-        if (currency == Currency.USD || isHandsold) {
+        if (currency == Currency.USD || saleSource.isRevenueComputed()) {
           publisherRevenueUsd = originalRevenue;
         } else {
           try {
@@ -199,10 +240,7 @@ public class DataSeeder implements CommandLineRunner {
           }
         }
 
-        BigDecimal authorRate =
-            isHandsold
-                ? book.getHandsoldAuthorRoyaltyRate()
-                : book.getDistributorAuthorRoyaltyRate();
+        BigDecimal authorRate = saleSource.getRoyaltyRate(book);
         BigDecimal authorRoyalty =
             publisherRevenueUsd.multiply(authorRate).setScale(2, RoundingMode.HALF_UP);
 
@@ -210,7 +248,7 @@ public class DataSeeder implements CommandLineRunner {
             Sale.builder()
                 .book(book)
                 .saleSource(saleSource)
-                .distributor(isHandsold ? null : distributor)
+                .distributor(saleSource.requiresDistributor() ? distributor : null)
                 .format(format)
                 .saleMonth(month)
                 .saleYear(year)
@@ -249,11 +287,28 @@ public class DataSeeder implements CommandLineRunner {
     return value == null ? null : Integer.valueOf(value);
   }
 
+  private static boolean parseYnAsBoolean(String raw, boolean defaultValue) {
+    String value = emptyToNull(raw);
+    if (value == null) {
+      return defaultValue;
+    }
+    if ("y".equalsIgnoreCase(value)) {
+      return true;
+    }
+    if ("n".equalsIgnoreCase(value)) {
+      return false;
+    }
+    return defaultValue;
+  }
+
   private static SaleSource parseSaleSource(String raw) {
     String value = emptyToNull(raw);
     if (value == null) return null;
     if ("handsold".equalsIgnoreCase(value) || "hand_sold".equalsIgnoreCase(value)) {
       return SaleSource.HAND_SOLD;
+    }
+    if ("kickstarter".equalsIgnoreCase(value)) {
+      return SaleSource.KICKSTARTER;
     }
     return SaleSource.DISTRIBUTOR;
   }
@@ -293,7 +348,10 @@ public class DataSeeder implements CommandLineRunner {
       // JXL (JPEG XL) is not supported by CoverService, so use JPG fallback
       String actualFilename = filename;
 
-      ClassPathResource resource = new ClassPathResource("ev3-sample-data/" + actualFilename);
+      ClassPathResource resource = new ClassPathResource(SAMPLE_IMAGE_DIR + actualFilename);
+      if (!resource.exists()) {
+        resource = new ClassPathResource(SAMPLE_DATA_DIR + actualFilename);
+      }
       if (!resource.exists()) {
         log.warn("Cover image not found: {}", actualFilename);
         return null;
