@@ -184,6 +184,26 @@ export default function AuthorShow() {
             </Typography>
           </Paper>
         </Grid>
+        {author.paypalAccount && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">PayPal</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {author.paypalAccount}
+              </Typography>
+            </Paper>
+          </Grid>
+        )}
+        {author.venmoAccount && (
+          <Grid size={{ xs: 12, sm: 6 }}>
+            <Paper sx={{ px: 2, py: 1 }}>
+              <Typography variant="overline">Venmo</Typography>
+              <Typography variant="body1" sx={{ mb: 1 }}>
+                {author.venmoAccount}
+              </Typography>
+            </Paper>
+          </Grid>
+        )}
       </Grid>
       <Box sx={{ mt: 3 }}>
         <Paper sx={{ p: 2 }}>

@@ -37,6 +37,13 @@ interface SaleCreateRowProps {
   onDeleteRecord: (index: number) => void;
 }
 
+// Reusable style for visually disabled fields
+const disabledSx = {
+  '& .MuiInputBase-root': {
+    backgroundColor: 'action.hover',
+  },
+};
+
 export default function SaleCreateRow({
   record,
   index,
@@ -100,7 +107,6 @@ export default function SaleCreateRow({
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const dist = event.target.value as SaleRequest.distributor;
       const updates: Partial<SaleRecordInput> = { distributor: dist, errors: {} };
-      // Reset format if invalid for new distributor
       if (
         dist === SaleRequest.distributor.INGRAM_SPARK &&
         record.format !== SaleRequest.format.PRINT
@@ -199,7 +205,6 @@ export default function SaleCreateRow({
     const distributorRate = record.book.distributorAuthorRoyaltyRate;
     const handsoldRate = record.book.handsoldAuthorRoyaltyRate;
 
-    // Handsold and USD distributor sales can be computed fully on the client.
     if (
       record.saleSource !== SaleRequest.saleSource.DISTRIBUTOR ||
       record.saleCurrency === SaleRequest.saleCurrency.USD
@@ -216,7 +221,6 @@ export default function SaleCreateRow({
       return;
     }
 
-    // For non-USD distributor sales, convert revenue to USD for royalty preview.
     if (record.publisherRevenue == null) {
       if (record.authorRoyalty !== null) {
         onUpdateRecord(index, { authorRoyalty: null });
@@ -400,6 +404,7 @@ export default function SaleCreateRow({
           error={!!record.errors.distributor}
           helperText={record.errors.distributor}
           disabled={!isDistributor}
+          sx={!isDistributor ? disabledSx : undefined}
           fullWidth
         >
           {!isDistributor && <MenuItem value="N/A">N/A</MenuItem>}
@@ -416,6 +421,7 @@ export default function SaleCreateRow({
           onFocus={() => onActivateRow(index)}
           onChange={handleFormatChange}
           disabled={!isDistributor}
+          sx={!isDistributor ? disabledSx : undefined}
           fullWidth
         >
           <MenuItem value={SaleRequest.format.PRINT}>Print</MenuItem>
@@ -435,6 +441,7 @@ export default function SaleCreateRow({
           onFocus={() => onActivateRow(index)}
           onChange={handleCurrencyChange}
           disabled={!isDistributor}
+          sx={!isDistributor ? disabledSx : undefined}
           fullWidth
         >
           {Object.values(SaleRequest.saleCurrency).map((c) => (
@@ -466,6 +473,7 @@ export default function SaleCreateRow({
           fullWidth
         />
 
+        {/* Publisher Revenue — editable for distributor, greyed out for handsold */}
         <TextField
           size="small"
           type="text"
@@ -475,19 +483,26 @@ export default function SaleCreateRow({
           onFocus={() => onActivateRow(index)}
           onChange={handleRevenueChange}
           disabled={!isDistributor}
+          sx={!isDistributor ? disabledSx : undefined}
           error={!!record.errors.publisherRevenue}
           helperText={record.errors.publisherRevenue}
-          inputProps={{ inputMode: 'decimal' }}
           fullWidth
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                {isDistributor ? record.saleCurrency : 'USD'}
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment
+                  position="start"
+                  sx={{ color: !isDistributor ? 'text.disabled' : 'text.primary' }}
+                >
+                  {isDistributor ? record.saleCurrency : 'USD'}
+                </InputAdornment>
+              ),
+            },
+            htmlInput: { inputMode: 'decimal' },
           }}
         />
 
+        {/* Author Royalty — always read-only and greyed out */}
         <TextField
           size="small"
           type="text"
@@ -495,6 +510,7 @@ export default function SaleCreateRow({
           placeholder="0.00"
           value={record.authorRoyalty ?? ''}
           onFocus={() => onActivateRow(index)}
+          sx={disabledSx}
           error={!!record.errors.authorRoyalty}
           helperText={
             record.errors.authorRoyalty ||
@@ -502,10 +518,17 @@ export default function SaleCreateRow({
               ? 'Auto-calculated from USD-converted revenue'
               : undefined)
           }
-          inputProps={{ inputMode: 'decimal', readOnly: true }}
           fullWidth
-          InputProps={{
-            startAdornment: <InputAdornment position="start">$</InputAdornment>,
+          slotProps={{
+            input: {
+              readOnly: true,
+              startAdornment: (
+                <InputAdornment position="start" sx={{ color: 'text.disabled' }}>
+                  $
+                </InputAdornment>
+              ),
+            },
+            htmlInput: { inputMode: 'decimal' },
           }}
         />
       </Box>
