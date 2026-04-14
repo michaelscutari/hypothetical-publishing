@@ -14,6 +14,7 @@ import Select, { type SelectChangeEvent } from '@mui/material/Select';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 
 import { type AuthorResponse, AuthorsService, type SaleResponse, SalesService } from '@/api';
 import PageContainer from '@/components/PageContainer';
@@ -43,7 +44,6 @@ export default function SaleList() {
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
-  // Default sort: descending by date (newest first) - requirement 3.1.1
   const [sortModel, setSortModel] = React.useState<GridSortModel>([
     { field: 'saleYear', sort: 'desc' },
   ]);
@@ -134,26 +134,19 @@ export default function SaleList() {
     loadAuthors();
   }, [loadAuthors]);
 
-  // Requirement 3.1.3 - Navigate to detail/modify view
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
     ({ row }, event) => {
       if (event.button === 1 || event.metaKey || event.ctrlKey) {
         window.open(`/sales/${row.id}`, '_blank', 'noopener,noreferrer');
         return;
       }
-
-      if (event.button !== 0) {
-        return;
-      }
-
+      if (event.button !== 0) return;
       navigate(`/sales/${row.id}`);
     },
     [navigate],
   );
 
-  // Requirement 3.1.4 - Navigate to sales input tool
   const handleCreateClick = React.useCallback(() => navigate('/sales/new'), [navigate]);
-
   const handleImportClick = React.useCallback(() => navigate('/sales/import'), [navigate]);
 
   const handleExportClick = React.useCallback(() => {
@@ -193,10 +186,7 @@ export default function SaleList() {
         } catch (deleteError) {
           notifications.show(
             `Failed to delete sale record. Reason: ${getErrorMessage(deleteError)}`,
-            {
-              severity: 'error',
-              autoHideDuration: 3000,
-            },
+            { severity: 'error', autoHideDuration: 3000 },
           );
         }
         setIsLoading(false);
@@ -211,15 +201,12 @@ export default function SaleList() {
         field: 'bookTitle',
         headerName: 'Book Title',
         flex: 1.5,
-        minWidth: 170,
+        minWidth: 150,
         renderCell: (params) => {
-          const bookId = params.row.bookId;
-          const title = params.row.bookTitle;
           const isProjected = params.row.isProjected;
-
           return (
             <Link
-              to={`/books/${bookId}`}
+              to={`/books/${params.row.bookId}`}
               style={{
                 color: 'inherit',
                 textDecoration: 'none',
@@ -235,7 +222,7 @@ export default function SaleList() {
                 e.stopPropagation();
               }}
             >
-              {title}
+              {params.row.bookTitle}
             </Link>
           );
         },
@@ -243,30 +230,48 @@ export default function SaleList() {
       {
         field: 'bookAuthor',
         headerName: 'Author',
-        flex: 1.2,
-        minWidth: 140,
+        flex: 1,
+        minWidth: 120,
       },
       {
         field: 'saleSource',
-        headerName: 'Sale Source',
-        flex: 1,
-        minWidth: 120,
-        valueGetter: (_value, row) => {
-          if (row.saleSource === 'DISTRIBUTOR') return 'Distributor';
-          if (row.saleSource === 'HAND_SOLD') return 'Hand Sold';
-          return row.saleSource;
-        },
-      },
-      {
-        field: 'distributor',
-        headerName: 'Distributor',
+        headerName: 'Source',
         flex: 1,
         minWidth: 130,
-        valueGetter: (_value, row) => {
-          if (row.distributor === 'INGRAM_SPARK') return 'Ingram Spark';
-          if (row.distributor === 'AMAZON') return 'Amazon';
-          if (row.distributor === 'OTHER') return 'Other';
-          return row.distributor;
+        renderCell: (params) => {
+          const source = params.row.saleSource;
+          const dist = params.row.distributor;
+
+          let sourceLabel = source;
+          if (source === 'DISTRIBUTOR') sourceLabel = 'Distributor';
+          else if (source === 'HAND_SOLD') sourceLabel = 'Hand Sold';
+          else if (source === 'KICKSTARTER') sourceLabel = 'Kickstarter';
+
+          let distLabel: string | null = null;
+          if (source === 'DISTRIBUTOR' && dist) {
+            if (dist === 'INGRAM_SPARK') distLabel = 'Ingram Spark';
+            else if (dist === 'AMAZON') distLabel = 'Amazon';
+            else if (dist === 'OTHER') distLabel = 'Other';
+          }
+
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%',
+                py: 1,
+              }}
+            >
+              <Typography variant="body2">{sourceLabel}</Typography>
+              {distLabel && (
+                <Typography variant="caption" color="text.secondary">
+                  {distLabel}
+                </Typography>
+              )}
+            </Box>
+          );
         },
       },
       {
@@ -292,52 +297,60 @@ export default function SaleList() {
         field: 'quantitySold',
         headerName: 'Qty / KENP',
         type: 'number',
-        flex: 0.8,
-        minWidth: 90,
+        flex: 0.6,
+        minWidth: 75,
         valueGetter: (_value, row) =>
           row.format === 'KINDLE_UNLIMITED' ? row.kenp : row.quantitySold,
       },
       {
         field: 'originalPublisherRevenue',
-        headerName: 'Revenue (Original)',
-        type: 'number',
+        headerName: 'Revenue',
         flex: 1,
-        minWidth: 150,
-        renderCell: (params) =>
-          formatCurrencyWithCode(
-            Number(params.row.originalPublisherRevenue),
-            params.row.saleCurrency,
-          ),
-      },
-      {
-        field: 'publisherRevenue',
-        headerName: 'Revenue (USD)',
-        type: 'number',
-        flex: 1,
-        minWidth: 120,
-        valueFormatter: (value) => formatCurrency(Number(value)),
+        minWidth: 130,
+        renderCell: (params) => {
+          const original = Number(params.row.originalPublisherRevenue);
+          const usd = Number(params.row.publisherRevenue);
+          const currency = params.row.saleCurrency;
+          const isSameCurrency = currency === 'USD';
+          return (
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%',
+                py: 1,
+              }}
+            >
+              <Typography variant="body2">{formatCurrencyWithCode(original, currency)}</Typography>
+              {!isSameCurrency && (
+                <Typography variant="caption" color="text.secondary">
+                  {formatCurrency(usd)} USD
+                </Typography>
+              )}
+            </Box>
+          );
+        },
       },
       {
         field: 'authorRoyalty',
         headerName: 'Royalty',
         type: 'number',
-        flex: 1,
-        minWidth: 120,
+        flex: 0.8,
+        minWidth: 90,
         valueFormatter: (value) => formatCurrency(Number(value)),
       },
       {
         field: 'comment',
-        headerName: 'Comment',
-        width: 90,
+        headerName: '',
+        width: 50,
         sortable: false,
         filterable: false,
         align: 'center',
         headerAlign: 'center',
         renderCell: (params) => {
           const comment = params.row.comment;
-
           if (!comment) return null;
-
           return (
             <Tooltip title={comment} placement="top" enterDelay={300}>
               <IconButton
@@ -352,17 +365,14 @@ export default function SaleList() {
         },
       },
       {
+        // align both header and content to center
         field: 'hasAuthorBeenPaid',
         headerName: 'Paid',
-        flex: 1,
-        minWidth: 120,
-        align: 'left',
+        flex: 0.7,
+        minWidth: 90,
+        align: 'center',
         headerAlign: 'center',
-        renderCell: (params) => (
-          <Box sx={{ pl: 1.5 }}>
-            <PaidStatusChip paid={params.row.hasAuthorBeenPaid} />
-          </Box>
-        ),
+        renderCell: (params) => <PaidStatusChip paid={params.row.hasAuthorBeenPaid} />,
       },
       {
         field: 'actions',
@@ -445,9 +455,7 @@ export default function SaleList() {
                     InputLabelProps: { shrink: true },
                   },
                   toolbar: { hidden: true },
-                  field: {
-                    clearable: true,
-                  },
+                  field: { clearable: true },
                 }}
                 sx={{ width: 150 }}
               />
@@ -467,9 +475,7 @@ export default function SaleList() {
                     InputLabelProps: { shrink: true },
                   },
                   toolbar: { hidden: true },
-                  field: {
-                    clearable: true,
-                  },
+                  field: { clearable: true },
                 }}
                 sx={{ width: 150 }}
               />
@@ -564,9 +570,14 @@ export default function SaleList() {
           sortModel={sortModel}
           onSortModelChange={setSortModel}
           getRowClassName={getRowClassName}
+          getRowHeight={() => 'auto'}
           sx={{
             '& .projected-row': {
               opacity: 0.55,
+            },
+            '& .MuiDataGrid-cell': {
+              display: 'flex',
+              alignItems: 'center',
             },
           }}
         />
