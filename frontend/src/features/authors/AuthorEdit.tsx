@@ -33,12 +33,12 @@ export default function AuthorEdit() {
       const authorData = await AuthorsService.getAuthorById(Number(authorId));
       setAuthor(authorData);
       setForm({
-  name: authorData.name,
-  email: authorData.email ?? '',
-  paypalAccount: authorData.paypalAccount ?? '',
-  venmoAccount: authorData.venmoAccount ?? '',
-  errors: {},
-});
+        name: authorData.name,
+        email: authorData.email ?? '',
+        paypalAccount: authorData.paypalAccount ?? '',
+        venmoAccount: authorData.venmoAccount ?? '',
+        errors: {},
+      });
     } catch (loadError) {
       setError(getErrorMessage(loadError));
     } finally {
@@ -71,11 +71,11 @@ export default function AuthorEdit() {
       setIsSubmitting(true);
       try {
         await AuthorsService.updateAuthor(Number(authorId), {
-  name: form.name.trim(),
-  email: form.email.trim(),
-  paypalAccount: form.paypalAccount?.trim() || undefined,
-  venmoAccount: form.venmoAccount?.trim() || undefined,
-});
+          name: form.name.trim(),
+          email: form.email.trim(),
+          paypalAccount: form.paypalAccount?.trim() || undefined,
+          venmoAccount: form.venmoAccount?.trim() || undefined,
+        });
         notifications.show('Author updated successfully.', {
           severity: 'success',
           autoHideDuration: 3000,
@@ -132,25 +132,25 @@ export default function AuthorEdit() {
               />
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>
-  <TextField
-    name="paypalAccount"
-    label="PayPal Account (paypal.me username)"
-    value={form.paypalAccount ?? ''}
-    onChange={handleChange}
-    helperText=" "
-    fullWidth
-  />
-</Grid>
-<Grid size={{ xs: 12, sm: 6 }}>
-  <TextField
-    name="venmoAccount"
-    label="Venmo Account"
-    value={form.venmoAccount ?? ''}
-    onChange={handleChange}
-    helperText=" "
-    fullWidth
-  />
-</Grid>
+              <TextField
+                name="paypalAccount"
+                label="PayPal Account (paypal.me username)"
+                value={form.paypalAccount ?? ''}
+                onChange={handleChange}
+                helperText=" "
+                fullWidth
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                name="venmoAccount"
+                label="Venmo Account"
+                value={form.venmoAccount ?? ''}
+                onChange={handleChange}
+                helperText=" "
+                fullWidth
+              />
+            </Grid>
           </Grid>
 
           <Stack direction="row" spacing={2} justifyContent="space-between">

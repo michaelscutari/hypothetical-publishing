@@ -360,7 +360,10 @@ export default function AuthorPayments() {
                           </div>
                         </Tooltip>
                         {authorInfo?.paypalAccount && unpaidTotal > 0 && (
-                          <Tooltip title={`Pay via PayPal: ${formatCurrency(unpaidTotal)}`} placement="bottom">
+                          <Tooltip
+                            title={`Pay via PayPal: ${formatCurrency(unpaidTotal)}`}
+                            placement="bottom"
+                          >
                             <IconButton
                               size="small"
                               component="a"
@@ -379,7 +382,10 @@ export default function AuthorPayments() {
                           </Tooltip>
                         )}
                         {authorInfo?.venmoAccount && unpaidTotal > 0 && (
-                          <Tooltip title={`Pay via Venmo: ${formatCurrency(unpaidTotal)}`} placement="bottom">
+                          <Tooltip
+                            title={`Pay via Venmo: ${formatCurrency(unpaidTotal)}`}
+                            placement="bottom"
+                          >
                             <IconButton
                               size="small"
                               component="a"
