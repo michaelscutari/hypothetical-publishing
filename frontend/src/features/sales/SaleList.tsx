@@ -190,9 +190,15 @@ export default function SaleList() {
           <Link
             to={`/books/${params.row.bookId}`}
             style={{ color: 'inherit', textDecoration: 'none' }}
-            onMouseEnter={(e) => { e.currentTarget.style.textDecoration = 'underline'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.textDecoration = 'none'; }}
-            onClick={(e) => { e.stopPropagation(); }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.textDecoration = 'underline';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.textDecoration = 'none';
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
           >
             {params.row.bookTitle}
           </Link>
@@ -226,10 +232,20 @@ export default function SaleList() {
           }
 
           return (
-            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', py: 1 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%',
+                py: 1,
+              }}
+            >
               <Typography variant="body2">{sourceLabel}</Typography>
               {distLabel && (
-                <Typography variant="caption" color="text.secondary">{distLabel}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {distLabel}
+                </Typography>
               )}
             </Box>
           );
@@ -274,10 +290,20 @@ export default function SaleList() {
           const currency = params.row.saleCurrency;
           const isSameCurrency = currency === 'USD';
           return (
-            <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', py: 1 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                height: '100%',
+                py: 1,
+              }}
+            >
               <Typography variant="body2">{formatCurrencyWithCode(original, currency)}</Typography>
               {!isSameCurrency && (
-                <Typography variant="caption" color="text.secondary">{formatCurrency(usd)} USD</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {formatCurrency(usd)} USD
+                </Typography>
               )}
             </Box>
           );
@@ -304,7 +330,11 @@ export default function SaleList() {
           if (!comment) return null;
           return (
             <Tooltip title={comment} placement="top" enterDelay={300}>
-              <IconButton size="small" onClick={(e) => e.stopPropagation()} aria-label="View comment">
+              <IconButton
+                size="small"
+                onClick={(e) => e.stopPropagation()}
+                aria-label="View comment"
+              >
                 <CommentIcon fontSize="small" />
               </IconButton>
             </Tooltip>
@@ -377,7 +407,11 @@ export default function SaleList() {
                 minDate={dayjs('1900-01-01')}
                 maxDate={dayjs()}
                 slotProps={{
-                  textField: { size: 'small', placeholder: 'MM/YYYY', InputLabelProps: { shrink: true } },
+                  textField: {
+                    size: 'small',
+                    placeholder: 'MM/YYYY',
+                    InputLabelProps: { shrink: true },
+                  },
                   toolbar: { hidden: true },
                   field: { clearable: true },
                 }}
@@ -393,7 +427,11 @@ export default function SaleList() {
                 minDate={dayjs('1900-01-01')}
                 maxDate={dayjs()}
                 slotProps={{
-                  textField: { size: 'small', placeholder: 'MM/YYYY', InputLabelProps: { shrink: true } },
+                  textField: {
+                    size: 'small',
+                    placeholder: 'MM/YYYY',
+                    InputLabelProps: { shrink: true },
+                  },
                   toolbar: { hidden: true },
                   field: { clearable: true },
                 }}
