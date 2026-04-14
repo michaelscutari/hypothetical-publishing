@@ -9,6 +9,7 @@ import CardContent from '@mui/material/CardContent';
 import CircularProgress from '@mui/material/CircularProgress';
 import Divider from '@mui/material/Divider';
 import FormControl from '@mui/material/FormControl';
+import Grid from '@mui/material/Grid';
 import InputLabel from '@mui/material/InputLabel';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -196,6 +197,7 @@ export default function AuthorRoyaltyReport() {
   };
 
   const years = Array.from({ length: 201 }, (_, i) => 1900 + i);
+  const actionButtonSx = { minWidth: 240 };
 
   return (
     <PageContainer title="Reports">
@@ -292,107 +294,136 @@ export default function AuthorRoyaltyReport() {
                 size="large"
                 onClick={handleGenerateReport}
                 disabled={!selectedAuthor || isLoadingAuthors}
+                sx={actionButtonSx}
               >
                 {isLoadingAuthors ? <CircularProgress size={24} /> : 'Generate Report'}
               </Button>
             </Box>
 
-            <Divider />
+            <Divider sx={{ my: 1 }} />
 
             <Typography variant="subtitle1" fontWeight={600}>
               Financial XLSX Exports
             </Typography>
 
             <Typography variant="body2" color="text.secondary">
-              Configure a quarter range for trend-based financial exports. Amazon Sales export uses
-              lifetime data.
+              Amazon sales is a lifetime export. Use the quarter range below only for the other XLSX
+              reports.
             </Typography>
 
-            <Stack direction="row" spacing={2}>
-              <FormControl fullWidth>
-                <InputLabel>Start Quarter</InputLabel>
-                <Select
-                  value={financialStartQuarter}
-                  label="Start Quarter"
-                  onChange={(e) => setFinancialStartQuarter(e.target.value as number)}
+            <Grid container spacing={2}>
+              <Grid size={{ xs: 12 }}>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleAmazonSalesExport}
+                  disabled={isDownloadingReport}
+                  sx={actionButtonSx}
                 >
-                  <MenuItem value={1}>Q1 (Jan-Mar)</MenuItem>
-                  <MenuItem value={2}>Q2 (Apr-Jun)</MenuItem>
-                  <MenuItem value={3}>Q3 (Jul-Sep)</MenuItem>
-                  <MenuItem value={4}>Q4 (Oct-Dec)</MenuItem>
-                </Select>
-              </FormControl>
+                  Export Amazon Sales (All Time)
+                </Button>
+              </Grid>
 
-              <FormControl fullWidth>
-                <InputLabel>Start Year</InputLabel>
-                <Select
-                  value={financialStartYear}
-                  label="Start Year"
-                  onChange={(e) => setFinancialStartYear(e.target.value as number)}
+              <Grid size={{ xs: 12 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Quarter range for royalties and publisher profit
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>Start Quarter</InputLabel>
+                      <Select
+                        value={financialStartQuarter}
+                        label="Start Quarter"
+                        onChange={(e) => setFinancialStartQuarter(e.target.value as number)}
+                      >
+                        <MenuItem value={1}>Q1 (Jan-Mar)</MenuItem>
+                        <MenuItem value={2}>Q2 (Apr-Jun)</MenuItem>
+                        <MenuItem value={3}>Q3 (Jul-Sep)</MenuItem>
+                        <MenuItem value={4}>Q4 (Oct-Dec)</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>Start Year</InputLabel>
+                      <Select
+                        value={financialStartYear}
+                        label="Start Year"
+                        onChange={(e) => setFinancialStartYear(e.target.value as number)}
+                      >
+                        {years.map((year) => (
+                          <MenuItem key={year} value={year}>
+                            {year}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>End Quarter</InputLabel>
+                      <Select
+                        value={financialEndQuarter}
+                        label="End Quarter"
+                        onChange={(e) => setFinancialEndQuarter(e.target.value as number)}
+                      >
+                        <MenuItem value={1}>Q1 (Jan-Mar)</MenuItem>
+                        <MenuItem value={2}>Q2 (Apr-Jun)</MenuItem>
+                        <MenuItem value={3}>Q3 (Jul-Sep)</MenuItem>
+                        <MenuItem value={4}>Q4 (Oct-Dec)</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+
+                  <Grid size={{ xs: 12, sm: 6 }}>
+                    <FormControl fullWidth>
+                      <InputLabel>End Year</InputLabel>
+                      <Select
+                        value={financialEndYear}
+                        label="End Year"
+                        onChange={(e) => setFinancialEndYear(e.target.value as number)}
+                      >
+                        {years.map((year) => (
+                          <MenuItem key={year} value={year}>
+                            {year}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                </Grid>
+              </Grid>
+
+              <Grid size={{ xs: 12 }}>
+                <Stack
+                  direction={{ xs: 'column', md: 'row' }}
+                  spacing={1}
+                  justifyContent="flex-end"
+                  useFlexGap
+                  sx={{ flexWrap: 'wrap' }}
                 >
-                  {years.map((year) => (
-                    <MenuItem key={year} value={year}>
-                      {year}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
-
-            <Stack direction="row" spacing={2}>
-              <FormControl fullWidth>
-                <InputLabel>End Quarter</InputLabel>
-                <Select
-                  value={financialEndQuarter}
-                  label="End Quarter"
-                  onChange={(e) => setFinancialEndQuarter(e.target.value as number)}
-                >
-                  <MenuItem value={1}>Q1 (Jan-Mar)</MenuItem>
-                  <MenuItem value={2}>Q2 (Apr-Jun)</MenuItem>
-                  <MenuItem value={3}>Q3 (Jul-Sep)</MenuItem>
-                  <MenuItem value={4}>Q4 (Oct-Dec)</MenuItem>
-                </Select>
-              </FormControl>
-
-              <FormControl fullWidth>
-                <InputLabel>End Year</InputLabel>
-                <Select
-                  value={financialEndYear}
-                  label="End Year"
-                  onChange={(e) => setFinancialEndYear(e.target.value as number)}
-                >
-                  {years.map((year) => (
-                    <MenuItem key={year} value={year}>
-                      {year}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Stack>
-
-            <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.5} justifyContent="flex-end">
-              <Button
-                variant="outlined"
-                onClick={handleAllAuthorsRoyaltyExport}
-                disabled={isDownloadingReport}
-              >
-                Export All Authors Royalty (XLSX)
-              </Button>
-              <Button
-                variant="outlined"
-                onClick={handlePublisherProfitExport}
-                disabled={isDownloadingReport}
-              >
-                Export Publisher Profit (XLSX)
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleAmazonSalesExport}
-                disabled={isDownloadingReport}
-              >
-                Export Amazon Sales (XLSX)
-              </Button>
-            </Stack>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleAllAuthorsRoyaltyExport}
+                    sx={actionButtonSx}
+                  >
+                    Export All Authors Royalty (XLSX)
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handlePublisherProfitExport}
+                    sx={actionButtonSx}
+                  >
+                    Export Publisher Profit (XLSX)
+                  </Button>
+                </Stack>
+              </Grid>
+            </Grid>
           </Stack>
         </CardContent>
       </Card>
