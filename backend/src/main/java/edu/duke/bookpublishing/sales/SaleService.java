@@ -1360,7 +1360,7 @@ public class SaleService {
       MultipartFile file, LocalDateTime parsedTimestamp, AmazonXlsxEntry row) {
     String comment =
         String.format(
-            "Amazon: Market='%s' File='%s' Sheet='%s' (%s)",
+            "Amazon: Market='%s' File='%s' Sheet:'%s' (%s)",
             ImportParser.truncateField(row.marketplace(), ImportParser.MAX_MARKET_LENGTH),
             ImportParser.truncateField(
                 file.getOriginalFilename(), ImportParser.MAX_FILENAME_LENGTH),

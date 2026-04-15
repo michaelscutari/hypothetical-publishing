@@ -53,7 +53,8 @@ public class BookController {
   private static final Sort DEFAULT_SORT =
       Sort.by(
           Sort.Order.asc("author.name"),
-          Sort.Order.asc("seriesName").nullsFirst(),
+          // Ev4 §2.1.1: non-series books must sort after those that are in a series.
+          Sort.Order.asc("seriesName").nullsLast(),
           Sort.Order.asc("seriesPosition"),
           Sort.Order.asc("title"));
 

@@ -78,7 +78,15 @@ export default function AuthorList() {
   } = useServerDataGrid<AuthorResponse>({ fetchFn, initialPageSize: 25 });
 
   const handleRowClick = React.useCallback<GridEventListener<'rowClick'>>(
-    ({ row }) => navigate(`/authors/${row.id}`),
+    ({ row }, event) => {
+      // Ev4 §1.12: preserve native open-in-new-tab semantics (middle-click, cmd/ctrl-click).
+      if (event.button === 1 || event.metaKey || event.ctrlKey) {
+        window.open(`/authors/${row.id}`, '_blank', 'noopener,noreferrer');
+        return;
+      }
+      if (event.button !== 0) return;
+      navigate(`/authors/${row.id}`);
+    },
     [navigate],
   );
 

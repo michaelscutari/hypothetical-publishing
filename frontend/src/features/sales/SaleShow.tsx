@@ -98,6 +98,7 @@ export default function SaleShow() {
   const formatSaleSource = (source: string) => {
     if (source === 'DISTRIBUTOR') return 'Distributor';
     if (source === 'HAND_SOLD') return 'Hand Sold';
+    if (source === 'KICKSTARTER') return 'Kickstarter';
     return '—';
   };
 

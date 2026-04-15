@@ -126,7 +126,10 @@ export default function SaleEdit() {
 
   React.useEffect(() => {
     setAuthorRoyalty(computedRoyalty.toFixed(2));
-    if (saleSource === SaleRequest.saleSource.HAND_SOLD) {
+    if (
+      saleSource === SaleRequest.saleSource.HAND_SOLD ||
+      saleSource === SaleRequest.saleSource.KICKSTARTER
+    ) {
       setPublisherRevenue(computedRevenue.toFixed(2));
     }
   }, [computedRevenue, computedRoyalty, saleSource]);
@@ -134,6 +137,12 @@ export default function SaleEdit() {
   // Reset format when saleSource or distributor changes to avoid invalid combinations
   React.useEffect(() => {
     if (saleSource === SaleRequest.saleSource.HAND_SOLD) {
+      setFormat(SaleRequest.format.PRINT);
+    } else if (
+      saleSource === SaleRequest.saleSource.KICKSTARTER &&
+      format === SaleRequest.format.KINDLE_UNLIMITED
+    ) {
+      // Kickstarter allows print or ebook — force print if KU was previously set.
       setFormat(SaleRequest.format.PRINT);
     } else if (
       distributor === SaleRequest.distributor.INGRAM_SPARK &&
@@ -172,9 +181,9 @@ export default function SaleEdit() {
           quantitySold: format === SaleRequest.format.KINDLE_UNLIMITED ? undefined : quantitySold,
           kenp: format === SaleRequest.format.KINDLE_UNLIMITED ? kenp : undefined,
           saleCurrency:
-            saleSource === SaleRequest.saleSource.HAND_SOLD
-              ? SaleRequest.saleCurrency.USD
-              : saleCurrency,
+            saleSource === SaleRequest.saleSource.DISTRIBUTOR
+              ? saleCurrency
+              : SaleRequest.saleCurrency.USD,
           originalPublisherRevenue:
             saleSource === SaleRequest.saleSource.DISTRIBUTOR
               ? parseFloat(publisherRevenue)
@@ -341,6 +350,7 @@ export default function SaleEdit() {
               >
                 <MenuItem value={SaleRequest.saleSource.DISTRIBUTOR}>Distributor</MenuItem>
                 <MenuItem value={SaleRequest.saleSource.HAND_SOLD}>Handsold</MenuItem>
+                <MenuItem value={SaleRequest.saleSource.KICKSTARTER}>Kickstarter</MenuItem>
               </Select>
             </FormControl>
           </Grid>

@@ -210,7 +210,7 @@ export default function BookList() {
             <Typography variant="body2">{row.title}</Typography>
             {row.seriesName && (
               <Typography variant="caption" color="text.secondary">
-                {row.seriesName} #{row.seriesPosition}
+                {row.seriesName} ({row.seriesPosition})
               </Typography>
             )}
           </Box>
