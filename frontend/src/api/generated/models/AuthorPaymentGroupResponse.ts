@@ -20,6 +20,10 @@ export type AuthorPaymentGroupResponse = {
      */
     unpaidTotal: number;
     /**
+     * Total unpaid projected author royalty for this author (not eligible for payment)
+     */
+    projectedUnpaidTotal: number;
+    /**
      * Sales rows for this author
      */
     sales: Array<AuthorPaymentSaleResponse>;

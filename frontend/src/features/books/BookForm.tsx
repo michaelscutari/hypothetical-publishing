@@ -7,12 +7,14 @@ import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
+import FormControlLabel from '@mui/material/FormControlLabel';
 import FormGroup from '@mui/material/FormGroup';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
 import InputAdornment from '@mui/material/InputAdornment';
 import MenuItem from '@mui/material/MenuItem';
 import Stack from '@mui/material/Stack';
+import Switch from '@mui/material/Switch';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
 import * as React from 'react';
@@ -142,6 +144,13 @@ export default function BookForm(props: BookFormProps) {
         event.target.name as keyof BookFormState['values'],
         value === '' ? null : Number(value),
       );
+    },
+    [onFieldChange],
+  );
+
+  const handleSwitchChange = React.useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      onFieldChange(event.target.name as keyof BookFormState['values'], event.target.checked);
     },
     [onFieldChange],
   );
@@ -278,6 +287,18 @@ export default function BookForm(props: BookFormProps) {
               fullWidth
             />
           </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex', alignItems: 'center' }}>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={formValues.released ?? true}
+                  onChange={handleSwitchChange}
+                  name="released"
+                />
+              }
+              label="Released"
+            />
+          </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
               type="number"
@@ -329,11 +350,37 @@ export default function BookForm(props: BookFormProps) {
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
             <TextField
+              value={formValues.kickstarterItemTagEbook ?? ''}
+              onChange={handleTextFieldChange}
+              name="kickstarterItemTagEbook"
+              label="Kickstarter Item Tag (Ebook)"
+              error={!!formErrors.kickstarterItemTagEbook}
+              helperText={
+                formErrors.kickstarterItemTagEbook ?? 'Optional, max 128 chars, no spaces'
+              }
+              fullWidth
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
+              value={formValues.kickstarterItemTagPrint ?? ''}
+              onChange={handleTextFieldChange}
+              name="kickstarterItemTagPrint"
+              label="Kickstarter Item Tag (Print)"
+              error={!!formErrors.kickstarterItemTagPrint}
+              helperText={
+                formErrors.kickstarterItemTagPrint ?? 'Optional, max 128 chars, no spaces'
+              }
+              fullWidth
+            />
+          </Grid>
+          <Grid size={{ xs: 12, sm: 6 }} sx={{ display: 'flex' }}>
+            <TextField
               type="number"
               value={formatRoyaltyRateForInput(formValues.handsoldAuthorRoyaltyRate)}
               onChange={handleRoyaltyFieldChange}
               name="handsoldAuthorRoyaltyRate"
-              label="Handsold Royalty Rate (%)"
+              label="Handsold/Kickstarter Royalty Rate (%)"
               error={!!formErrors.handsoldAuthorRoyaltyRate}
               helperText={
                 formErrors.handsoldAuthorRoyaltyRate ?? 'Enter a percentage from 0 to 100'

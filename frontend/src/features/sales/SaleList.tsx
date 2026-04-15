@@ -25,6 +25,7 @@ import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import { useServerDataGrid } from '@/hooks/useServerDataGrid';
 import { getErrorMessage } from '@/utils/error';
 import { formatCurrency, formatCurrencyWithCode, formatMonthYear } from '@/utils/formatting';
+import type { GridRowClassNameParams } from '@mui/x-data-grid';
 import {
   GridActionsCellItem,
   type GridColDef,
@@ -53,6 +54,7 @@ export default function SaleList() {
   const [saleSource, setSaleSource] = React.useState<string>('all');
   const [format, setFormat] = React.useState<string>('all');
   const [distributor, setDistributor] = React.useState<string>('all');
+  const [projectedStatus, setProjectedStatus] = React.useState<string>('all');
   const [authors, setAuthors] = React.useState<AuthorResponse[]>([]);
 
   const fetchFn = React.useCallback(
@@ -78,6 +80,8 @@ export default function SaleList() {
         format === 'all'
           ? undefined
           : (format.toUpperCase() as 'PRINT' | 'EBOOK' | 'KINDLE_UNLIMITED');
+      const isProjectedParam =
+        projectedStatus === 'all' ? undefined : projectedStatus === 'projected';
 
       return SalesService.getSales(
         params.page,
@@ -91,9 +95,19 @@ export default function SaleList() {
         saleSourceParam,
         distributorParam,
         formatParam,
+        isProjectedParam,
       );
     },
-    [sortModel, startDate, endDate, selectedAuthor, saleSource, distributor, format],
+    [
+      sortModel,
+      startDate,
+      endDate,
+      selectedAuthor,
+      saleSource,
+      distributor,
+      format,
+      projectedStatus,
+    ],
   );
 
   const {
@@ -143,8 +157,10 @@ export default function SaleList() {
     if (saleSource !== 'all') params.set('saleSource', saleSource.toUpperCase());
     if (distributor !== 'all') params.set('distributor', distributor.toUpperCase());
     if (format !== 'all') params.set('format', format.toUpperCase());
+    if (projectedStatus === 'projected') params.set('isProjected', 'true');
+    if (projectedStatus === 'actual') params.set('isProjected', 'false');
     window.open(`/api/sales/export?${params.toString()}`, '_blank');
-  }, [startDate, endDate, selectedAuthor, saleSource, distributor, format]);
+  }, [startDate, endDate, selectedAuthor, saleSource, distributor, format, projectedStatus]);
 
   const handleRowDelete = React.useCallback(
     (sale: SaleResponse) => async () => {
@@ -186,23 +202,30 @@ export default function SaleList() {
         headerName: 'Book Title',
         flex: 1.5,
         minWidth: 150,
-        renderCell: (params) => (
-          <Link
-            to={`/books/${params.row.bookId}`}
-            style={{ color: 'inherit', textDecoration: 'none' }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.textDecoration = 'underline';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.textDecoration = 'none';
-            }}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          >
-            {params.row.bookTitle}
-          </Link>
-        ),
+        renderCell: (params) => {
+          const isProjected = params.row.isProjected;
+          return (
+            <Link
+              to={`/books/${params.row.bookId}`}
+              style={{
+                color: 'inherit',
+                textDecoration: 'none',
+                opacity: isProjected ? 0.5 : 1,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.textDecoration = 'underline';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.textDecoration = 'none';
+              }}
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              {params.row.bookTitle}
+            </Link>
+          );
+        },
       },
       {
         field: 'bookAuthor',
@@ -371,6 +394,13 @@ export default function SaleList() {
 
   const pageTitle = 'Records';
 
+  const getRowClassName = React.useCallback((params: GridRowClassNameParams<SaleResponse>) => {
+    if (params.row?.isProjected) {
+      return 'projected-row';
+    }
+    return '';
+  }, []);
+
   return (
     <PageContainer
       title={pageTitle}
@@ -386,6 +416,18 @@ export default function SaleList() {
               <Button onClick={handleExportClick}>Export</Button>
             </ButtonGroup>
           </Box>
+
+          <Stack
+            direction="row"
+            alignItems="center"
+            spacing={0.75}
+            flexWrap="wrap"
+            useFlexGap
+            sx={{ fontSize: '0.875rem', color: 'text.secondary' }}
+          >
+            <span style={{ opacity: 0.5 }}>●</span>
+            <span>Greyed out records are projected sales (unreleased books)</span>
+          </Stack>
 
           <Stack direction="row" alignItems="center" spacing={0.75} flexWrap="wrap" useFlexGap>
             <Tooltip title="Reload data" placement="bottom" enterDelay={1000}>
@@ -466,6 +508,20 @@ export default function SaleList() {
                 <MenuItem value="all">All</MenuItem>
                 <MenuItem value="distributor">Distributor</MenuItem>
                 <MenuItem value="hand_sold">Hand Sold</MenuItem>
+                <MenuItem value="kickstarter">Kickstarter</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl size="small" sx={{ minWidth: 130 }}>
+              <InputLabel>Projected Status</InputLabel>
+              <Select
+                value={projectedStatus}
+                label="Projected Status"
+                onChange={(e: SelectChangeEvent) => setProjectedStatus(e.target.value)}
+              >
+                <MenuItem value="all">All Sales</MenuItem>
+                <MenuItem value="actual">Actual Only</MenuItem>
+                <MenuItem value="projected">Projected Only</MenuItem>
               </Select>
             </FormControl>
 
@@ -513,8 +569,12 @@ export default function SaleList() {
           onPaginationModelChange={onPaginationModelChange}
           sortModel={sortModel}
           onSortModelChange={setSortModel}
+          getRowClassName={getRowClassName}
           getRowHeight={() => 'auto'}
           sx={{
+            '& .projected-row': {
+              opacity: 0.55,
+            },
             '& .MuiDataGrid-cell': {
               display: 'flex',
               alignItems: 'center',

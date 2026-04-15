@@ -78,6 +78,10 @@ export type SaleResponse = {
      * Optional comment
      */
     comment?: string;
+    /**
+     * True if this sale is for an unreleased book (projected/not yet eligible for payment)
+     */
+    isProjected: boolean;
 };
 export namespace SaleResponse {
     /**

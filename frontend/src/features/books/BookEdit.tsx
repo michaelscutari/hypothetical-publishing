@@ -1,21 +1,21 @@
-import Alert from '@mui/material/Alert';
-import * as React from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import FullPageLoader from '@/components/FullPageLoader';
 import {
   AuthorsService,
-  BooksService,
   BookCoversService,
+  BooksService,
   type AuthorResponse,
   type BookRequest,
   type BookResponse,
 } from '@/api';
+import FullPageLoader from '@/components/FullPageLoader';
+import PageContainer from '@/components/PageContainer';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
 import { getErrorMessage } from '@/utils/error';
 import { truncate } from '@/utils/formatting';
-import { validateBook, parseFieldErrors } from './bookValidation';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import Alert from '@mui/material/Alert';
+import * as React from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
-import PageContainer from '@/components/PageContainer';
+import { parseFieldErrors, validateBook } from './bookValidation';
 
 const normalizeRoyaltyRate = (value: unknown, fallback: number) => {
   if (value == null || value === '') return fallback;
@@ -215,6 +215,9 @@ export default function BookEdit() {
         coverPrice: formValues.coverPrice ?? 0,
         printCost: formValues.printCost ?? 0,
         amazonEbookAsin: formValues.amazonEbookAsin ?? undefined,
+        released: formValues.released ?? true,
+        kickstarterItemTagEbook: formValues.kickstarterItemTagEbook ?? undefined,
+        kickstarterItemTagPrint: formValues.kickstarterItemTagPrint ?? undefined,
       };
       const updatedData = await BooksService.updateBook(Number(bookId), request);
       setBook(updatedData);

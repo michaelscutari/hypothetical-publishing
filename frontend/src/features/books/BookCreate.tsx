@@ -1,5 +1,3 @@
-import * as React from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   ApiError,
   BookCoversService,
@@ -8,11 +6,13 @@ import {
   type BookRequest,
   type BookResponse,
 } from '@/api';
-import { getErrorMessage } from '@/utils/error';
-import { validateBook, parseFieldErrors } from './bookValidation';
-import { useNotifications } from '@/hooks/useNotifications/useNotifications';
-import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
 import PageContainer from '@/components/PageContainer';
+import { useNotifications } from '@/hooks/useNotifications/useNotifications';
+import { getErrorMessage } from '@/utils/error';
+import * as React from 'react';
+import { useNavigate } from 'react-router-dom';
+import BookForm, { type BookFormState, type FormFieldValue } from './BookForm';
+import { parseFieldErrors, validateBook } from './bookValidation';
 
 const INITIAL_FORM_VALUES: Partial<BookFormState['values']> = {
   distributorAuthorRoyaltyRate: 0.5,
@@ -21,6 +21,7 @@ const INITIAL_FORM_VALUES: Partial<BookFormState['values']> = {
   publicationMonth: 1,
   coverPrice: 0,
   printCost: 0,
+  released: true,
 };
 
 export default function BookCreate() {
@@ -188,6 +189,9 @@ export default function BookCreate() {
         coverPrice: formValues.coverPrice ?? 0,
         printCost: formValues.printCost ?? 0,
         amazonEbookAsin: formValues.amazonEbookAsin ?? undefined,
+        released: formValues.released ?? true,
+        kickstarterItemTagEbook: formValues.kickstarterItemTagEbook ?? undefined,
+        kickstarterItemTagPrint: formValues.kickstarterItemTagPrint ?? undefined,
         coverImage: formValues.coverImage ?? undefined,
       };
       const book: BookResponse = await BooksService.createBook(request);

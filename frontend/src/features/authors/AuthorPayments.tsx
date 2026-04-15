@@ -117,11 +117,7 @@ export default function AuthorPayments() {
           if (yearDiff !== 0) return yearDiff;
           return b.saleMonth - a.saleMonth;
         });
-        const unpaidTotal = sales.reduce(
-          (sum, sale) => sum + (sale.hasAuthorBeenPaid ? 0 : sale.authorRoyalty),
-          0,
-        );
-        return { ...g, sales, unpaidTotal };
+        return { ...g, sales };
       });
 
       setGroups(normalized);
@@ -185,9 +181,11 @@ export default function AuthorPayments() {
 
   const handlePayAuthor = React.useCallback(
     async (group: AuthorPaymentGroupResponse) => {
-      const unpaidCount = group.sales.filter((sale) => !sale.hasAuthorBeenPaid).length;
+      const unpaidCount = group.sales.filter(
+        (sale) => !sale.hasAuthorBeenPaid && !sale.isProjected,
+      ).length;
       if (unpaidCount === 0) {
-        notifications.show('No unpaid records for this author', {
+        notifications.show('No non-projected unpaid records for this author', {
           severity: 'error',
           autoHideDuration: 3000,
         });
@@ -199,6 +197,8 @@ export default function AuthorPayments() {
         <>
           You are about to mark <strong>{group.author}</strong>&apos;s {unpaidCount} unpaid sale
           record(s) as paid. Total: <strong>{formatCurrency(unpaidTotal)}</strong>.
+          <br />
+          Projected sales are excluded and will remain unpaid until release.
         </>,
         { title: 'Confirm mark paid', okText: 'Confirm', severity: 'warning' },
       );
@@ -306,6 +306,7 @@ export default function AuthorPayments() {
           <Box>
             {groups.map((group, idx) => {
               const unpaidTotal = group.unpaidTotal ?? 0;
+              const projectedUnpaidTotal = group.projectedUnpaidTotal ?? 0;
               const authorInfo = authorOptions.find((a) => a.id === group.authorId);
               return (
                 <Accordion
@@ -340,6 +341,14 @@ export default function AuthorPayments() {
                           size="small"
                           variant={unpaidTotal > 0 ? 'outlined' : 'filled'}
                         />
+                        <Chip
+                          icon={<PendingIcon />}
+                          label={`Projected (Not Eligible): ${formatCurrency(projectedUnpaidTotal)}`}
+                          color="default"
+                          size="small"
+                          variant="outlined"
+                          sx={{ opacity: 0.8 }}
+                        />
                       </Stack>
 
                       <Stack direction="row" spacing={1} alignItems="center">
@@ -361,7 +370,7 @@ export default function AuthorPayments() {
                         </Tooltip>
                         {authorInfo?.paypalAccount && unpaidTotal > 0 && (
                           <Tooltip
-                            title={`Pay via PayPal: ${formatCurrency(unpaidTotal)}`}
+                            title={`Pay non-projected unpaid total via PayPal: ${formatCurrency(unpaidTotal)}`}
                             placement="bottom"
                           >
                             <IconButton
@@ -383,7 +392,7 @@ export default function AuthorPayments() {
                         )}
                         {authorInfo?.venmoAccount && unpaidTotal > 0 && (
                           <Tooltip
-                            title={`Pay via Venmo: ${formatCurrency(unpaidTotal)}`}
+                            title={`Pay non-projected unpaid total via Venmo: ${formatCurrency(unpaidTotal)}`}
                             placement="bottom"
                           >
                             <IconButton
@@ -425,7 +434,11 @@ export default function AuthorPayments() {
                             <TableRow
                               key={sale.id}
                               hover
-                              sx={{ cursor: 'pointer' }}
+                              sx={{
+                                cursor: 'pointer',
+                                opacity: sale.isProjected ? 0.55 : 1,
+                                bgcolor: sale.isProjected ? 'action.hover' : 'transparent',
+                              }}
                               onClick={(event) => handleSaleNavigate(sale.id, event)}
                               onAuxClick={(event) => handleSaleNavigate(sale.id, event)}
                             >
@@ -458,7 +471,17 @@ export default function AuthorPayments() {
                               </TableCell>
 
                               <TableCell>
-                                <PaidStatusChip paid={sale.hasAuthorBeenPaid} />
+                                <Stack direction="row" spacing={1} alignItems="center">
+                                  <PaidStatusChip paid={sale.hasAuthorBeenPaid} />
+                                  {sale.isProjected && (
+                                    <Chip
+                                      label="Projected"
+                                      size="small"
+                                      variant="outlined"
+                                      color="default"
+                                    />
+                                  )}
+                                </Stack>
                               </TableCell>
                             </TableRow>
                           ))}

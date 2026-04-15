@@ -169,7 +169,7 @@ export default function SaleEdit() {
           format,
           saleMonth,
           saleYear,
-          quantitySold: format === SaleRequest.format.KINDLE_UNLIMITED ? 0 : quantitySold,
+          quantitySold: format === SaleRequest.format.KINDLE_UNLIMITED ? undefined : quantitySold,
           kenp: format === SaleRequest.format.KINDLE_UNLIMITED ? kenp : undefined,
           saleCurrency:
             saleSource === SaleRequest.saleSource.HAND_SOLD

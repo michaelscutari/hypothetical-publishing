@@ -99,6 +99,7 @@ export class SalesService {
      * @param saleSource
      * @param distributor
      * @param format
+     * @param isProjected
      * @param query
      * @param bookId
      * @returns PagedResponseSaleResponse OK
@@ -116,6 +117,7 @@ export class SalesService {
         saleSource?: 'DISTRIBUTOR' | 'HAND_SOLD' | 'KICKSTARTER',
         distributor?: 'INGRAM_SPARK' | 'AMAZON' | 'OTHER',
         format?: 'PRINT' | 'EBOOK' | 'KINDLE_UNLIMITED',
+        isProjected?: boolean,
         query?: string,
         bookId?: number,
     ): CancelablePromise<PagedResponseSaleResponse> {
@@ -134,6 +136,7 @@ export class SalesService {
                 'saleSource': saleSource,
                 'distributor': distributor,
                 'format': format,
+                'isProjected': isProjected,
                 'query': query,
                 'bookId': bookId,
             },
@@ -274,6 +277,7 @@ export class SalesService {
      * @param saleSource
      * @param distributor
      * @param format
+     * @param isProjected
      * @param query
      * @param bookId
      * @returns any OK
@@ -286,6 +290,7 @@ export class SalesService {
         saleSource?: 'DISTRIBUTOR' | 'HAND_SOLD' | 'KICKSTARTER',
         distributor?: 'INGRAM_SPARK' | 'AMAZON' | 'OTHER',
         format?: 'PRINT' | 'EBOOK' | 'KINDLE_UNLIMITED',
+        isProjected?: boolean,
         query?: string,
         bookId?: number,
     ): CancelablePromise<any> {
@@ -299,6 +304,7 @@ export class SalesService {
                 'saleSource': saleSource,
                 'distributor': distributor,
                 'format': format,
+                'isProjected': isProjected,
                 'query': query,
                 'bookId': bookId,
             },

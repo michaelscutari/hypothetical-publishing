@@ -21,6 +21,7 @@ import InputAdornment from '@mui/material/InputAdornment';
 import Stack from '@mui/material/Stack';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
+import Typography from '@mui/material/Typography';
 import {
   GridActionsCellItem,
   type GridColDef,
@@ -230,6 +231,9 @@ export default function AuthorList() {
         </Stack>
       }
     >
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+        Royalty totals exclude projected sales for unreleased books.
+      </Typography>
       <Box sx={{ flex: 1, width: '100%' }}>
         <StandardDataGrid
           rows={rows}

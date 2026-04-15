@@ -94,11 +94,20 @@ public class SaleService {
       SaleSource saleSource,
       SaleDistributor distributor,
       SaleFormat format,
+      Boolean isProjected,
       String query,
       Sort sort) {
     Specification<Sale> spec =
         buildSaleSpecification(
-            startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
+            startDate,
+            endDate,
+            authorId,
+            bookId,
+            saleSource,
+            distributor,
+            format,
+            isProjected,
+            query);
     return saleRepository.findAll(spec, sort);
   }
 
@@ -110,11 +119,20 @@ public class SaleService {
       SaleSource saleSource,
       SaleDistributor distributor,
       SaleFormat format,
+      Boolean isProjected,
       String query,
       Pageable pageable) {
     Specification<Sale> spec =
         buildSaleSpecification(
-            startDate, endDate, authorId, bookId, saleSource, distributor, format, query);
+            startDate,
+            endDate,
+            authorId,
+            bookId,
+            saleSource,
+            distributor,
+            format,
+            isProjected,
+            query);
     return saleRepository.findAll(spec, pageable);
   }
 
@@ -126,6 +144,7 @@ public class SaleService {
       SaleSource saleSource,
       SaleDistributor distributor,
       SaleFormat format,
+      Boolean isProjected,
       String query) {
     Specification<Sale> spec = Specification.where(null);
 
@@ -153,6 +172,10 @@ public class SaleService {
 
     if (format != null) {
       spec = spec.and(SaleSpecifications.byFormat(format));
+    }
+
+    if (isProjected != null) {
+      spec = spec.and(SaleSpecifications.isProjected(isProjected));
     }
 
     if (query != null && !query.isBlank()) {
@@ -201,6 +224,7 @@ public class SaleService {
     List<AuthorPaymentGroupResponse> groups = new ArrayList<>();
     for (Map.Entry<Long, List<Sale>> entry : grouped.entrySet()) {
       BigDecimal unpaidTotal = BigDecimal.ZERO;
+      BigDecimal projectedTotal = BigDecimal.ZERO;
       List<AuthorPaymentSaleResponse> saleRows = new ArrayList<>();
       String authorName = null;
 
@@ -209,12 +233,22 @@ public class SaleService {
         if (authorName == null) {
           authorName = sale.getBook().getAuthor().getName();
         }
-        if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
-          unpaidTotal = unpaidTotal.add(sale.getAuthorRoyalty());
+        // Exclude projected sales from unpaid total
+        boolean isProjected = !sale.getBook().getReleased();
+        if (isProjected) {
+          if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
+            projectedTotal = projectedTotal.add(sale.getAuthorRoyalty());
+          }
+        } else {
+          if (!Boolean.TRUE.equals(sale.getHasAuthorBeenPaid())) {
+            unpaidTotal = unpaidTotal.add(sale.getAuthorRoyalty());
+          }
         }
       }
 
-      groups.add(new AuthorPaymentGroupResponse(entry.getKey(), authorName, unpaidTotal, saleRows));
+      groups.add(
+          new AuthorPaymentGroupResponse(
+              entry.getKey(), authorName, unpaidTotal, projectedTotal, saleRows));
     }
 
     return groups;
@@ -321,8 +355,11 @@ public class SaleService {
             .map(Author::getName)
             .orElseThrow(() -> new NotFoundException("Author not found"));
 
-    // Get all sales for this author
-    List<Sale> allSales = saleRepository.findAllByAuthorId(authorId);
+    // Get all non-projected sales for this author
+    List<Sale> allSales =
+        saleRepository.findAllByAuthorId(authorId).stream()
+            .filter(sale -> !isUnreleased(sale.getBook()))
+            .toList();
 
     // Generate quarter sections, conditionally including quarters with no sales
     List<QuarterSection> sections = new ArrayList<>();
@@ -917,11 +954,7 @@ public class SaleService {
   }
 
   private boolean isUnreleased(Book book) {
-    if (book.getPublicationYear() == null || book.getPublicationMonth() == null) {
-      return true;
-    }
-    YearMonth publication = YearMonth.of(book.getPublicationYear(), book.getPublicationMonth());
-    return publication.isAfter(YearMonth.now());
+    return !Boolean.TRUE.equals(book.getReleased());
   }
 
   private String bookDisplayName(Book book) {
