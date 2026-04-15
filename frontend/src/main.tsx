@@ -7,6 +7,7 @@ import App from '@/App';
 import { getTheme } from '@/theme/getTheme';
 import { ColorSchemeProvider, useColorScheme } from '@/context/ColorSchemeContext';
 import { AuthProvider } from '@/context/AuthContext';
+import { BrandingProvider } from '@/branding/BrandingContext';
 
 // eslint-disable-next-line react-refresh/only-export-components
 function Root() {
@@ -24,11 +25,13 @@ function Root() {
 // eslint-disable-next-line react-refresh/only-export-components
 function Providers() {
   return (
-    <ColorSchemeProvider>
-      <AuthProvider>
-        <Root />
-      </AuthProvider>
-    </ColorSchemeProvider>
+    <BrandingProvider>
+      <ColorSchemeProvider>
+        <AuthProvider>
+          <Root />
+        </AuthProvider>
+      </ColorSchemeProvider>
+    </BrandingProvider>
   );
 }
 

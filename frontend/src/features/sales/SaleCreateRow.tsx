@@ -90,7 +90,12 @@ export default function SaleCreateRow({
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const source = event.target.value as SaleRequest.saleSource;
       const updates: Partial<SaleRecordInput> = { saleSource: source, errors: {} };
-      if (source === SaleRequest.saleSource.HAND_SOLD) {
+      if (
+        source === SaleRequest.saleSource.HAND_SOLD ||
+        source === SaleRequest.saleSource.KICKSTARTER
+      ) {
+        // Handsold and Kickstarter: no distributor, USD-only, revenue computed.
+        // Handsold forces print format; Kickstarter allows print (default) or ebook.
         updates.distributor = null;
         updates.format = SaleRequest.format.PRINT;
         updates.saleCurrency = SaleRequest.saleCurrency.USD;
@@ -392,6 +397,7 @@ export default function SaleCreateRow({
         >
           <MenuItem value={SaleRequest.saleSource.DISTRIBUTOR}>Distributor</MenuItem>
           <MenuItem value={SaleRequest.saleSource.HAND_SOLD}>Handsold</MenuItem>
+          <MenuItem value={SaleRequest.saleSource.KICKSTARTER}>Kickstarter</MenuItem>
         </TextField>
 
         <TextField

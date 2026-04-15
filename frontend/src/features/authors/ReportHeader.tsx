@@ -1,6 +1,7 @@
 import { type RoyaltyReportResponse } from '@/api';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
+import { useBranding } from '@/branding/BrandingContext';
 import { getGeneratedDate, getQuarterLabel } from './royaltyReportUtils';
 
 interface ReportHeaderProps {
@@ -8,6 +9,7 @@ interface ReportHeaderProps {
 }
 
 export default function ReportHeader({ reportData }: ReportHeaderProps) {
+  const { publisherName, logoUrl } = useBranding();
   return (
     <Box className="report-header" sx={{ borderBottom: 3, borderColor: 'primary.main' }}>
       <Box
@@ -18,9 +20,15 @@ export default function ReportHeader({ reportData }: ReportHeaderProps) {
           mb: 3,
         }}
       >
-        <Box>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box
+            component="img"
+            src={logoUrl}
+            alt=""
+            sx={{ height: 64, width: 64, display: 'block' }}
+          />
           <Typography variant="h3" sx={{ fontWeight: 'bold', color: 'primary.main', mb: 0.5 }}>
-            Hypothetical Publishing
+            {publisherName}
           </Typography>
         </Box>
         <Box sx={{ textAlign: 'right' }}>

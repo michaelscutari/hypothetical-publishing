@@ -1,3 +1,6 @@
+/** Sale source union — matches backend SaleSource enum. */
+type SaleSourceCode = 'HAND_SOLD' | 'DISTRIBUTOR' | 'KICKSTARTER';
+
 /** Compute publisher revenue for a hand-sold sale: (coverPrice - printCost) * quantity. */
 export function computeHandsoldRevenue(
   coverPrice: number,
@@ -14,11 +17,12 @@ export function computeRoyalty(revenue: number, rate: number): number {
 
 /**
  * Compute publisher revenue for a sale, dispatching on sale source.
- * For handsold sales, computes from cover price / print cost.
+ * For handsold sales, computes from (cover - print) * quantity.
+ * For Kickstarter sales, print cost is treated as 0, so revenue is cover * quantity.
  * For distributor sales, returns the provided distributor revenue as-is.
  */
 export function computePublisherRevenue(
-  saleSource: 'HAND_SOLD' | 'DISTRIBUTOR',
+  saleSource: SaleSourceCode,
   coverPrice: number,
   printCost: number,
   quantity: number | null,
@@ -26,19 +30,21 @@ export function computePublisherRevenue(
 ): number | null {
   if (saleSource === 'DISTRIBUTOR') return distributorRevenue;
   if (quantity == null) return null;
-  return computeHandsoldRevenue(coverPrice, printCost, quantity);
+  const effectivePrintCost = saleSource === 'KICKSTARTER' ? 0 : printCost;
+  return computeHandsoldRevenue(coverPrice, effectivePrintCost, quantity);
 }
 
 /**
  * Compute author royalty for a sale, selecting the rate by sale source.
+ * Handsold and Kickstarter both use the handsold/Kickstarter rate per def 10.
  */
 export function computeSaleRoyalty(
   revenue: number | null,
-  saleSource: 'HAND_SOLD' | 'DISTRIBUTOR',
+  saleSource: SaleSourceCode,
   handsoldRate: number,
   distributorRate: number,
 ): number | null {
   if (revenue == null) return null;
-  const rate = saleSource === 'HAND_SOLD' ? handsoldRate : distributorRate;
+  const rate = saleSource === 'DISTRIBUTOR' ? distributorRate : handsoldRate;
   return computeRoyalty(revenue, rate);
 }

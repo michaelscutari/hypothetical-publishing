@@ -256,21 +256,24 @@ export default function SaleCreate() {
 
     try {
       const promises = filledRecords.map((record) => {
-        const isHandsold = record.saleSource === SaleRequest.saleSource.HAND_SOLD;
+        // Handsold and Kickstarter have no distributor, are USD-only, and revenue is computed.
+        const isComputedRevenue =
+          record.saleSource === SaleRequest.saleSource.HAND_SOLD ||
+          record.saleSource === SaleRequest.saleSource.KICKSTARTER;
         const isKU = record.format === SaleRequest.format.KINDLE_UNLIMITED;
         const resolvedRevenue = record.publisherRevenue ?? 0;
         const req = {
           bookId: record.book!.id!,
           saleSource: record.saleSource,
-          distributor: isHandsold ? undefined : (record.distributor ?? undefined),
+          distributor: isComputedRevenue ? undefined : (record.distributor ?? undefined),
           format: record.format,
           saleMonth: record.saleDate!.month() + 1,
           saleYear: record.saleDate!.year(),
           quantitySold: isKU ? undefined : record.quantitySold!,
           kenp: isKU ? record.kenp! : undefined,
-          saleCurrency: isHandsold ? SaleRequest.saleCurrency.USD : record.saleCurrency,
-          originalPublisherRevenue: isHandsold ? resolvedRevenue : record.publisherRevenue!,
-          publisherRevenue: isHandsold ? undefined : record.publisherRevenue!,
+          saleCurrency: isComputedRevenue ? SaleRequest.saleCurrency.USD : record.saleCurrency,
+          originalPublisherRevenue: isComputedRevenue ? resolvedRevenue : record.publisherRevenue!,
+          publisherRevenue: isComputedRevenue ? undefined : record.publisherRevenue!,
           hasAuthorBeenPaid: record.hasAuthorBeenPaid,
           comment: record.comment || undefined,
         };
