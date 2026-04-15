@@ -352,7 +352,7 @@ export default function AuthorPayments() {
                       </Stack>
 
                       <Stack direction="row" spacing={1} alignItems="center">
-                      {authorInfo?.paypalAccount && unpaidTotal > 0 && (
+                        {authorInfo?.paypalAccount && unpaidTotal > 0 && (
                           <Tooltip
                             title={`Pay non-projected unpaid total via PayPal: ${formatCurrency(unpaidTotal)}`}
                             placement="bottom"
