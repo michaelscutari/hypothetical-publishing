@@ -355,8 +355,11 @@ public class SaleService {
             .map(Author::getName)
             .orElseThrow(() -> new NotFoundException("Author not found"));
 
-    // Get all sales for this author
-    List<Sale> allSales = saleRepository.findAllByAuthorId(authorId);
+    // Get all non-projected sales for this author
+    List<Sale> allSales =
+        saleRepository.findAllByAuthorId(authorId).stream()
+            .filter(sale -> !isUnreleased(sale.getBook()))
+            .toList();
 
     // Generate quarter sections, conditionally including quarters with no sales
     List<QuarterSection> sections = new ArrayList<>();
@@ -951,11 +954,7 @@ public class SaleService {
   }
 
   private boolean isUnreleased(Book book) {
-    if (book.getPublicationYear() == null || book.getPublicationMonth() == null) {
-      return true;
-    }
-    YearMonth publication = YearMonth.of(book.getPublicationYear(), book.getPublicationMonth());
-    return publication.isAfter(YearMonth.now());
+    return !Boolean.TRUE.equals(book.getReleased());
   }
 
   private String bookDisplayName(Book book) {

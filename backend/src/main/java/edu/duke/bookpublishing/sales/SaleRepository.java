@@ -21,20 +21,22 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
 
   @Query(
       """
-            select coalesce(sum(s.quantitySold), 0)
-            from Sale s
-            where s.book.id = :bookId
-            """)
+              select coalesce(sum(s.quantitySold), 0)
+              from Sale s
+              where s.book.id = :bookId
+            and s.book.released = true
+              """)
   Long totalUnitsSoldByBook(Long bookId);
 
   // ---- Requirement 2.2 Book Detail ----
   // 1) Total Publisher revenue for a book
   @Query(
       """
-            select coalesce(sum(s.publisherRevenue), 0)
-            from Sale s
-            where s.book.id = :bookId
-            """)
+              select coalesce(sum(s.publisherRevenue), 0)
+              from Sale s
+              where s.book.id = :bookId
+            and s.book.released = true
+              """)
   BigDecimal totalPublisherRevenueByBook(Long bookId);
 
   // 2) Total UNPAID author royalty for a book
@@ -43,6 +45,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
             select coalesce(sum(s.authorRoyalty), 0)
             from Sale s
             where s.book.id = :bookId
+              and s.book.released = true
               and s.hasAuthorBeenPaid = false
             """)
   BigDecimal totalUnpaidAuthorRoyaltyByBook(Long bookId);
@@ -53,6 +56,7 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
             select coalesce(sum(s.authorRoyalty), 0)
             from Sale s
             where s.book.id = :bookId
+              and s.book.released = true
               and s.hasAuthorBeenPaid = true
             """)
   BigDecimal totalPaidAuthorRoyaltyByBook(Long bookId);
@@ -60,10 +64,11 @@ public interface SaleRepository extends JpaRepository<Sale, Long>, JpaSpecificat
   // 4) Total (paid + unpaid) author royalty for a book
   @Query(
       """
-            select coalesce(sum(s.authorRoyalty), 0)
-            from Sale s
-            where s.book.id = :bookId
-            """)
+              select coalesce(sum(s.authorRoyalty), 0)
+              from Sale s
+              where s.book.id = :bookId
+            and s.book.released = true
+              """)
   BigDecimal totalAuthorRoyaltyByBook(Long bookId);
 
   // ---- Requirement 3.2 Author Payments ----

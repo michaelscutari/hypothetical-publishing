@@ -1,10 +1,20 @@
 package edu.duke.bookpublishing.author;
 
 import edu.duke.bookpublishing.common.StringUtils;
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import java.math.BigDecimal;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Formula;
 
 @Entity
@@ -35,15 +45,15 @@ public class Author {
   private Long bookCount;
 
   @Formula(
-      "(SELECT COALESCE(SUM(s.author_royalty), 0) FROM sales s JOIN books b ON s.book_id = b.id WHERE b.author_id = id)")
+      "(SELECT COALESCE(SUM(s.author_royalty), 0) FROM sales s JOIN books b ON s.book_id = b.id WHERE b.author_id = id AND b.released = true)")
   private BigDecimal totalRoyalty;
 
   @Formula(
-      "(SELECT COALESCE(SUM(s.author_royalty), 0) FROM sales s JOIN books b ON s.book_id = b.id WHERE b.author_id = id AND s.has_author_been_paid = true)")
+      "(SELECT COALESCE(SUM(s.author_royalty), 0) FROM sales s JOIN books b ON s.book_id = b.id WHERE b.author_id = id AND b.released = true AND s.has_author_been_paid = true)")
   private BigDecimal paidRoyalty;
 
   @Formula(
-      "(SELECT COALESCE(SUM(s.author_royalty), 0) FROM sales s JOIN books b ON s.book_id = b.id WHERE b.author_id = id AND s.has_author_been_paid = false)")
+      "(SELECT COALESCE(SUM(s.author_royalty), 0) FROM sales s JOIN books b ON s.book_id = b.id WHERE b.author_id = id AND b.released = true AND s.has_author_been_paid = false)")
   private BigDecimal unpaidRoyalty;
 
   @PrePersist

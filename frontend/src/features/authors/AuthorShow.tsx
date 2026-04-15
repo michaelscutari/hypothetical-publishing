@@ -210,6 +210,9 @@ export default function AuthorShow() {
           <Typography variant="h6" sx={{ mb: 2 }}>
             Books
           </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+            Royalty totals shown below exclude projected sales for unreleased books.
+          </Typography>
           {books.length === 0 ? (
             <Alert severity="info">No books found for this author.</Alert>
           ) : (
@@ -221,7 +224,7 @@ export default function AuthorShow() {
                     <TableCell>Series</TableCell>
                     <TableCell>Publication</TableCell>
                     <TableCell align="right">Distributor Royalty</TableCell>
-                    <TableCell align="right">Handsold Royalty</TableCell>
+                    <TableCell align="right">Handsold/Kickstarter Royalty</TableCell>
                     <TableCell align="right">Total Royalty</TableCell>
                     <TableCell align="right">Paid Royalty</TableCell>
                     <TableCell align="right">Unpaid Royalty</TableCell>
