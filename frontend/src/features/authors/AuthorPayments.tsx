@@ -352,23 +352,7 @@ export default function AuthorPayments() {
                       </Stack>
 
                       <Stack direction="row" spacing={1} alignItems="center">
-                        <Tooltip title="Pay & mark unpaid records as paid" placement="bottom">
-                          <div>
-                            <Button
-                              size="small"
-                              variant="contained"
-                              startIcon={<PaymentIcon />}
-                              disabled={unpaidTotal === 0 || isProcessing}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handlePayAuthor(group);
-                              }}
-                            >
-                              Pay
-                            </Button>
-                          </div>
-                        </Tooltip>
-                        {authorInfo?.paypalAccount && unpaidTotal > 0 && (
+                      {authorInfo?.paypalAccount && unpaidTotal > 0 && (
                           <Tooltip
                             title={`Pay non-projected unpaid total via PayPal: ${formatCurrency(unpaidTotal)}`}
                             placement="bottom"
@@ -412,6 +396,22 @@ export default function AuthorPayments() {
                             </IconButton>
                           </Tooltip>
                         )}
+                        <Tooltip title="Pay & mark unpaid records as paid" placement="bottom">
+                          <div>
+                            <Button
+                              size="small"
+                              variant="contained"
+                              startIcon={<PaymentIcon />}
+                              disabled={unpaidTotal === 0 || isProcessing}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePayAuthor(group);
+                              }}
+                            >
+                              Pay
+                            </Button>
+                          </div>
+                        </Tooltip>
                       </Stack>
                     </Stack>
                   </AccordionSummary>
