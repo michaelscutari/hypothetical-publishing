@@ -12,6 +12,7 @@ import * as React from 'react';
 import { Link, matchPath, useLocation, useNavigate } from 'react-router-dom';
 import ColorModeToggle from '@/components/ColorModeToggle';
 import { useAuth } from '@/context/AuthContext';
+import { useBranding } from '@/branding/BrandingContext';
 
 const AppBar = styled(MuiAppBar)(({ theme }) => ({
   borderWidth: 0,
@@ -44,6 +45,7 @@ export default function DashboardHeader() {
   const activeTab = useActiveTab();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { publisherShortName, logoUrl } = useBranding();
 
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
 
@@ -68,6 +70,26 @@ export default function DashboardHeader() {
   return (
     <AppBar color="inherit" position="static" sx={{ displayPrint: 'none' }}>
       <Toolbar sx={{ backgroundColor: 'inherit', gap: 2 }}>
+        <Box
+          component={Link}
+          to="/"
+          aria-label={`${publisherShortName} home`}
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            color: 'text.primary',
+            textDecoration: 'none',
+          }}
+        >
+          <Box
+            component="img"
+            src={logoUrl}
+            alt=""
+            sx={{ height: 32, width: 32, display: 'block' }}
+          />
+          <Box sx={{ fontWeight: 700, letterSpacing: '0.04em' }}>{publisherShortName}</Box>
+        </Box>
         <Tabs value={activeTab} sx={{ flex: 1 }}>
           {NAV_ITEMS.map((item) => (
             <Tab key={item.path} label={item.label} component={Link} to={item.path} />

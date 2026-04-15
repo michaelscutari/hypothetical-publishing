@@ -10,6 +10,9 @@ services:
       - JWT_EXPIRATION_HOURS=${JWT_EXPIRATION_HOURS:-24}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin}
       - CURRENCY_API_APP_ID=${CURRENCY_API_APP_ID}
+      - APP_PUBLISHER_NAME=${PUBLISHER_NAME:-Hypothetical Publishing}
+      - APP_PUBLISHER_SHORT_NAME=${PUBLISHER_SHORT_NAME:-HP}
+      - APP_PUBLISHER_LOGO_URL=${PUBLISHER_LOGO_URL:-/branding/logo.svg}
     depends_on:
       db:
         condition: service_healthy

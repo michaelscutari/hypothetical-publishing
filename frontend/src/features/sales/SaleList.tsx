@@ -44,8 +44,10 @@ export default function SaleList() {
   const dialogs = useDialogs();
   const notifications = useNotifications();
 
+  // Ev4 §3.1.1: default sort descending by record month/year (newest first).
   const [sortModel, setSortModel] = React.useState<GridSortModel>([
     { field: 'saleYear', sort: 'desc' },
+    { field: 'saleMonth', sort: 'desc' },
   ]);
 
   const [startDate, setStartDate] = React.useState<Dayjs | null>(null);

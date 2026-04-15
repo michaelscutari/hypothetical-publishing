@@ -13,6 +13,7 @@ import Typography from '@mui/material/Typography';
 import * as React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useBranding } from '@/branding/BrandingContext';
 import { getErrorMessage } from '@/utils/error';
 import ColorModeToggle from '@/components/ColorModeToggle';
 
@@ -34,6 +35,7 @@ const SignInContainer = styled(Stack)(() => ({
 }));
 
 export default function Login() {
+  const { publisherName } = useBranding();
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [usernameError, setUsernameError] = React.useState(false);
@@ -124,7 +126,7 @@ export default function Login() {
             textAlign: 'center',
           }}
         >
-          Hypothetical Publishing
+          {publisherName}
         </Typography>
         <Card variant="outlined" sx={{ boxShadow: 3 }}>
           {error && (

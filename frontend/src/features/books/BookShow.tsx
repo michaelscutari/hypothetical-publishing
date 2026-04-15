@@ -159,7 +159,7 @@ export default function BookShow() {
             {book.hasCover ? (
               <Box
                 component="img"
-                src={`/api/books/${book.id}/cover/thumbnail`}
+                src={`/api/books/${book.id}/cover`}
                 alt={`${book.title} cover`}
                 sx={{
                   width: '100%',
@@ -197,14 +197,25 @@ export default function BookShow() {
 
         {/* CENTER: Title, author, metadata */}
         <Grid size={{ xs: 12, md: 6 }}>
-          {book.seriesName && (
-            <Chip
-              label={`${book.seriesName}${book.seriesPosition ? ` · Book ${book.seriesPosition}` : ''}`}
-              size="small"
-              variant="outlined"
-              sx={{ mb: 1.5, fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
-            />
-          )}
+          <Stack direction="row" spacing={1} sx={{ mb: 1.5, flexWrap: 'wrap', rowGap: 1 }}>
+            {book.seriesName && (
+              <Chip
+                label={`${book.seriesName}${book.seriesPosition ? ` (${book.seriesPosition})` : ''}`}
+                size="small"
+                variant="outlined"
+                sx={{ fontWeight: 500, borderColor: 'divider', color: 'text.secondary' }}
+              />
+            )}
+            {!book.released && (
+              <Chip
+                label="Unreleased (Sales Projected)"
+                size="small"
+                variant="outlined"
+                color="warning"
+                sx={{ fontWeight: 600 }}
+              />
+            )}
+          </Stack>
 
           <Typography variant="h4" sx={{ fontWeight: 700, lineHeight: 1.2, mb: 1 }}>
             {book.title}
@@ -312,6 +323,34 @@ export default function BookShow() {
                 </Typography>
               </Stack>
             )}
+            {book.kickstarterItemTagEbook && (
+              <Stack direction="row" spacing={1} alignItems="baseline">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ minWidth: 160, fontWeight: 600 }}
+                >
+                  Kickstarter (ebook)
+                </Typography>
+                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                  {book.kickstarterItemTagEbook}
+                </Typography>
+              </Stack>
+            )}
+            {book.kickstarterItemTagPrint && (
+              <Stack direction="row" spacing={1} alignItems="baseline">
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ minWidth: 160, fontWeight: 600 }}
+                >
+                  Kickstarter (print)
+                </Typography>
+                <Typography variant="body1" sx={{ fontFamily: 'monospace' }}>
+                  {book.kickstarterItemTagPrint}
+                </Typography>
+              </Stack>
+            )}
           </Stack>
         </Grid>
 
@@ -347,7 +386,7 @@ export default function BookShow() {
                   color="text.secondary"
                   sx={{ fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}
                 >
-                  Handsold
+                  Handsold / Kickstarter
                 </Typography>
                 <Typography
                   variant="h5"

@@ -47,6 +47,10 @@ Edit `.env` with production values:
 | `JWT_SECRET`           | Use a long random string (e.g. `openssl rand -hex 32`)   |
 | `JWT_EXPIRATION_HOURS` | Token lifetime in hours (default: `24`)                  |
 | `ADMIN_PASSWORD`       | Password for the default admin account                   |
+| `CURRENCY_API_APP_ID`  | Open Exchange Rates app-id (free tier works)             |
+| `PUBLISHER_NAME`       | Display name shown in UI + report headers (§4.2.2)       |
+| `PUBLISHER_SHORT_NAME` | Compact label used in the dashboard header               |
+| `PUBLISHER_LOGO_URL`   | Path served for the logo (defaults to `/branding/logo.svg`) |
 
 You also need to set the Spring profile. Add this to `.env`:
 
@@ -124,6 +128,29 @@ just backup restore backup-2026-03-24.dump
 The backend does not need to be restarted after a restore.
 
 For full details on the backup system, see the [Backup Admin Guide](backup-admin-guide.md).
+
+## White-Label Rebranding (§4.2.2)
+
+The system can be rebadged for other publishers without code changes. Three env vars control the visible branding:
+
+| Variable               | Purpose                                                                 |
+|------------------------|-------------------------------------------------------------------------|
+| `PUBLISHER_NAME`       | Full publisher name — shown on the login page, browser tab, and royalty report PDF header |
+| `PUBLISHER_SHORT_NAME` | Compact label shown next to the logo in the dashboard header            |
+| `PUBLISHER_LOGO_URL`   | Path to the logo asset served by the frontend (default `/branding/logo.svg`) |
+
+**To change the publisher name / short name:**
+
+1. Edit `.env` on the server and set the three variables.
+2. Restart: `docker compose --profile prod up -d` (no rebuild needed — the backend reads them on startup and serves them via `GET /api/config/branding`; the frontend re-fetches on next page load).
+
+**To replace the logo:**
+
+1. Place the new logo at `frontend/public/branding/logo.svg` (SVG recommended — displays crisply at any size from 32px header icons to 80px report PDF headers). PNG is also fine.
+2. Rebuild the frontend image: `docker compose --profile prod up --build -d frontend-prod`.
+3. If you prefer a different path than `/branding/logo.svg`, set `PUBLISHER_LOGO_URL` to that path and ensure the asset is served from it.
+
+The defaults produce Hypothetical Publishing branding with no `.env` changes required.
 
 ## Updating
 

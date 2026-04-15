@@ -40,7 +40,10 @@ public class SaleCsvExporter {
   };
 
   private static final Map<SaleSource, String> SOURCE_NAMES =
-      Map.of(SaleSource.DISTRIBUTOR, "Distributor", SaleSource.HAND_SOLD, "Handsold");
+      Map.of(
+          SaleSource.DISTRIBUTOR, "Distributor",
+          SaleSource.HAND_SOLD, "Handsold",
+          SaleSource.KICKSTARTER, "Kickstarter");
 
   private static final Map<SaleDistributor, String> DISTRIBUTOR_NAMES =
       Map.of(
@@ -67,16 +70,16 @@ public class SaleCsvExporter {
 
   private String[] toRow(Sale sale) {
     boolean isKindleUnlimited = sale.getFormat() == SaleFormat.KINDLE_UNLIMITED;
-    boolean isHandsold = sale.getSaleSource() == SaleSource.HAND_SOLD;
+    boolean isDistributor = sale.getSaleSource() == SaleSource.DISTRIBUTOR;
 
     return new String[] {
       formatDate(sale.getSaleYear(), sale.getSaleMonth()),
       sale.getBook().getTitle(),
       sale.getBook().getAuthor().getName(),
       SOURCE_NAMES.getOrDefault(sale.getSaleSource(), sale.getSaleSource().name()),
-      isHandsold
-          ? "N/A"
-          : DISTRIBUTOR_NAMES.getOrDefault(sale.getDistributor(), sale.getDistributor().name()),
+      isDistributor
+          ? DISTRIBUTOR_NAMES.getOrDefault(sale.getDistributor(), sale.getDistributor().name())
+          : "N/A",
       FORMAT_NAMES.getOrDefault(sale.getFormat(), sale.getFormat().name()),
       isKindleUnlimited ? "N/A" : String.valueOf(sale.getQuantitySold()),
       isKindleUnlimited ? String.valueOf(sale.getKenp()) : "N/A",
